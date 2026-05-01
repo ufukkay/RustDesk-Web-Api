@@ -10,20 +10,22 @@ export async function POST(req: Request) {
     const deviceId = body.id || body.uuid;
 
     if (deviceId) {
+      console.log(`[SYSINFO FULL DATA] ${deviceId}:`, JSON.stringify(body));
+
       let infoData: Record<string, any> = {};
       if (fs.existsSync(INFO_FILE)) {
         try { infoData = JSON.parse(fs.readFileSync(INFO_FILE, "utf-8")); } catch (e) {}
       }
 
-      // Gelen tüm ağ bilgilerini (ip, mac, subnet vb.) standardize edelim
-      const netInfo = body.net || body.networks || body.network_interfaces || [];
+      // RustDesk'in gönderebileceği tüm ağ anahtarlarını kontrol edelim
+      const netInfo = body.net || body.networks || body.network_interfaces || body.interfaces || body.adapters || [];
 
       infoData[String(deviceId)] = {
         ...body,
         standard_user: body.user || body.username || body.alias || body.login_name || "-",
         ram: body.memory || body.ram || "-",
-        // Detaylı Ağ Bilgisi
-        net_details: netInfo,
+        // Eğer ağ bilgisi direkt gelmediyse, body içindeki dizileri tara (ipconfig benzeri veri arıyoruz)
+        net_details: Array.isArray(netInfo) ? netInfo : [],
         lastUpdate: Math.floor(Date.now() / 1000)
       };
       

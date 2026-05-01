@@ -41,7 +41,7 @@ export default function DeviceDetailsPage() {
     { label: "İşlemci (CPU)", value: device.cpu || "Bilinmiyor", icon: Cpu, color: "text-blue-500", bg: "bg-blue-500/10" },
     { label: "Bellek (RAM)", value: device.ram || "Bilinmiyor", icon: Database, color: "text-purple-500", bg: "bg-purple-500/10" },
     { label: "Disk Durumu", value: device.disk || "Bilinmiyor", icon: HardDrive, color: "text-amber-500", bg: "bg-amber-500/10" },
-    { label: "IP Adresi", value: device.ip || "-", icon: Globe, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+    { label: "IP Adresi", value: (device.ip || "-").replace(/^::ffff:/, ""), icon: Globe, color: "text-emerald-500", bg: "bg-emerald-500/10" },
   ];
 
   return (
