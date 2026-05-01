@@ -2,7 +2,7 @@
 
 import { useAppStore, Device } from "@/lib/store";
 import { Search, Monitor, Laptop, Server, Play, MoreHorizontal, Plus, Filter, Smartphone, Trash2, LayoutGrid, List as ListIcon, ChevronRight, Edit2 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,12 +19,16 @@ type StatusFilter = "all" | "online" | "offline";
 type ViewMode = "list" | "grouped";
 
 export default function DevicesPage() {
-  const { devices, addDevice, deleteDevice } = useAppStore();
+  const { devices, addDevice, deleteDevice, fetchDevices } = useAppStore();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [isOpen, setIsOpen] = useState(false);
   const [newDevice, setNewDevice] = useState({ id: "", name: "", os: "Windows 11", user: "", group: "Genel" });
+
+  useEffect(() => {
+    fetchDevices();
+  }, [fetchDevices]);
 
   const filteredDevices = useMemo(() => {
     return devices.filter(d => {

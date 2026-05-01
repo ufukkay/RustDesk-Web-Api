@@ -37,6 +37,14 @@ interface AppState {
   technicians: Technician[];
   addTechnician: (tech: Technician) => void;
   deleteTechnician: (id: string) => void;
+
+  serverConfig: {
+    host: string;
+    apiPort: string;
+    token: string;
+  };
+  setServerConfig: (config: { host: string; apiPort: string; token: string }) => void;
+  fetchDevices: () => Promise<void>;
 }
 
 export const useAppStore = create<AppState>()(
@@ -70,6 +78,24 @@ export const useAppStore = create<AppState>()(
       technicians: [], // Canlı veri için boşaltıldı
       addTechnician: (tech) => set((state) => ({ technicians: [...state.technicians, tech] })),
       deleteTechnician: (id) => set((state) => ({ technicians: state.technicians.filter(t => t.id !== id) })),
+
+      serverConfig: {
+        host: "192.168.0.184",
+        apiPort: "3000",
+        token: "",
+      },
+      setServerConfig: (config) => set({ serverConfig: config }),
+      fetchDevices: async () => {
+        try {
+          const res = await fetch("/api/rustdesk/devices");
+          const data = await res.json();
+          if (data && Array.isArray(data)) {
+            set({ devices: data });
+          }
+        } catch (error) {
+          console.error("Cihazlar çekilemedi:", error);
+        }
+      },
     }),
     { name: 'rustdesk-store' }
   )
