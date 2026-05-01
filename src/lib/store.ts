@@ -34,8 +34,6 @@ interface AppState {
   logout: () => void;
 
   devices: Device[];
-  updateDeviceStatus: (id: string, status: "online" | "offline") => void;
-  updateDeviceStatuses: () => void;
   setDevices: (devices: Device[]) => void;
   addDevice: (device: Device) => void;
   deleteDevice: (id: string) => void;
