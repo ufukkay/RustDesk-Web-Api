@@ -16,6 +16,7 @@ export interface Technician {
   id: string;
   name: string;
   email: string;
+  password?: string; // Şifre alanı eklendi
   role: "Admin" | "Teknisyen";
   status: "Aktif" | "Pasif";
   lastLogin: string;

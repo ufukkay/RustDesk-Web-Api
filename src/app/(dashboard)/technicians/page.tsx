@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 export default function TechniciansPage() {
   const { technicians, addTechnician, deleteTechnician } = useAppStore();
   const [isOpen, setIsOpen] = useState(false);
-  const [newTech, setNewTech] = useState<Partial<Technician>>({ name: "", email: "", role: "Teknisyen" });
+  const [newTech, setNewTech] = useState<Partial<Technician>>({ name: "", email: "", password: "", role: "Teknisyen" });
 
   const handleAdd = () => {
     if (!newTech.name || !newTech.email) return;
@@ -26,12 +26,13 @@ export default function TechniciansPage() {
       id: Math.random().toString(36).substr(2, 9),
       name: newTech.name,
       email: newTech.email,
+      password: newTech.password,
       role: newTech.role as "Admin" | "Teknisyen",
       status: "Aktif",
       lastLogin: "Hiç",
     });
     setIsOpen(false);
-    setNewTech({ name: "", email: "", role: "Teknisyen" });
+    setNewTech({ name: "", email: "", password: "", role: "Teknisyen" });
   };
 
   return (
@@ -62,6 +63,10 @@ export default function TechniciansPage() {
               <div className="space-y-2">
                 <Label className="text-[12px] font-black text-brand-ink uppercase">E-posta Adresi</Label>
                 <Input type="email" placeholder="selin@rustdesk.local" value={newTech.email} onChange={e => setNewTech({...newTech, email: e.target.value})} className="bg-brand-bg/30 border-brand-ink/10 h-11" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[12px] font-black text-brand-ink uppercase">Şifre</Label>
+                <Input type="password" placeholder="••••••••" value={newTech.password} onChange={e => setNewTech({...newTech, password: e.target.value})} className="bg-brand-bg/30 border-brand-ink/10 h-11" />
               </div>
               <div className="space-y-2">
                 <Label className="text-[12px] font-black text-brand-ink uppercase">Yetki Rolü</Label>
