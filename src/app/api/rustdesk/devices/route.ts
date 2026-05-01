@@ -3,41 +3,47 @@ import { NextResponse } from "next/server";
 export async function GET() {
   const HOST = "http://192.168.0.184:3000";
   const USERNAME = "admin";
-  const PASSWORD = "admin";
+  const PASSWORDS = ["admin", "Ban41kam5"]; // İki şifreyi de deneyeceğiz
+
+  let token = null;
+
+  for (const password of PASSWORDS) {
+    try {
+      console.log(`[RUSTDESK AUTH] Giriş deneniyor (${password})...`);
+      
+      const loginRes = await fetch(`${HOST}/api/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: USERNAME,
+          password: password,
+          id: "rustdesk-portal",
+          device_name: "Admin Portal"
+        })
+      });
+
+      if (loginRes.ok) {
+        const loginData = await loginRes.json();
+        token = loginData.access_token || loginData.token || loginData.data?.token;
+        if (token) {
+          console.log(`[RUSTDESK AUTH] Giriş BAŞARILI! Şifre: ${password}`);
+          break; 
+        }
+      } else {
+        console.warn(`[RUSTDESK AUTH] ${password} şifresi ile giriş yapılamadı: ${loginRes.status}`);
+      }
+    } catch (e: any) {
+      console.error("[RUSTDESK AUTH] Bağlantı Hatası:", e.message);
+    }
+  }
+
+  if (!token) {
+    console.error("[RUSTDESK AUTH] Hiçbir şifre ile giriş yapılamadı!");
+    return NextResponse.json({ error: "Giriş başarısız" }, { status: 401 });
+  }
 
   try {
-    console.log("[RUSTDESK AUTH] Giriş yapılıyor...");
-    
-    // 1. Sunucuya Giriş Yap ve Token Al
-    const loginRes = await fetch(`${HOST}/api/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        username: USERNAME,
-        password: PASSWORD,
-        id: "rustdesk-portal",
-        device_name: "Admin Portal"
-      })
-    });
-
-    if (!loginRes.ok) {
-      const errorText = await loginRes.text();
-      console.error("[RUSTDESK AUTH] Giriş Başarısız:", loginRes.status, errorText);
-      return NextResponse.json({ error: "Giriş yapılamadı" }, { status: 401 });
-    }
-
-    const loginData = await loginRes.json();
-    const token = loginData.access_token || loginData.token || loginData.data?.token;
-
-    if (!token) {
-      console.error("[RUSTDESK AUTH] Token alınamadı!");
-      return NextResponse.json({ error: "Token alınamadı" }, { status: 500 });
-    }
-
-    console.log("[RUSTDESK AUTH] Giriş başarılı, cihazlar çekiliyor...");
-
-    // 2. Token ile Cihazları/Adres Defterini Çek
-    // RustDesk Pro/Community genelde /api/devices veya /api/ab kullanır
+    // Token ile Cihazları Çek
     const devicesRes = await fetch(`${HOST}/api/devices`, {
       method: 'GET',
       headers: {
@@ -46,8 +52,9 @@ export async function GET() {
       }
     });
 
+    let data;
     if (!devicesRes.ok) {
-      // Eğer /api/devices yoksa /api/ab dene
+      console.log("[RUSTDESK API] /api/devices bulunamadı, /api/ab deneniyor...");
       const abRes = await fetch(`${HOST}/api/ab`, {
         method: 'GET',
         headers: {
@@ -55,23 +62,19 @@ export async function GET() {
           'Content-Type': 'application/json'
         }
       });
-      
-      if (!abRes.ok) throw new Error("Cihaz listesi çekilemedi.");
-      
-      const abData = await abRes.json();
-      return NextResponse.json(formatDevices(abData));
+      if (!abRes.ok) throw new Error("Veri çekilemedi.");
+      data = await abRes.json();
+    } else {
+      data = await devicesRes.json();
     }
 
-    const devicesData = await devicesRes.json();
-    return NextResponse.json(formatDevices(devicesData));
-
+    return NextResponse.json(formatDevices(data));
   } catch (error: any) {
     console.error("[RUSTDESK API ERROR]:", error.message);
     return NextResponse.json([]);
   }
 }
 
-// Gelen veriyi portal formatına çeviren yardımcı fonksiyon
 function formatDevices(data: any) {
   const list = Array.isArray(data) ? data : (data.data || data.list || []);
   return list.map((d: any) => ({
