@@ -6,12 +6,13 @@ import { useEffect } from "react";
 import Link from "next/link";
 
 export default function DashboardPage() {
-  const { devices, technicians, updateDeviceStatuses } = useAppStore();
+  const { devices, technicians, fetchDevices } = useAppStore();
 
   useEffect(() => {
-    const interval = setInterval(() => updateDeviceStatuses(), 10000);
+    fetchDevices();
+    const interval = setInterval(() => fetchDevices(), 10000);
     return () => clearInterval(interval);
-  }, [updateDeviceStatuses]);
+  }, [fetchDevices]);
 
   const online  = devices.filter(d => d.status === "online").length;
   const offline = devices.length - online;
