@@ -9,6 +9,7 @@ export interface Device {
   status: "online" | "offline";
   lastSeen: string;
   ip: string;
+  group?: string;
 }
 
 export interface Technician {
@@ -23,7 +24,7 @@ export interface Technician {
 interface AppState {
   isAuthenticated: boolean;
   user: { name: string; email: string; role: string } | null;
-  login: (username: string) => void;
+  login: (username: string, password?: string) => void;
   logout: () => void;
 
   devices: Device[];
@@ -38,10 +39,10 @@ interface AppState {
 }
 
 const INITIAL_DEVICES: Device[] = [
-  { id: "983214556", name: "MUHASEBE-PC",    os: "Windows 11",   user: "Ayşe Yılmaz",    status: "online",  lastSeen: "Şimdi",       ip: "192.168.1.45" },
-  { id: "445123998", name: "YAZILIM-MAC",    os: "macOS Sonoma", user: "Ufuk Kaya",       status: "online",  lastSeen: "Şimdi",       ip: "192.168.1.12" },
-  { id: "112998334", name: "DEPO-TERMINAL",  os: "Windows 10",   user: "Depo Görevlisi",  status: "offline", lastSeen: "2 saat önce", ip: "192.168.2.100" },
-  { id: "776543221", name: "SVR-DB-01",      os: "Ubuntu 22.04", user: "Sistem",          status: "online",  lastSeen: "Şimdi",       ip: "10.0.0.5" },
+  { id: "983214556", name: "MUHASEBE-PC",    os: "Windows 11",   user: "Ayşe Yılmaz",    status: "online",  lastSeen: "Şimdi",       ip: "192.168.1.45", group: "Finans" },
+  { id: "445123998", name: "YAZILIM-MAC",    os: "macOS Sonoma", user: "Ufuk Kaya",       status: "online",  lastSeen: "Şimdi",       ip: "192.168.1.12", group: "IT" },
+  { id: "112998334", name: "DEPO-TERMINAL",  os: "Windows 10",   user: "Depo Görevlisi",  status: "offline", lastSeen: "2 saat önce", ip: "192.168.2.100", group: "Lojistik" },
+  { id: "776543221", name: "SVR-DB-01",      os: "Ubuntu 22.04", user: "Sistem",          status: "online",  lastSeen: "Şimdi",       ip: "10.0.0.5",     group: "Sunucu" },
 ];
 
 const INITIAL_TECHNICIANS: Technician[] = [
@@ -54,7 +55,7 @@ export const useAppStore = create<AppState>()(
     (set) => ({
       isAuthenticated: false,
       user: null,
-      login: (username) => set({
+      login: (username, _password) => set({
         isAuthenticated: true,
         user: { name: username, email: `${username.toLowerCase()}@firma.com`, role: "Admin" },
       }),
