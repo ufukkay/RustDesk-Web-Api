@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
-import { User, Lock, ArrowRight, ShieldCheck, Check } from "lucide-react";
+import { User, Lock, ArrowRight, ShieldCheck, Check, Mail } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 export default function LoginPage() {
-  const [username, setUsername] = useState("admin");
+  const [email, setEmail] = useState("admin@rustdesk.local");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -19,7 +19,7 @@ export default function LoginPage() {
     setLoading(true);
     // Simüle giriş (normalde API'ye gider)
     setTimeout(() => {
-      login(username);
+      login(email);
       router.push("/dashboard");
     }, 800);
   };
@@ -89,15 +89,16 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-5">
               <div className="space-y-2">
-                <label className="text-[12px] font-black text-brand-ink uppercase tracking-wide">Kullanıcı Adı</label>
+                <label className="text-[12px] font-black text-brand-ink uppercase tracking-wide">E-Posta Adresi</label>
                 <div className="relative group">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-slate-300 group-focus-within:text-brand-ink transition-colors" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-slate-300 group-focus-within:text-brand-ink transition-colors" />
                   <Input
+                    type="email"
                     required
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="h-12 pl-12 bg-slate-50 border-brand-ink/5 rounded-brand focus-visible:ring-brand-yellow focus-visible:bg-white transition-all font-bold text-brand-ink"
-                    placeholder="admin"
+                    placeholder="admin@rustdesk.local"
                   />
                 </div>
               </div>

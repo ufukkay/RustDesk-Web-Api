@@ -52,9 +52,9 @@ export const useAppStore = create<AppState>()(
     (set) => ({
       isAuthenticated: false,
       user: null,
-      login: (username) => set({
+      login: (email) => set({
         isAuthenticated: true,
-        user: { name: username, email: `${username.toLowerCase()}@firma.com`, role: "Admin" },
+        user: { name: email.split("@")[0], email: email, role: "Admin" },
       }),
       logout: () => set({ isAuthenticated: false, user: null }),
 
