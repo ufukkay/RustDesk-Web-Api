@@ -1,43 +1,49 @@
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  // Not: Buradaki IP ve Port store'dan dinamik olarak da alınabilir
-  // Şimdilik senin ekran görüntündeki IP'yi baz alıyoruz.
-  const API_URL = "http://192.168.0.184:3000/api/devices"; 
-  
-  try {
-    const response = await fetch(API_URL, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        // 'Authorization': 'Bearer YOUR_TOKEN_HERE' // Eğer token gerekiyorsa buraya eklenecek
-      },
-      next: { revalidate: 10 } // 10 saniyede bir önbelleği tazele
-    });
+  const HOST = "http://192.168.0.184:3000";
+  // RustDesk'in yaygın kullandığı iki farklı uç nokta:
+  const ENDPOINTS = ["/api/devices", "/api/ab"]; 
+  const KEY = "5XE+DKQ46fl1EgSLWqKV9qkV+nGT4VLBrhJKYUrFbD0=";
 
-    if (!response.ok) {
-      throw new Error(`Sunucu hatası: ${response.status}`);
+  for (const endpoint of ENDPOINTS) {
+    try {
+      console.log(`Deneniyor: ${HOST}${endpoint}`);
+      const response = await fetch(`${HOST}${endpoint}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${KEY}` // Key değerini bearer olarak deniyoruz
+        },
+        next: { revalidate: 0 } 
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`Başarılı: ${endpoint}`);
+        
+        // Veri formatını standardize etme
+        const rawDevices = Array.isArray(data) ? data : (data.data || data.list || []);
+        
+        if (rawDevices.length > 0) {
+          const devices = rawDevices.map((device: any) => ({
+            id: device.id || device.guid || "-",
+            name: device.hostname || device.name || device.alias || "Bilinmeyen Cihaz",
+            os: device.os || "Windows",
+            user: device.username || device.alias || "-",
+            status: device.online || device.status === "online" ? "online" : "offline",
+            lastSeen: device.updated_at || "Şimdi",
+            ip: device.ip || "-",
+            group: device.group || "Genel"
+          }));
+          return NextResponse.json(devices);
+        }
+      }
+    } catch (error: any) {
+      console.error(`${endpoint} hatası:`, error.message);
     }
-
-    const data = await response.json();
-    
-    // RustDesk API genelde listeyi direkt veya 'data' içinde döndürür.
-    // Gelen veriyi bizim 'Device' formatımıza uygun hale getiriyoruz:
-    const devices = (Array.isArray(data) ? data : data.data || []).map((device: any) => ({
-      id: device.id || device.guid || "-",
-      name: device.hostname || device.name || "Bilinmeyen Cihaz",
-      os: device.os || "Windows",
-      user: device.username || device.alias || "-",
-      status: device.online ? "online" : "offline",
-      lastSeen: device.updated_at || "Az önce",
-      ip: device.ip || "-",
-      group: device.group || "Genel"
-    }));
-
-    return NextResponse.json(devices);
-  } catch (error: any) {
-    console.error("RustDesk API Bağlantı Hatası:", error.message);
-    // Hata durumunda boş liste dönüyoruz ki arayüz bozulmasın
-    return NextResponse.json([]);
   }
+
+  // Eğer hiçbir şey bulunamazsa veya hata alınırsa boş liste dön
+  return NextResponse.json([]);
 }
