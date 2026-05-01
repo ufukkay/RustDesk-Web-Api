@@ -5,6 +5,7 @@ import { Server, Mail, Save, ShieldCheck, MailCheck, AlertCircle, History, Layou
 import { Input } from "@/components/ui/input";
 import { UpdateChecker } from "@/components/UpdateChecker";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 
 type Tab = "smtp" | "logs" | "updates" | "brand";
 
