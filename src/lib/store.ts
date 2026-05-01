@@ -32,6 +32,7 @@ interface AppState {
   updateDeviceStatuses: () => void;
   setDevices: (devices: Device[]) => void;
   addDevice: (device: Device) => void;
+  deleteDevice: (id: string) => void;
 
   technicians: Technician[];
   addTechnician: (tech: Technician) => void;
@@ -64,6 +65,7 @@ export const useAppStore = create<AppState>()(
       })),
       setDevices: (devices) => set({ devices }),
       addDevice: (device) => set((state) => ({ devices: [device, ...state.devices] })),
+      deleteDevice: (id) => set((state) => ({ devices: state.devices.filter(d => d.id !== id) })),
 
       technicians: [], // Canlı veri için boşaltıldı
       addTechnician: (tech) => set((state) => ({ technicians: [...state.technicians, tech] })),

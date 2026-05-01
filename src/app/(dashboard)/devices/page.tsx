@@ -1,7 +1,7 @@
 "use client";
 
-import { useAppStore } from "@/lib/store";
-import { Search, Monitor, Laptop, Server, Play, MoreHorizontal, Plus, Filter, Smartphone } from "lucide-react";
+import { useAppStore, Device } from "@/lib/store";
+import { Search, Monitor, Laptop, Server, Play, MoreHorizontal, Plus, Filter, Smartphone, Trash2, LayoutGrid, List as ListIcon, ChevronRight } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,11 +16,13 @@ import {
 import { Label } from "@/components/ui/label";
 
 type StatusFilter = "all" | "online" | "offline";
+type ViewMode = "list" | "grouped";
 
 export default function DevicesPage() {
-  const { devices, addDevice } = useAppStore();
+  const { devices, addDevice, deleteDevice } = useAppStore();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<StatusFilter>("all");
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [isOpen, setIsOpen] = useState(false);
   const [newDevice, setNewDevice] = useState({ id: "", name: "", os: "Windows 11", user: "", group: "Genel" });
 
@@ -32,10 +34,26 @@ export default function DevicesPage() {
     });
   }, [devices, search, filter]);
 
+  const groupedDevices = useMemo(() => {
+    const groups: Record<string, Device[]> = {};
+    filteredDevices.forEach(d => {
+      const groupName = d.group || "Gruplanmamış";
+      if (!groups[groupName]) groups[groupName] = [];
+      groups[groupName].push(d);
+    });
+    return groups;
+  }, [filteredDevices]);
+
   const handleAddDevice = () => {
     addDevice({ ...newDevice, status: "offline", lastSeen: "Hiç", ip: "-" });
     setIsOpen(false);
     setNewDevice({ id: "", name: "", os: "Windows 11", user: "", group: "Genel" });
+  };
+
+  const handleDelete = (id: string, name: string) => {
+    if (confirm(`${name} cihazını silmek istediğinize emin misiniz?`)) {
+      deleteDevice(id);
+    }
   };
 
   return (
@@ -44,16 +62,16 @@ export default function DevicesPage() {
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold text-foreground tracking-tight">Cihazlar</h1>
-          <p className="text-sm text-muted-foreground">Tüm envanterinizi buradan yönetin.</p>
+          <p className="text-sm text-muted-foreground">Envanterinizi gruplayın ve yönetin.</p>
         </div>
         
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-primary text-primary-foreground hover:opacity-90 font-semibold px-6 rounded-md">
+            <Button className="bg-primary text-primary-foreground hover:opacity-90 font-semibold px-6 rounded-md shadow-sm">
               <Plus className="w-4 h-4 mr-2" /> Yeni Cihaz
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md bg-card border-border rounded-lg">
+          <DialogContent className="sm:max-w-md bg-card border-border rounded-lg shadow-xl">
             <DialogHeader>
               <DialogTitle className="text-foreground font-semibold">Yeni Cihaz Kaydı</DialogTitle>
             </DialogHeader>
@@ -101,122 +119,171 @@ export default function DevicesPage() {
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="Cihaz ID veya adı ara…" 
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 h-10 bg-card border-border rounded-md shadow-brand-sm focus-visible:ring-primary"
-          />
+      <div className="flex flex-col lg:flex-row lg:items-center gap-4 justify-between">
+        <div className="flex flex-col md:flex-row gap-4 flex-1">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input 
+              placeholder="Cihaz ID veya adı ara…" 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10 h-10 bg-card border-border rounded-md shadow-sm focus-visible:ring-primary"
+            />
+          </div>
+
+          <div className="flex items-center gap-1 p-1 bg-muted/30 border border-border rounded-lg shadow-sm w-fit">
+            {[
+              { id: "all", label: `Hepsi (${devices.length})` },
+              { id: "online", label: `Online` },
+              { id: "offline", label: `Offline` },
+            ].map(opt => (
+              <button
+                key={opt.id}
+                onClick={() => setFilter(opt.id as StatusFilter)}
+                className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                  filter === opt.id 
+                    ? "bg-card text-foreground shadow-sm border border-border" 
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="flex items-center gap-1 p-1 bg-muted/30 border border-border rounded-lg shadow-brand-sm">
-          {[
-            { id: "all", label: `Tümü (${devices.length})` },
-            { id: "online", label: `Çevrimiçi (${devices.filter(d => d.status === "online").length})` },
-            { id: "offline", label: `Çevrimdışı (${devices.filter(d => d.status === "offline").length})` },
-          ].map(opt => (
-            <button
-              key={opt.id}
-              onClick={() => setFilter(opt.id as StatusFilter)}
-              className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                filter === opt.id 
-                  ? "bg-card text-foreground shadow-brand-sm border border-border" 
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+        {/* View Mode Toggle */}
+        <div className="flex items-center gap-1 p-1 bg-muted/30 border border-border rounded-lg shadow-sm">
+          <button
+            onClick={() => setViewMode("list")}
+            className={`p-2 rounded-md transition-all ${viewMode === "list" ? "bg-card text-primary shadow-sm border border-border" : "text-muted-foreground"}`}
+            title="Liste Görünümü"
+          >
+            <ListIcon className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setViewMode("grouped")}
+            className={`p-2 rounded-md transition-all ${viewMode === "grouped" ? "bg-card text-primary shadow-sm border border-border" : "text-muted-foreground"}`}
+            title="Grup Görünümü"
+          >
+            <LayoutGrid className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-card rounded-brand-lg border border-border overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-muted/30 border-b border-border">
-                <th className="px-6 py-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Durum</th>
-                <th className="px-6 py-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Cihaz</th>
-                <th className="px-6 py-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Kullanıcı</th>
-                <th className="px-6 py-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Grup</th>
-                <th className="px-6 py-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Son Görülme</th>
-                <th className="px-6 py-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-right">İşlem</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {filteredDevices.map(d => (
-                <tr key={d.id} className="hover:bg-muted/20 transition-colors group">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium ${
-                      d.status === "online" ? "text-emerald-600 bg-emerald-500/10" : "text-muted-foreground bg-secondary"
-                    }`}>
-                      <div className={`w-1 h-1 rounded-full ${d.status === "online" ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground"}`} />
-                      {d.status === "online" ? "Online" : "Offline"}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-9 h-9 rounded-md bg-secondary flex items-center justify-center text-muted-foreground group-hover:text-foreground transition-colors">
-                        {d.os.includes("Windows") ? <Monitor className="w-4.5 h-4.5" /> : d.os.includes("mac") ? <Laptop className="w-4.5 h-4.5" /> : d.os.includes("Android") ? <Smartphone className="w-4.5 h-4.5" /> : <Server className="w-4.5 h-4.5" />}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{d.name}</p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5 font-mono">ID: {d.id} · {d.os}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm font-medium text-muted-foreground">{d.user}</td>
-                  <td className="px-6 py-4">
-                    <span className="px-2 py-0.5 bg-secondary text-muted-foreground text-[10px] font-semibold rounded-md border border-border">
-                      {d.group}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-muted-foreground">{d.lastSeen}</td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                      <Button 
-                        disabled={d.status !== "online"}
-                        size="sm"
-                        className={`h-8 px-4 rounded-md text-xs font-semibold ${
-                          d.status === "online" 
-                            ? "bg-primary text-primary-foreground hover:opacity-90" 
-                            : "bg-secondary text-muted-foreground cursor-not-allowed"
-                        }`}
-                        onClick={() => window.location.href = `rustdesk://${d.id}`}
-                      >
-                        <Play className="w-3 h-3 mr-1.5 fill-current" /> Bağlan
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md text-muted-foreground hover:text-foreground">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </td>
+      {viewMode === "list" ? (
+        <div className="bg-card rounded-brand-lg border border-border shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-muted/30 border-b border-border">
+                  <th className="px-6 py-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Durum</th>
+                  <th className="px-6 py-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Cihaz</th>
+                  <th className="px-6 py-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Kullanıcı</th>
+                  <th className="px-6 py-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Grup</th>
+                  <th className="px-6 py-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-right">İşlem</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        
-        {filteredDevices.length === 0 && (
-          <div className="py-20 text-center">
-            <Search className="w-10 h-10 text-muted/50 mx-auto mb-4" />
-            <p className="text-muted-foreground font-medium text-sm">Cihaz bulunamadı.</p>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {filteredDevices.map(d => (
+                  <DeviceRow key={d.id} d={d} onDelete={handleDelete} />
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
+          {filteredDevices.length === 0 && <EmptyState />}
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {Object.entries(groupedDevices).map(([groupName, groupDevices]) => (
+            <div key={groupName} className="space-y-3">
+              <div className="flex items-center gap-2 px-1">
+                <ChevronRight className="w-4 h-4 text-primary" />
+                <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">{groupName}</h2>
+                <span className="text-xs text-muted-foreground">({groupDevices.length})</span>
+              </div>
+              <div className="bg-card rounded-brand-lg border border-border shadow-sm overflow-hidden">
+                <table className="w-full text-left">
+                  <tbody className="divide-y divide-border">
+                    {groupDevices.map(d => (
+                      <DeviceRow key={d.id} d={d} onDelete={handleDelete} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+          {filteredDevices.length === 0 && <EmptyState />}
+        </div>
+      )}
+    </div>
+  );
+}
 
-        <div className="px-6 py-3 border-t border-border bg-muted/10 flex items-center justify-between text-xs font-medium text-muted-foreground">
-          <span>{filteredDevices.length} cihaz listeleniyor</span>
-          <div className="flex items-center gap-3">
-            <button className="p-1 hover:bg-secondary rounded-md disabled:opacity-30" disabled>‹</button>
-            <span className="text-foreground">1 / 1</span>
-            <button className="p-1 hover:bg-secondary rounded-md disabled:opacity-30" disabled>›</button>
+function DeviceRow({ d, onDelete }: { d: Device, onDelete: (id: string, name: string) => void }) {
+  return (
+    <tr className="hover:bg-muted/20 transition-colors group">
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium ${
+          d.status === "online" ? "text-emerald-600 bg-emerald-500/10" : "text-muted-foreground bg-secondary"
+        }`}>
+          <div className={`w-1 h-1 rounded-full ${d.status === "online" ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground"}`} />
+          {d.status === "online" ? "Online" : "Offline"}
+        </div>
+      </td>
+      <td className="px-6 py-4">
+        <div className="flex items-center gap-4">
+          <div className="w-9 h-9 rounded-md bg-secondary flex items-center justify-center text-muted-foreground group-hover:text-foreground transition-colors">
+            {d.os.includes("Windows") ? <Monitor className="w-4.5 h-4.5" /> : d.os.includes("mac") ? <Laptop className="w-4.5 h-4.5" /> : d.os.includes("Android") ? <Smartphone className="w-4.5 h-4.5" /> : <Server className="w-4.5 h-4.5" />}
+          </div>
+          <div>
+            <p className="text-sm font-medium text-foreground">{d.name}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5 font-mono">ID: {d.id} · {d.os}</p>
           </div>
         </div>
-      </div>
+      </td>
+      <td className="px-6 py-4 text-sm font-medium text-muted-foreground">{d.user}</td>
+      <td className="px-6 py-4">
+        <span className="px-2 py-0.5 bg-secondary text-muted-foreground text-[10px] font-semibold rounded-md border border-border">
+          {d.group}
+        </span>
+      </td>
+      <td className="px-6 py-4 text-right">
+        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+          <Button 
+            disabled={d.status !== "online"}
+            size="sm"
+            className={`h-8 px-4 rounded-md text-xs font-semibold ${
+              d.status === "online" 
+                ? "bg-primary text-primary-foreground hover:opacity-90" 
+                : "bg-secondary text-muted-foreground cursor-not-allowed"
+            }`}
+            onClick={() => window.location.href = `rustdesk://${d.id}`}
+          >
+            <Play className="w-3 h-3 mr-1.5 fill-current" /> Bağlan
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 rounded-md text-muted-foreground hover:text-destructive"
+            onClick={() => onDelete(d.id, d.name)}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md text-muted-foreground hover:text-foreground">
+            <MoreHorizontal className="w-4 h-4" />
+          </Button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="py-20 text-center">
+      <Search className="w-10 h-10 text-muted/50 mx-auto mb-4" />
+      <p className="text-muted-foreground font-medium text-sm">Cihaz bulunamadı.</p>
     </div>
   );
 }
