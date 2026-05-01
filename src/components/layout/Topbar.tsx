@@ -44,7 +44,10 @@ export function Topbar() {
           R
         </div>
         <div className="flex flex-col leading-none">
-          <span className="font-extrabold text-brand-ink text-sm tracking-tight">RustDesk Portal</span>
+          <div className="flex items-center gap-2">
+            <span className="font-extrabold text-brand-ink dark:text-white text-sm tracking-tight">RustDesk Portal</span>
+            <div className="px-1.5 py-0.5 rounded-full bg-emerald-500 text-white text-[8px] font-black tracking-widest leading-none">CANLI</div>
+          </div>
           <span className="text-[10px] text-slate-400 font-bold mt-0.5 tracking-wide uppercase">RustDesk Admin</span>
         </div>
       </div>
