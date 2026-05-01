@@ -15,11 +15,15 @@ export async function POST(req: Request) {
         try { infoData = JSON.parse(fs.readFileSync(INFO_FILE, "utf-8")); } catch (e) {}
       }
 
+      // Gelen tüm ağ bilgilerini (ip, mac, subnet vb.) standardize edelim
+      const netInfo = body.net || body.networks || body.network_interfaces || [];
+
       infoData[String(deviceId)] = {
         ...body,
-        // İsim eşleşmelerini (mapping) yapalım
         standard_user: body.user || body.username || body.alias || body.login_name || "-",
-        ram: body.memory || body.ram || "-", // 'memory' olarak geleni 'ram' yapıyoruz
+        ram: body.memory || body.ram || "-",
+        // Detaylı Ağ Bilgisi
+        net_details: netInfo,
         lastUpdate: Math.floor(Date.now() / 1000)
       };
       

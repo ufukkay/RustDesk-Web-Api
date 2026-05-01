@@ -33,19 +33,15 @@ export async function GET() {
       const lastHeartbeat = onlineStatus[deviceId] || 0;
       const extra = hardwareInfo[deviceId] || {};
       
-      // SQLite 'info' kolonunu parse et (Genelde IP burada olur)
       let sqliteInfo: any = {};
-      try {
-        if (row.info) sqliteInfo = JSON.parse(row.info);
-      } catch (e) {}
+      try { if (row.info) sqliteInfo = JSON.parse(row.info); } catch (e) {}
 
       const isOnline = (now - lastHeartbeat) < 90;
 
       return {
         id: deviceId,
         name: row.hostname || row.id,
-        // IP bilgisini hem SQLite'tan hem de gelen sinyalden kovala
-        ip: sqliteInfo.ip || extra.ip || row.ip || "-",
+        ip: extra.ip || sqliteInfo.ip || row.ip || "-",
         os: extra.os || row.os || "Windows",
         user: extra.standard_user || row.user || row.username || "-",
         status: isOnline ? "online" : "offline",
@@ -56,7 +52,9 @@ export async function GET() {
         cpu: extra.cpu || "-",
         ram: extra.ram || extra.memory || "-",
         disk: extra.disk || extra.storage || "-",
-        version: extra.version || "-"
+        version: extra.version || "-",
+        // Detaylı Ağ Bilgisi
+        net_details: extra.net_details || []
       };
     });
 

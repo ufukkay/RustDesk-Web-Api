@@ -142,6 +142,36 @@ export default function DeviceDetailsPage() {
               </div>
             </div>
           </div>
+
+          {/* Network Details Section */}
+          <div className="bg-card border border-border rounded-brand-lg overflow-hidden">
+            <div className="px-6 py-4 border-b border-border bg-muted/20 flex items-center justify-between">
+              <h3 className="font-black text-xs uppercase tracking-widest text-brand-ink/70">Ağ Kartları</h3>
+              <Globe className="w-4 h-4 text-muted-foreground" />
+            </div>
+            <div className="divide-y divide-border max-h-[400px] overflow-y-auto">
+              {!device.net_details || device.net_details.length === 0 ? (
+                <div className="p-8 text-center text-xs text-muted-foreground font-bold uppercase italic">
+                  Ağ bilgisi bulunamadı.
+                </div>
+              ) : (
+                device.net_details.map((net: any, idx: number) => (
+                  <div key={idx} className="p-4 space-y-3 hover:bg-muted/10 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <p className="text-[11px] font-black text-brand-ink uppercase">{net.name || `Adapter ${idx + 1}`}</p>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2">
+                      <NetInfoRow label="IPv4" value={net.ip || net.ipv4 || "-"} />
+                      <NetInfoRow label="IPv6" value={net.ipv6 || "-"} />
+                      <NetInfoRow label="MAC" value={net.mac || "-"} />
+                      <NetInfoRow label="Subnet" value={net.mask || net.subnet || "-"} />
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -158,6 +188,15 @@ function DetailItem({ icon: Icon, label, value }: { icon: any, label: string, va
         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">{label}</p>
         <p className="text-sm font-bold text-foreground">{value}</p>
       </div>
+    </div>
+  );
+}
+
+function NetInfoRow({ label, value }: { label: string, value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4 text-[11px]">
+      <span className="font-bold text-muted-foreground uppercase">{label}:</span>
+      <span className="font-mono font-medium text-foreground bg-muted px-1.5 py-0.5 rounded leading-none">{value}</span>
     </div>
   );
 }

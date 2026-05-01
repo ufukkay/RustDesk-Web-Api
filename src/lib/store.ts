@@ -14,6 +14,7 @@ export interface Device {
   ram?: string;
   disk?: string;
   version?: string;
+  net_details?: any[]; // Detaylı ağ bilgileri
 }
 
 export interface Technician {
