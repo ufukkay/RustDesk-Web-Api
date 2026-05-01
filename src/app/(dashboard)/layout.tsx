@@ -7,17 +7,15 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen overflow-hidden bg-black bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.15),rgba(255,255,255,0))]">
-      <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop')] bg-cover bg-center opacity-[0.03] pointer-events-none" />
-      
+    <div className="flex h-screen overflow-hidden bg-slate-50">
       {/* Sidebar - Desktop */}
-      <div className="hidden md:flex z-10">
+      <div className="hidden md:flex z-10 shadow-sm border-r border-slate-200">
         <Sidebar />
       </div>
 
       <div className="flex-1 flex flex-col min-w-0 z-10 relative">
         <Header />
-        <main className="flex-1 overflow-y-auto p-6 scroll-smooth">
+        <main className="flex-1 overflow-y-auto p-6 md:p-8 bg-slate-50 scroll-smooth">
           <div className="mx-auto max-w-7xl h-full">
             {children}
           </div>
