@@ -32,13 +32,13 @@ export function Topbar() {
 
   return (
     <header className="h-16 bg-white border-b border-brand-ink/5 flex items-center px-8 gap-8 sticky top-0 z-30 w-full backdrop-blur-md">
-      {/* Logo: Talay "T" Mark */}
+      {/* Logo: RustDesk "R" Mark */}
       <div className="flex items-center gap-3 shrink-0">
         <div className="w-8 h-8 bg-brand-yellow rounded-[9px] flex items-center justify-center shadow-brand-sm font-black text-brand-ink text-lg tracking-tighter ring-1 ring-brand-ink/10 inset-shadow-sm">
-          T
+          R
         </div>
         <div className="flex flex-col leading-none">
-          <span className="font-extrabold text-brand-ink text-sm tracking-tight">Talay Portal</span>
+          <span className="font-extrabold text-brand-ink text-sm tracking-tight">RustDesk Portal</span>
           <span className="text-[10px] text-slate-400 font-bold mt-0.5 tracking-wide uppercase">RustDesk Admin</span>
         </div>
       </div>
@@ -102,7 +102,7 @@ export function Topbar() {
             <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-brand-ink/10 rounded-brand-lg shadow-brand overflow-hidden z-50">
               <div className="px-5 py-4 bg-brand-bg/50 border-b border-brand-ink/5">
                 <p className="text-sm font-black text-brand-ink">{user?.name || "Ufuk Kaya"}</p>
-                <p className="text-xs text-slate-400 font-medium mt-0.5">{user?.email || "ufuk@talay.com"}</p>
+                <p className="text-xs text-slate-400 font-medium mt-0.5">{user?.email || "admin@rustdesk.local"}</p>
               </div>
               <div className="p-2">
                 <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-brand text-[13px] text-slate-600 hover:bg-brand-ink/5 hover:text-brand-ink transition-colors font-bold">

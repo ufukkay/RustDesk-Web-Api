@@ -58,7 +58,7 @@ export default function TechniciansPage() {
               </div>
               <div className="space-y-2">
                 <Label className="text-[12px] font-black text-brand-ink uppercase">E-posta Adresi</Label>
-                <Input type="email" placeholder="selin@talay.com" value={newTech.email} onChange={e => setNewTech({...newTech, email: e.target.value})} className="bg-brand-bg/30 border-brand-ink/10 h-11" />
+                <Input type="email" placeholder="selin@rustdesk.local" value={newTech.email} onChange={e => setNewTech({...newTech, email: e.target.value})} className="bg-brand-bg/30 border-brand-ink/10 h-11" />
               </div>
               <div className="space-y-2">
                 <Label className="text-[12px] font-black text-brand-ink uppercase">Yetki Rolü</Label>

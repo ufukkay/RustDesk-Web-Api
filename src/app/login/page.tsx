@@ -41,7 +41,7 @@ export default function LoginPage() {
               T
             </div>
             <div>
-              <p className="text-2xl font-black text-brand-ink tracking-tight">Talay Portal</p>
+              <p className="text-2xl font-black text-brand-ink tracking-tight">RustDesk Portal</p>
               <p className="text-sm font-bold text-brand-ink/60 uppercase tracking-wider">Uzaktan Destek Sistemi</p>
             </div>
           </div>
@@ -52,7 +52,7 @@ export default function LoginPage() {
               Cihazlarınızı tek bir yerden yönetin.
             </h1>
             <p className="text-lg font-bold text-brand-ink/70 leading-relaxed mb-10">
-              Talay Lojistik ekibi için RustDesk üzerinde uzaktan destek, cihaz envanteri ve teknisyen yetkilendirmesi.
+              RustDesk yönetim ekibi için uzaktan destek, cihaz envanteri ve teknisyen yetkilendirmesi.
             </p>
 
             <ul className="space-y-4">
@@ -73,7 +73,7 @@ export default function LoginPage() {
 
           {/* Footer */}
           <p className="text-sm font-black text-brand-ink/40 uppercase tracking-widest mt-auto">
-            © 2026 Talay Lojistik · Tüm hakları saklıdır
+            © 2026 RustDesk Portal · Tüm hakları saklıdır
           </p>
         </div>
       </div>

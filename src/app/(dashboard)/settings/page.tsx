@@ -67,7 +67,7 @@ export default function SettingsPage() {
                   <div className="grid gap-5">
                     <div className="space-y-2">
                       <Label className="text-[12px] font-black text-brand-ink uppercase">SMTP Host</Label>
-                      <Input defaultValue="smtp.talay.com" className="bg-brand-bg/30 border-brand-ink/10 h-11" />
+                      <Input defaultValue="smtp.rustdesk.local" className="bg-brand-bg/30 border-brand-ink/10 h-11" />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
@@ -85,7 +85,7 @@ export default function SettingsPage() {
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[12px] font-black text-brand-ink uppercase">Kullanıcı Adı (E-posta)</Label>
-                      <Input defaultValue="no-reply@talay.com" className="bg-brand-bg/30 border-brand-ink/10 h-11" />
+                      <Input defaultValue="no-reply@rustdesk.local" className="bg-brand-bg/30 border-brand-ink/10 h-11" />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[12px] font-black text-brand-ink uppercase">Uygulama Parolası</Label>
@@ -191,7 +191,7 @@ export default function SettingsPage() {
             <div className="grid gap-6 max-w-xl">
               <div className="space-y-2">
                 <Label className="text-[12px] font-black text-brand-ink uppercase">Marka Adı</Label>
-                <Input defaultValue="Talay Portal" className="bg-brand-bg/30 border-brand-ink/10 h-11" />
+                <Input defaultValue="RustDesk Portal" className="bg-brand-bg/30 border-brand-ink/10 h-11" />
               </div>
               <div className="space-y-2">
                 <Label className="text-[12px] font-black text-brand-ink uppercase">Alt Başlık</Label>
@@ -204,7 +204,7 @@ export default function SettingsPage() {
                     <button key={c} className={`w-10 h-10 rounded-xl border-2 transition-transform hover:scale-110 ${c === "#FFCC00" ? "border-brand-ink shadow-brand" : "border-brand-ink/5"}`} style={{ background: c }} />
                   ))}
                 </div>
-                <p className="text-[11px] text-slate-400 font-bold italic mt-2">Aktif renk paleti: Talay Yellow (#FFCC00)</p>
+                <p className="text-[11px] text-slate-400 font-bold italic mt-2">Aktif renk paleti: RustDesk Yellow (#FFCC00)</p>
               </div>
             </div>
             
