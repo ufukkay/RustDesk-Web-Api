@@ -6,14 +6,12 @@ import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Dialog,
-  DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import Link from "next/link";
 
 type StatusFilter = "all" | "online" | "offline";
 type ViewMode = "list" | "grouped";
@@ -241,10 +239,10 @@ function DeviceRow({ d, onDelete }: { d: Device, onDelete: (id: string, name: st
           <div className="w-9 h-9 rounded-md bg-secondary flex items-center justify-center text-muted-foreground group-hover:text-foreground transition-colors">
             {d.os.includes("Windows") ? <Monitor className="w-4.5 h-4.5" /> : d.os.includes("mac") ? <Laptop className="w-4.5 h-4.5" /> : d.os.includes("Android") ? <Smartphone className="w-4.5 h-4.5" /> : <Server className="w-4.5 h-4.5" />}
           </div>
-          <div>
+          <Link href={`/devices/${d.id}`} className="hover:opacity-80 transition-opacity">
             <p className="text-sm font-medium text-foreground">{d.name}</p>
             <p className="text-[11px] text-muted-foreground mt-0.5 font-mono">ID: {d.id} · {d.os}</p>
-          </div>
+          </Link>
         </div>
       </td>
       <td className="px-6 py-4 text-sm font-medium text-muted-foreground">{d.user}</td>
@@ -268,55 +266,16 @@ function DeviceRow({ d, onDelete }: { d: Device, onDelete: (id: string, name: st
             <Play className="w-3 h-3 mr-1.5 fill-current" /> Bağlan
           </Button>
           
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                className="h-8 w-8 rounded-md border-border text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors"
-                title="Detaylar"
-              >
-                <Info className="w-4 h-4" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md bg-card border-border rounded-lg shadow-xl">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Monitor className="w-5 h-5 text-primary" />
-                  {d.name} Detayları
-                </DialogTitle>
-              </DialogHeader>
-              <div className="grid grid-cols-2 gap-4 py-4">
-                <div className="p-3 bg-muted/30 rounded-lg border border-border">
-                  <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase mb-2">
-                    <Cpu className="w-3.5 h-3.5" /> İşlemci (CPU)
-                  </div>
-                  <p className="text-sm font-semibold text-foreground">{d.cpu || "Bilinmiyor"}</p>
-                </div>
-                <div className="p-3 bg-muted/30 rounded-lg border border-border">
-                  <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase mb-2">
-                    <Database className="w-3.5 h-3.5" /> Bellek (RAM)
-                  </div>
-                  <p className="text-sm font-semibold text-foreground">{d.ram || "Bilinmiyor"}</p>
-                </div>
-                <div className="p-3 bg-muted/30 rounded-lg border border-border">
-                  <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase mb-2">
-                    <HardDrive className="w-3.5 h-3.5" /> Disk Durumu
-                  </div>
-                  <p className="text-sm font-semibold text-foreground">{d.disk || "Bilinmiyor"}</p>
-                </div>
-                <div className="p-3 bg-muted/30 rounded-lg border border-border">
-                  <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase mb-2">
-                    <Activity className="w-3.5 h-3.5" /> IP Adresi
-                  </div>
-                  <p className="text-sm font-semibold text-foreground">{d.ip || "-"}</p>
-                </div>
-              </div>
-              <div className="text-[11px] text-muted-foreground italic text-center border-t border-border pt-4">
-                Son güncelleme: {d.lastSeen}
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Link href={`/devices/${d.id}`}>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="h-8 w-8 rounded-md border-border text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors"
+              title="Detaylar"
+            >
+              <Info className="w-4 h-4" />
+            </Button>
+          </Link>
 
           <Button 
             variant="outline" 
