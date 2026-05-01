@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { RefreshCw, CheckCircle, AlertCircle, Download, ExternalLink, Tag, Clock } from "lucide-react";
 
-const CURRENT_VERSION = "1.0.0";
+const CURRENT_VERSION = "1.4.0";
 const GITHUB_REPO = "ufukkay/RustDesk-Web-Api";
 
 interface Release {
