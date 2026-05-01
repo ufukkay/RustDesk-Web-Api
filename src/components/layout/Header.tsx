@@ -1,9 +1,9 @@
 "use client";
 
-import { Bell, Search, Menu } from "lucide-react";
+import { Bell, Search, Menu, User as UserIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,7 +27,7 @@ export function Header() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input 
             placeholder="Cihaz ID veya isim ara..." 
-            className="pl-9 bg-slate-50 border-slate-200 text-slate-900 focus-visible:ring-blue-500 h-9 rounded-full shadow-inner"
+            className="pl-9 bg-slate-50 border-slate-200 text-slate-900 focus-visible:ring-blue-500 h-9 rounded-full shadow-inner transition-all focus:bg-white"
           />
         </div>
       </div>
@@ -40,10 +40,11 @@ export function Header() {
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-9 w-9 rounded-full ml-1">
-              <Avatar className="h-9 w-9 border border-slate-200 shadow-sm">
-                <AvatarImage src="https://github.com/shadcn.png" alt="@admin" />
-                <AvatarFallback className="bg-blue-100 text-blue-700 font-bold">{(user?.name || "AD").substring(0,2).toUpperCase()}</AvatarFallback>
+            <Button variant="ghost" className="relative h-10 w-10 rounded-full ml-1 p-0">
+              <Avatar className="h-10 w-10 border border-slate-200 shadow-sm bg-slate-50 hover:bg-slate-100 transition-colors">
+                <AvatarFallback className="bg-transparent text-slate-600">
+                  <UserIcon className="w-5 h-5" />
+                </AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>

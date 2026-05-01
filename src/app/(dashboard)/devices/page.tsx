@@ -22,9 +22,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAppStore } from "@/lib/store";
 
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+
 export default function DevicesPage() {
   const [searchTerm, setSearchTerm] = useState("");
-  const { devices } = useAppStore();
+  const { devices, addDevice } = useAppStore();
+  const [isOpen, setIsOpen] = useState(false);
+  const [newDevice, setNewDevice] = useState({ id: "", name: "", os: "Windows 11", ip: "" });
 
   const filteredDevices = devices.filter(device => 
     device.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -33,6 +38,21 @@ export default function DevicesPage() {
 
   const handleConnect = (id: string) => {
     window.location.href = `rustdesk://${id}`;
+  };
+
+  const handleAdd = () => {
+    if(!newDevice.id || !newDevice.name) return;
+    addDevice({
+      id: newDevice.id,
+      name: newDevice.name,
+      os: newDevice.os,
+      ip: newDevice.ip || "Bilinmiyor",
+      user: "Atanmamış",
+      status: "offline",
+      lastSeen: "Hiç bağlanmadı"
+    });
+    setIsOpen(false);
+    setNewDevice({ id: "", name: "", os: "Windows 11", ip: "" });
   };
 
   return (
@@ -59,9 +79,42 @@ export default function DevicesPage() {
             <Button variant="outline" className="border-slate-200 text-slate-700 hover:bg-slate-100 font-semibold">
               <Filter className="w-4 h-4 mr-2" /> Filtrele
             </Button>
-            <Button className="bg-blue-600 text-white hover:bg-blue-700 font-semibold shadow-sm">
-              Yeni Ekle
-            </Button>
+            
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-blue-600 text-white hover:bg-blue-700 font-semibold shadow-sm">
+                  Yeni Ekle
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Yeni Cihaz Kaydı</DialogTitle>
+                  <DialogDescription>RustDesk ID bilgisini girerek sistemi manuel kaydedin.</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>RustDesk ID</Label>
+                    <Input value={newDevice.id} onChange={e => setNewDevice({...newDevice, id: e.target.value})} placeholder="Örn: 123456789" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Cihaz Adı</Label>
+                    <Input value={newDevice.name} onChange={e => setNewDevice({...newDevice, name: e.target.value})} placeholder="Örn: MUHASEBE-LAPTOP" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>İşletim Sistemi</Label>
+                    <Input value={newDevice.os} onChange={e => setNewDevice({...newDevice, os: e.target.value})} placeholder="Örn: Windows 11" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>IP Adresi (Opsiyonel)</Label>
+                    <Input value={newDevice.ip} onChange={e => setNewDevice({...newDevice, ip: e.target.value})} placeholder="Örn: 192.168.1.100" />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsOpen(false)}>İptal</Button>
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleAdd}>Cihazı Ekle</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
         
