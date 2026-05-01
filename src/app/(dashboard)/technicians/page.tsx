@@ -1,27 +1,24 @@
 "use client";
 
-import { useState } from "react";
 import { useAppStore, Technician } from "@/lib/store";
-import { UserPlus, MoreHorizontal, Shield, Trash2, Edit } from "lucide-react";
+import { UserPlus, Search, Shield, User, Trash2, Edit2, Mail } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 
 export default function TechniciansPage() {
   const { technicians, addTechnician, deleteTechnician } = useAppStore();
   const [isOpen, setIsOpen] = useState(false);
-  const [newTech, setNewTech] = useState({ name: "", email: "", role: "Teknisyen" });
+  const [newTech, setNewTech] = useState<Partial<Technician>>({ name: "", email: "", role: "Teknisyen" });
 
   const handleAdd = () => {
     if (!newTech.name || !newTech.email) return;
@@ -31,120 +28,149 @@ export default function TechniciansPage() {
       email: newTech.email,
       role: newTech.role as "Admin" | "Teknisyen",
       status: "Aktif",
-      lastLogin: "Hiç girmedi",
+      lastLogin: "Hiç",
     });
     setIsOpen(false);
     setNewTech({ name: "", email: "", role: "Teknisyen" });
   };
 
   return (
-    <div className="space-y-6 h-full flex flex-col">
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Teknisyen Yönetimi</h1>
-          <p className="text-slate-500 font-medium">Sistemde yetkili olan kullanıcıları görüntüleyin ve yönetin.</p>
+    <div className="p-8 space-y-6 animate-in fade-in duration-500">
+      {/* Title & Add */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-black text-brand-ink">Teknisyenler</h1>
+          <p className="text-[11px] text-slate-400 font-bold mt-1 uppercase tracking-wider">Yetkili Kullanıcı Yönetimi</p>
         </div>
 
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger render={<Button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold" />}>
-            <UserPlus className="w-4 h-4 mr-2" /> Yeni Teknisyen Ekle
+          <DialogTrigger render={<Button className="bg-brand-yellow text-brand-ink hover:bg-brand-yellow/90 font-black shadow-brand-sm ring-1 ring-brand-ink/10 h-10 px-5 rounded-brand" />}>
+            <UserPlus className="w-4 h-4 mr-2" /> Yeni Teknisyen
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md bg-white border-brand-ink/10 rounded-brand-lg">
             <DialogHeader>
-              <DialogTitle>Yeni Teknisyen Ekle</DialogTitle>
-              <DialogDescription>
-                Sisteme erişebilecek yeni bir teknisyen profili oluşturun.
-              </DialogDescription>
+              <DialogTitle className="text-brand-ink font-black">Yeni Teknisyen Davet Et</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+            <div className="grid gap-5 py-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Ad Soyad</Label>
-                <Input id="name" value={newTech.name} onChange={e => setNewTech({...newTech, name: e.target.value})} placeholder="Örn: Ahmet Yılmaz" />
+                <Label className="text-[12px] font-black text-brand-ink uppercase">Ad Soyad</Label>
+                <Input placeholder="Selin Demir" value={newTech.name} onChange={e => setNewTech({...newTech, name: e.target.value})} className="bg-brand-bg/30 border-brand-ink/10 h-11" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">E-posta Adresi</Label>
-                <Input id="email" type="email" value={newTech.email} onChange={e => setNewTech({...newTech, email: e.target.value})} placeholder="ahmet@firma.com" />
+                <Label className="text-[12px] font-black text-brand-ink uppercase">E-posta Adresi</Label>
+                <Input type="email" placeholder="selin@talay.com" value={newTech.email} onChange={e => setNewTech({...newTech, email: e.target.value})} className="bg-brand-bg/30 border-brand-ink/10 h-11" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="role">Rol</Label>
+                <Label className="text-[12px] font-black text-brand-ink uppercase">Yetki Rolü</Label>
                 <select 
-                  id="role" 
                   value={newTech.role} 
-                  onChange={e => setNewTech({...newTech, role: e.target.value})}
-                  className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2"
+                  onChange={e => setNewTech({...newTech, role: e.target.value as any})}
+                  className="flex h-11 w-full rounded-md border border-brand-ink/10 bg-brand-bg/30 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow"
                 >
-                  <option value="Teknisyen">Teknisyen</option>
-                  <option value="Admin">Admin</option>
+                  <option value="Teknisyen">Teknisyen (Sınırlı)</option>
+                  <option value="Admin">Admin (Tam Yetki)</option>
                 </select>
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsOpen(false)}>İptal</Button>
-              <Button onClick={handleAdd} className="bg-blue-600 hover:bg-blue-700">Kaydet</Button>
+              <Button onClick={handleAdd} className="bg-brand-yellow text-brand-ink hover:bg-brand-yellow/90 font-black w-full h-11 rounded-brand">
+                Teknisyen Ekle
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
-      <Card className="bg-white border-slate-200 shadow-sm flex-1 flex flex-col overflow-hidden">
-        <CardContent className="p-0 flex-1 overflow-auto">
-          <Table>
-            <TableHeader className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10">
-              <TableRow>
-                <TableHead className="text-slate-500 font-bold uppercase text-xs tracking-wider">Kullanıcı</TableHead>
-                <TableHead className="text-slate-500 font-bold uppercase text-xs tracking-wider">E-posta</TableHead>
-                <TableHead className="text-slate-500 font-bold uppercase text-xs tracking-wider">Yetki Rolü</TableHead>
-                <TableHead className="text-slate-500 font-bold uppercase text-xs tracking-wider">Durum</TableHead>
-                <TableHead className="text-slate-500 font-bold uppercase text-xs tracking-wider">Son Giriş</TableHead>
-                <TableHead className="text-right text-slate-500 font-bold uppercase text-xs tracking-wider">İşlem</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {technicians.map((tech) => (
-                <TableRow key={tech.id} className="border-b border-slate-100 hover:bg-slate-50/80">
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
-                        {tech.name.substring(0, 2).toUpperCase()}
-                      </div>
-                      <span className="font-bold text-slate-900">{tech.name}</span>
+      {/* Mini Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        {[
+          { label: "Toplam Teknisyen", value: technicians.length, sub: "Tümü aktif" },
+          { label: "Yöneticiler", value: technicians.filter(t => t.role === "Admin").length, sub: "Tam yetkili" },
+          { label: "Bugün Aktif", value: technicians.length, sub: "Sisteme girenler" },
+        ].map((s) => (
+          <div key={s.label} className="bg-white p-5 rounded-brand border border-brand-ink/5 shadow-brand-sm">
+            <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider">{s.label}</p>
+            <div className="flex items-end gap-2 mt-2">
+              <p className="text-2xl font-black text-brand-ink leading-none">{s.value}</p>
+              <p className="text-[11px] text-slate-400 font-bold pb-0.5">{s.sub}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-brand-lg border border-brand-ink/5 shadow-brand-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-brand-ink/5 flex items-center justify-between bg-brand-bg/10">
+          <div className="relative w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <Input placeholder="Teknisyen ara..." className="pl-9 h-9 bg-white border-brand-ink/10 text-xs rounded-lg shadow-brand-sm" />
+          </div>
+          <Button variant="outline" className="h-9 text-[11px] font-black border-brand-ink/10 hover:bg-brand-ink/5 rounded-lg">
+            <Mail className="w-3.5 h-3.5 mr-2" /> Toplu Davet Gönder
+          </Button>
+        </div>
+        
+        <table className="w-full">
+          <thead>
+            <tr className="bg-brand-bg/5 border-b border-brand-ink/5">
+              <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Kullanıcı</th>
+              <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">E-posta</th>
+              <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Rol</th>
+              <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Durum</th>
+              <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Son Giriş</th>
+              <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">İşlem</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-brand-ink/5">
+            {technicians.map(t => (
+              <tr key={t.id} className="hover:bg-brand-bg/10 transition-colors group">
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-brand-ink font-black text-xs ring-1 ring-brand-ink/10 shadow-brand-sm ${t.role === "Admin" ? "bg-brand-yellow" : "bg-slate-100"}`}>
+                      {t.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
                     </div>
-                  </TableCell>
-                  <TableCell className="text-slate-600 font-medium">{tech.email}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={tech.role === 'Admin' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-blue-50 text-blue-700 border-blue-200'}>
-                      {tech.role === 'Admin' && <Shield className="w-3 h-3 mr-1" />}
-                      {tech.role}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                      {tech.status}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-slate-500">{tech.lastLogin}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50">
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50" onClick={() => deleteTechnician(tech.id)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                    <div>
+                      <p className="text-[13.5px] font-black text-brand-ink">{t.name}</p>
+                      <p className="text-[11px] text-slate-400 font-bold mt-0.5 tracking-tight">@{t.email.split("@")[0]}</p>
                     </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {technicians.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-32 text-center text-slate-500 font-medium">Kayıtlı teknisyen bulunamadı.</TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                  </div>
+                </td>
+                <td className="px-6 py-4 text-[13px] font-bold text-slate-500">{t.email}</td>
+                <td className="px-6 py-4">
+                  <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black ${
+                    t.role === "Admin" ? "bg-brand-yellow/10 text-brand-ink ring-1 ring-brand-yellow/20" : "bg-slate-50 text-slate-500 ring-1 ring-slate-200"
+                  }`}>
+                    {t.role === "Admin" && <Shield className="w-3 h-3" />}
+                    {t.role === "Admin" ? "Yönetici" : "Teknisyen"}
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 text-[11px] font-black rounded-full ring-1 ring-emerald-100 w-fit">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-brand-pulse" />
+                    {t.status}
+                  </div>
+                </td>
+                <td className="px-6 py-4 text-[13px] font-medium text-slate-500">{t.lastLogin}</td>
+                <td className="px-6 py-4 text-right">
+                  <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-brand-ink/5 text-slate-400 hover:text-brand-ink">
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600"
+                      onClick={() => deleteTechnician(t.id)}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
