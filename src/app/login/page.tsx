@@ -19,7 +19,7 @@ export default function LoginPage() {
     setLoading(true);
     // Simüle giriş (normalde API'ye gider)
     setTimeout(() => {
-      login(username, password);
+      login(username);
       router.push("/dashboard");
     }, 800);
   };
