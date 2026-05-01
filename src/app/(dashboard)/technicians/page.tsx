@@ -46,10 +46,8 @@ export default function TechniciansPage() {
         </div>
 
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold">
-              <UserPlus className="w-4 h-4 mr-2" /> Yeni Teknisyen Ekle
-            </Button>
+          <DialogTrigger render={<Button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold" />}>
+            <UserPlus className="w-4 h-4 mr-2" /> Yeni Teknisyen Ekle
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>

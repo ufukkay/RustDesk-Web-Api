@@ -39,14 +39,12 @@ export function Header() {
         </Button>
         
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-10 w-10 rounded-full ml-1 p-0">
-              <Avatar className="h-10 w-10 border border-slate-200 shadow-sm bg-slate-50 hover:bg-slate-100 transition-colors">
-                <AvatarFallback className="bg-transparent text-slate-600">
-                  <UserIcon className="w-5 h-5" />
-                </AvatarFallback>
-              </Avatar>
-            </Button>
+          <DropdownMenuTrigger render={<Button variant="ghost" className="relative h-10 w-10 rounded-full ml-1 p-0" />}>
+            <Avatar className="h-10 w-10 border border-slate-200 shadow-sm bg-slate-50 hover:bg-slate-100 transition-colors">
+              <AvatarFallback className="bg-transparent text-slate-600">
+                <UserIcon className="w-5 h-5" />
+              </AvatarFallback>
+            </Avatar>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56 bg-white border-slate-200 text-slate-700 shadow-lg" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">

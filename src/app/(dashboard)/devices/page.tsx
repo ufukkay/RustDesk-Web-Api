@@ -81,10 +81,8 @@ export default function DevicesPage() {
             </Button>
             
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-blue-600 text-white hover:bg-blue-700 font-semibold shadow-sm">
-                  Yeni Ekle
-                </Button>
+              <DialogTrigger render={<Button className="bg-blue-600 text-white hover:bg-blue-700 font-semibold shadow-sm" />}>
+                Yeni Ekle
               </DialogTrigger>
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
@@ -173,10 +171,8 @@ export default function DevicesPage() {
                       </Button>
                       
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
+                        <DropdownMenuTrigger render={<Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100" />}>
+                          <MoreHorizontal className="w-4 h-4" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="bg-white border-slate-200 text-slate-700 shadow-lg">
                           <DropdownMenuItem className="focus:bg-slate-50 focus:text-slate-900 cursor-pointer font-medium">
