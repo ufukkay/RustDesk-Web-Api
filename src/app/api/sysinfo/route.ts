@@ -10,8 +10,6 @@ export async function POST(req: Request) {
     const deviceId = body.id || body.uuid;
 
     if (deviceId) {
-      console.log(`[SYSINFO DEBUG] ${deviceId} verisi geldi:`, JSON.stringify(body));
-
       let infoData: Record<string, any> = {};
       if (fs.existsSync(INFO_FILE)) {
         try { infoData = JSON.parse(fs.readFileSync(INFO_FILE, "utf-8")); } catch (e) {}
@@ -19,8 +17,9 @@ export async function POST(req: Request) {
 
       infoData[String(deviceId)] = {
         ...body,
-        // Farklı gelebilecek kullanıcı isimlerini standardize edelim
+        // İsim eşleşmelerini (mapping) yapalım
         standard_user: body.user || body.username || body.alias || body.login_name || "-",
+        ram: body.memory || body.ram || "-", // 'memory' olarak geleni 'ram' yapıyoruz
         lastUpdate: Math.floor(Date.now() / 1000)
       };
       
