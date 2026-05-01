@@ -6,6 +6,7 @@ import fs from "fs";
 
 const execAsync = promisify(exec);
 const STATUS_FILE = path.join(process.cwd(), "scripts", "online_status.json");
+const INFO_FILE = path.join(process.cwd(), "scripts", "device_info.json");
 
 export async function GET() {
   try {
@@ -15,17 +16,17 @@ export async function GET() {
     if (stderr) console.log("[PYTHON DEBUG]:", stderr);
 
     const result = JSON.parse(stdout.trim());
-    
-    if (!result.ok) {
-      return NextResponse.json({ error: true, message: result.error }, { status: 500 });
-    }
+    if (!result.ok) return NextResponse.json([], { status: 500 });
 
-    // Online durumlarını dosyadan oku
+    // Online ve Donanım bilgilerini oku
     let onlineStatus: Record<string, number> = {};
+    let hardwareInfo: Record<string, any> = {};
+
     if (fs.existsSync(STATUS_FILE)) {
-      try {
-        onlineStatus = JSON.parse(fs.readFileSync(STATUS_FILE, "utf-8"));
-      } catch (e) {}
+      try { onlineStatus = JSON.parse(fs.readFileSync(STATUS_FILE, "utf-8")); } catch (e) {}
+    }
+    if (fs.existsSync(INFO_FILE)) {
+      try { hardwareInfo = JSON.parse(fs.readFileSync(INFO_FILE, "utf-8")); } catch (e) {}
     }
 
     const now = Math.floor(Date.now() / 1000);
@@ -33,29 +34,31 @@ export async function GET() {
     const devices = result.data.map((row: any) => {
       const deviceId = String(row.id);
       const lastHeartbeat = onlineStatus[deviceId] || 0;
+      const extra = hardwareInfo[deviceId] || {};
       
-      // Eğer son 90 saniye içinde sinyal gelmişse ONLINE kabul et
       const isOnline = (now - lastHeartbeat) < 90;
 
       return {
         id: deviceId,
         name: row.hostname || row.id,
-        ip: row.ip || "-",
-        os: row.os || "Windows",
-        user: row.username || "-",
+        ip: extra.ip || row.ip || "-",
+        os: extra.os || row.os || "Windows",
+        user: extra.user || row.username || "-",
         status: isOnline ? "online" : "offline",
         lastSeen: lastHeartbeat > 0 
           ? new Date(lastHeartbeat * 1000).toLocaleString("tr-TR") 
           : "Bilinmiyor",
         group: row.note || "Genel",
+        // Yeni donanım detayları
+        cpu: extra.cpu || "-",
+        ram: extra.ram || "-",
+        disk: extra.disk || "-",
+        version: extra.version || "-"
       };
     });
 
-    console.log(`[DEVICES] ${devices.filter((d: any) => d.status === "online").length} cihaz online.`);
     return NextResponse.json(devices);
-
   } catch (error: any) {
-    console.error("[SQLITE FATAL]:", error.message);
-    return NextResponse.json([], { status: 500 });
+    return NextResponse.json([]);
   }
 }

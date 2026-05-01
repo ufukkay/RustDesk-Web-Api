@@ -10,6 +10,10 @@ export interface Device {
   lastSeen: string;
   ip: string;
   group?: string;
+  cpu?: string;
+  ram?: string;
+  disk?: string;
+  version?: string;
 }
 
 export interface Technician {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useAppStore, Device } from "@/lib/store";
-import { Search, Monitor, Laptop, Server, Play, MoreHorizontal, Plus, Filter, Smartphone, Trash2, LayoutGrid, List as ListIcon, ChevronRight, Edit2 } from "lucide-react";
+import { Search, Monitor, Laptop, Server, Play, MoreHorizontal, Plus, Filter, Smartphone, Trash2, LayoutGrid, List as ListIcon, ChevronRight, Edit2, Info, Cpu, HardDrive, Database, Activity } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -268,6 +268,56 @@ function DeviceRow({ d, onDelete }: { d: Device, onDelete: (id: string, name: st
             <Play className="w-3 h-3 mr-1.5 fill-current" /> Bağlan
           </Button>
           
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="h-8 w-8 rounded-md border-border text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors"
+                title="Detaylar"
+              >
+                <Info className="w-4 h-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md bg-card border-border rounded-lg shadow-xl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Monitor className="w-5 h-5 text-primary" />
+                  {d.name} Detayları
+                </DialogTitle>
+              </DialogHeader>
+              <div className="grid grid-cols-2 gap-4 py-4">
+                <div className="p-3 bg-muted/30 rounded-lg border border-border">
+                  <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase mb-2">
+                    <Cpu className="w-3.5 h-3.5" /> İşlemci (CPU)
+                  </div>
+                  <p className="text-sm font-semibold text-foreground">{d.cpu || "Bilinmiyor"}</p>
+                </div>
+                <div className="p-3 bg-muted/30 rounded-lg border border-border">
+                  <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase mb-2">
+                    <Database className="w-3.5 h-3.5" /> Bellek (RAM)
+                  </div>
+                  <p className="text-sm font-semibold text-foreground">{d.ram || "Bilinmiyor"}</p>
+                </div>
+                <div className="p-3 bg-muted/30 rounded-lg border border-border">
+                  <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase mb-2">
+                    <HardDrive className="w-3.5 h-3.5" /> Disk Durumu
+                  </div>
+                  <p className="text-sm font-semibold text-foreground">{d.disk || "Bilinmiyor"}</p>
+                </div>
+                <div className="p-3 bg-muted/30 rounded-lg border border-border">
+                  <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase mb-2">
+                    <Activity className="w-3.5 h-3.5" /> IP Adresi
+                  </div>
+                  <p className="text-sm font-semibold text-foreground">{d.ip || "-"}</p>
+                </div>
+              </div>
+              <div className="text-[11px] text-muted-foreground italic text-center border-t border-border pt-4">
+                Son güncelleme: {d.lastSeen}
+              </div>
+            </DialogContent>
+          </Dialog>
+
           <Button 
             variant="outline" 
             size="icon" 
