@@ -13,12 +13,9 @@ export async function GET() {
     const scriptPath = path.join(process.cwd(), "scripts", "read_db.py");
     const { stdout, stderr } = await execAsync(`python3 "${scriptPath}"`);
 
-    if (stderr) console.log("[PYTHON DEBUG]:", stderr);
-
     const result = JSON.parse(stdout.trim());
-    if (!result.ok) return NextResponse.json([], { status: 500 });
+    if (!result.ok) return NextResponse.json([]);
 
-    // Online ve Donanım bilgilerini oku
     let onlineStatus: Record<string, number> = {};
     let hardwareInfo: Record<string, any> = {};
 
@@ -43,13 +40,13 @@ export async function GET() {
         name: row.hostname || row.id,
         ip: extra.ip || row.ip || "-",
         os: extra.os || row.os || "Windows",
-        user: extra.user || row.username || "-",
+        // Önce 'standard_user', yoksa SQLite'taki 'user' kolonuna bak
+        user: extra.standard_user || row.user || row.username || "-",
         status: isOnline ? "online" : "offline",
         lastSeen: lastHeartbeat > 0 
           ? new Date(lastHeartbeat * 1000).toLocaleString("tr-TR") 
           : "Bilinmiyor",
         group: row.note || "Genel",
-        // Yeni donanım detayları
         cpu: extra.cpu || "-",
         ram: extra.ram || "-",
         disk: extra.disk || "-",

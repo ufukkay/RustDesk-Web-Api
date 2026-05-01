@@ -10,22 +10,21 @@ export async function POST(req: Request) {
     const deviceId = body.id || body.uuid;
 
     if (deviceId) {
+      console.log(`[SYSINFO DEBUG] ${deviceId} verisi geldi:`, JSON.stringify(body));
+
       let infoData: Record<string, any> = {};
-      
       if (fs.existsSync(INFO_FILE)) {
-        try {
-          infoData = JSON.parse(fs.readFileSync(INFO_FILE, "utf-8"));
-        } catch (e) { infoData = {}; }
+        try { infoData = JSON.parse(fs.readFileSync(INFO_FILE, "utf-8")); } catch (e) {}
       }
 
-      // Gelen tüm sistem bilgilerini kaydet (CPU, RAM, Disk, Hostname vb.)
       infoData[String(deviceId)] = {
         ...body,
+        // Farklı gelebilecek kullanıcı isimlerini standardize edelim
+        standard_user: body.user || body.username || body.alias || body.login_name || "-",
         lastUpdate: Math.floor(Date.now() / 1000)
       };
       
       fs.writeFileSync(INFO_FILE, JSON.stringify(infoData, null, 2));
-      console.log(`[SYSINFO] Donanım bilgisi güncellendi: ${deviceId}`);
     }
 
     return NextResponse.json({ ok: true });
