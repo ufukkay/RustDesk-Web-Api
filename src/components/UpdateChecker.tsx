@@ -38,6 +38,12 @@ export function UpdateChecker() {
         `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`,
         { headers: { Accept: "application/vnd.github+json" } }
       );
+      
+      if (res.status === 404) {
+        setStatus("latest");
+        return;
+      }
+
       if (!res.ok) throw new Error("GitHub API yanıt vermedi.");
       const data: Release = await res.json();
       setRelease(data);
