@@ -2,53 +2,60 @@ import { NextResponse } from "next/server";
 import { exec } from "child_process";
 import { promisify } from "util";
 import path from "path";
+import fs from "fs";
 
 const execAsync = promisify(exec);
+const STATUS_FILE = path.join(process.cwd(), "scripts", "online_status.json");
 
 export async function GET() {
   try {
     const scriptPath = path.join(process.cwd(), "scripts", "read_db.py");
     const { stdout, stderr } = await execAsync(`python3 "${scriptPath}"`);
 
-    // Python script'inden gelen her şeyi logla
     if (stderr) console.log("[PYTHON DEBUG]:", stderr);
 
     const result = JSON.parse(stdout.trim());
     
-    // Eğer Python tarafında bir sorun varsa bunu UI'a gönderelim
     if (!result.ok) {
-      return NextResponse.json({ 
-        error: true, 
-        message: result.error || "Veritabanı okunamadı",
-        debug: stderr 
-      }, { status: 500 });
+      return NextResponse.json({ error: true, message: result.error }, { status: 500 });
     }
 
-    if (!result.data || result.data.length === 0) {
-      console.warn("[SQLITE] Tablo boş veya bulunamadı.");
-      return NextResponse.json([]);
+    // Online durumlarını dosyadan oku
+    let onlineStatus: Record<string, number> = {};
+    if (fs.existsSync(STATUS_FILE)) {
+      try {
+        onlineStatus = JSON.parse(fs.readFileSync(STATUS_FILE, "utf-8"));
+      } catch (e) {}
     }
 
-    const devices = result.data.map((row: any) => ({
-      id: String(row.id || row.peer_id || "-"),
-      name: row.hostname || row.name || row.alias || row.note || String(row.id),
-      ip: row.ip || row.last_ip || "-",
-      os: row.os || row.platform || "Windows",
-      user: row.username || row.user || row.alias || "-",
-      status: (row.status === 1 || row.online === 1) ? "online" : "offline",
-      lastSeen: row.last_online
-        ? new Date(Number(row.last_online) * 1000).toLocaleString("tr-TR")
-        : "Bilinmiyor",
-      group: row.group_name || row.group || row.note || "Genel",
-    }));
+    const now = Math.floor(Date.now() / 1000);
 
+    const devices = result.data.map((row: any) => {
+      const deviceId = String(row.id);
+      const lastHeartbeat = onlineStatus[deviceId] || 0;
+      
+      // Eğer son 90 saniye içinde sinyal gelmişse ONLINE kabul et
+      const isOnline = (now - lastHeartbeat) < 90;
+
+      return {
+        id: deviceId,
+        name: row.hostname || row.id,
+        ip: row.ip || "-",
+        os: row.os || "Windows",
+        user: row.username || "-",
+        status: isOnline ? "online" : "offline",
+        lastSeen: lastHeartbeat > 0 
+          ? new Date(lastHeartbeat * 1000).toLocaleString("tr-TR") 
+          : "Bilinmiyor",
+        group: row.note || "Genel",
+      };
+    });
+
+    console.log(`[DEVICES] ${devices.filter((d: any) => d.status === "online").length} cihaz online.`);
     return NextResponse.json(devices);
 
   } catch (error: any) {
     console.error("[SQLITE FATAL]:", error.message);
-    return NextResponse.json({ 
-      error: true, 
-      message: "Sistemsel Hata: " + error.message 
-    }, { status: 500 });
+    return NextResponse.json([], { status: 500 });
   }
 }
