@@ -1,23 +1,48 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { RefreshCw, Download, Clock, Zap, CheckCircle2 } from "lucide-react";
+import { RefreshCw, Download, Clock, Zap, CheckCircle2, ListFilter, GitCommit } from "lucide-react";
+
+interface Commit {
+  sha: string;
+  commit: {
+    message: string;
+    author: {
+      date: string;
+    };
+  };
+}
 
 export function UpdateChecker() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateMsg, setUpdateMsg] = useState("");
   const [lastChecked, setLastChecked] = useState<string | null>(null);
+  const [commits, setCommits] = useState<Commit[]>([]);
+  const [loadingCommits, setLoadingCommits] = useState(true);
 
   useEffect(() => {
     const saved = localStorage.getItem("last_update_check");
     if (saved) setLastChecked(saved);
+    fetchCommits();
   }, []);
+
+  const fetchCommits = async () => {
+    try {
+      const res = await fetch("https://api.github.com/repos/ufukkay/RustDesk-Web-Api/commits?per_page=5");
+      const data = await res.json();
+      if (Array.isArray(data)) setCommits(data);
+    } catch (e) {
+      console.error("Commits çekilemedi");
+    } finally {
+      setLoadingCommits(false);
+    }
+  };
 
   const handleUpdate = async () => {
     if (!confirm("En son kodlar GitHub'dan çekilecek ve sistem yeniden derlenecektir. Devam edilsin mi?")) return;
     
     setIsUpdating(true);
-    setUpdateMsg("GitHub bağlantısı kuruluyor, kodlar senkronize ediliyor...");
+    setUpdateMsg("Kodlar senkronize ediliyor...");
     
     try {
       const res = await fetch("/api/system/update", { method: "POST" });
@@ -27,9 +52,8 @@ export function UpdateChecker() {
         const now = new Date().toLocaleString("tr-TR");
         localStorage.setItem("last_update_check", now);
         setLastChecked(now);
-        setUpdateMsg("Kodlar başarıyla çekildi! Derleme yapılıyor, panel 2 dakika içinde hazır olacak...");
+        setUpdateMsg("İşlem Başarılı! Derleme yapılıyor, 2 dk içinde hazır...");
         
-        // Sayfayı 2 dakika sonra yenile
         setTimeout(() => window.location.reload(), 120000);
       } else {
         throw new Error(data.error || "Güncelleme başlatılamadı.");
@@ -54,7 +78,8 @@ export function UpdateChecker() {
         </div>
       </div>
 
-      <div className="p-8 space-y-6">
+      <div className="p-8 space-y-8">
+        {/* Main Action */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <p className="text-sm font-black text-brand-ink dark:text-white uppercase tracking-tight">Yazılımı Güncelle</p>
@@ -73,8 +98,40 @@ export function UpdateChecker() {
           </button>
         </div>
 
+        {/* Change Log */}
+        <div className="bg-brand-bg/30 dark:bg-white/5 rounded-brand-lg p-6 space-y-4">
+          <div className="flex items-center gap-2 text-brand-ink dark:text-white">
+            <ListFilter className="w-4 h-4" />
+            <span className="text-[12px] font-black uppercase tracking-tight">Son Yapılan Değişiklikler</span>
+          </div>
+          
+          <div className="space-y-3">
+            {loadingCommits ? (
+              <div className="flex items-center gap-2 text-[11px] text-slate-400 animate-pulse">
+                <RefreshCw className="w-3 h-3 animate-spin" />
+                Değişiklik listesi yükleniyor...
+              </div>
+            ) : (
+              commits.map((c) => (
+                <div key={c.sha} className="flex items-start gap-3 group">
+                  <GitCommit className="w-4 h-4 text-brand-yellow mt-0.5 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12.5px] font-bold text-brand-ink dark:text-slate-200 truncate group-hover:text-brand-yellow transition-colors cursor-default">
+                      {c.commit.message}
+                    </p>
+                    <p className="text-[10px] text-slate-400 font-medium mt-1 uppercase tracking-tight">
+                      {new Date(c.commit.author.date).toLocaleString("tr-TR")}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Status Message */}
         {isUpdating ? (
-          <div className="flex items-start gap-4 p-5 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-brand-lg">
+          <div className="flex items-start gap-4 p-5 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-brand-lg border-l-4 border-l-brand-yellow">
             <RefreshCw className="w-6 h-6 text-amber-600 shrink-0 mt-0.5 animate-spin" />
             <div>
               <p className="text-sm font-black text-amber-900 dark:text-amber-400 uppercase tracking-tight">Güncelleme Devam Ediyor</p>
@@ -84,12 +141,12 @@ export function UpdateChecker() {
             </div>
           </div>
         ) : (
-          <div className="flex items-start gap-4 p-5 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/20 rounded-brand-lg">
+          <div className="flex items-start gap-4 p-5 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/20 rounded-brand-lg border-l-4 border-l-emerald-500">
             <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-black text-emerald-900 dark:text-emerald-400 uppercase tracking-tight">Sistem Aktif</p>
+              <p className="text-sm font-black text-emerald-900 dark:text-emerald-400 uppercase tracking-tight">Sistem Stabil</p>
               <p className="text-[12px] text-emerald-700 dark:text-emerald-500 font-bold mt-1 leading-relaxed">
-                Yazılım şu an en son çekilen kodlarla çalışıyor. İstediğiniz zaman tekrar senkronize edebilirsiniz.
+                Yazılım şu an en son çekilen kodlarla çalışıyor. Sisteminizi başarıyla güncellediniz.
               </p>
             </div>
           </div>
