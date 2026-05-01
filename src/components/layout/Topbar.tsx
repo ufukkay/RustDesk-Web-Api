@@ -25,13 +25,10 @@ export function Topbar() {
 
   // Avoid hydration mismatch
   useEffect(() => {
-    let isMounted = true;
-    if (isMounted) {
+    const frameId = requestAnimationFrame(() => {
       setMounted(true);
-    }
-    return () => {
-      isMounted = false;
-    };
+    });
+    return () => cancelAnimationFrame(frameId);
   }, []);
 
   useEffect(() => {
