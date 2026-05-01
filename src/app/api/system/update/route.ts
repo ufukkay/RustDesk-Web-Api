@@ -1,36 +1,42 @@
 import { NextResponse } from "next/server";
 import { exec } from "child_process";
-import { promisify } from "util";
-
-const execAsync = promisify(exec);
+import fs from "fs";
+import path from "path";
 
 export async function POST() {
   try {
-    // 1. Git pull - En son kodları çek
-    console.log("Güncelleme başlatıldı: git pull...");
-    await execAsync("git pull");
-
-    // 2. Npm install - Yeni paketler varsa kur
-    console.log("Paketler güncelleniyor: npm install...");
-    await execAsync("npm install");
-
-    // 3. Build - Projeyi derle (Bu kısım uzun sürebilir)
-    console.log("Proje derleniyor: npm run build...");
-    // Build işlemini asenkron başlatıp hemen yanıt dönebiliriz 
-    // çünkü build sırasında bu process meşgul olacak.
+    const projectRoot = process.cwd();
+    const logFile = path.join(projectRoot, "update.log");
     
-    exec("npm run build && pm2 restart rustdesk-portal", (error) => {
+    // Log dosyasını temizle ve başlat
+    fs.writeFileSync(logFile, `[${new Date().toISOString()}] Güncelleme başlatıldı...\n`);
+
+    // Komutları birleştir (Ubuntu/Linux uyumlu)
+    // git fetch ve reset kullanarak yerel çakışmaları önlüyoruz.
+    const updateCommand = `
+      git fetch --all && 
+      git reset --hard origin/main && 
+      npm install && 
+      npm run build && 
+      pm2 restart rustdesk-portal
+    `.replace(/\n/g, " ");
+
+    // Komutu arka planda (detached) çalıştır
+    // Çıktıları update.log dosyasına yönlendiriyoruz
+    const fullCommand = `(${updateCommand}) > ${logFile} 2>&1 &`;
+
+    exec(fullCommand, (error) => {
       if (error) {
-        console.error("Build veya Restart hatası:", error);
+        fs.appendFileSync(logFile, `[HATA] ${error.message}\n`);
       }
     });
 
     return NextResponse.json({ 
       success: true, 
-      message: "Güncelleme başlatıldı. Panel birkaç dakika içinde yeniden başlayacak." 
+      message: "Güncelleme komutu başarıyla gönderildi. İşlem log dosyasından (update.log) takip edilebilir. Panel 1-2 dakika içinde güncellenip yeniden başlayacaktır." 
     });
   } catch (error: any) {
-    console.error("Güncelleme hatası:", error);
+    console.error("Güncelleme API Hatası:", error);
     return NextResponse.json({ 
       success: false, 
       error: error.message 

@@ -72,10 +72,11 @@ export function UpdateChecker() {
       const data = await res.json();
       
       if (data.success) {
-        setUpdateMsg("Güncelleme başarılı! Panel 30 saniye içinde yeniden başlayacak...");
-        setTimeout(() => window.location.reload(), 30000);
+        setUpdateMsg("İşlem başlatıldı! Sunucu arka planda derleme yapıyor. Yaklaşık 2 dakika sonra sayfa otomatik yenilenecek...");
+        // Sayfayı 2 dakika sonra yenile (Build süresi tahmini)
+        setTimeout(() => window.location.reload(), 120000);
       } else {
-        throw new Error(data.error || "Güncelleme başarısız.");
+        throw new Error(data.error || "Güncelleme başlatılamadı.");
       }
     } catch (e: any) {
       setError(e.message);
