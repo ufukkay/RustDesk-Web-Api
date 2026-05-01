@@ -22,8 +22,8 @@ export async function POST() {
     `.replace(/\n/g, " ");
 
     // Komutu arka planda (detached) çalıştır
-    // Çıktıları update.log dosyasına yönlendiriyoruz
-    const fullCommand = `(${updateCommand}) > ${logFile} 2>&1 &`;
+    // İşlem bitince log dosyasına DEPLOY_COMPLETE yazdırıyoruz
+    const fullCommand = `(${updateCommand} && echo "DEPLOY_COMPLETE" >> ${logFile}) > ${logFile} 2>&1 &`;
 
     exec(fullCommand, (error) => {
       if (error) {

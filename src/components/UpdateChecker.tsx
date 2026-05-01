@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, Download, Clock, Zap, CheckCircle2, ShieldCheck, Activity, GitCommit, FileText, ChevronRight } from "lucide-react";
+import { RefreshCw, Download, Clock, Zap, CheckCircle2, ShieldCheck, Activity, GitCommit } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -47,54 +47,73 @@ export function UpdateChecker() {
     fetchCommits();
   }, [fetchCommits]);
 
-  // Simulated detailed status messages
+  // Real-time polling
+  useEffect(() => {
+    let pollInterval: NodeJS.Timeout;
+    
+    if (isUpdating) {
+      pollInterval = setInterval(async () => {
+        try {
+          const res = await fetch("/api/system/update/status");
+          const data = await res.json();
+          
+          if (data.status === "done") {
+            setProgress(100);
+            setIsUpdating(false);
+            setIsDone(true);
+            const now = new Date().toLocaleString("tr-TR");
+            localStorage.setItem("last_update_check", now);
+            setLastChecked(now);
+            clearInterval(pollInterval);
+          } else if (data.status === "error") {
+            alert("Güncelleme hatası: " + data.message);
+            setIsUpdating(false);
+            clearInterval(pollInterval);
+          }
+        } catch (e) {
+          console.error("Durum kontrolü yapılamadı.");
+        }
+      }, 3000); // Poll every 3 seconds
+    }
+
+    return () => clearInterval(pollInterval);
+  }, [isUpdating]);
+
+  // Smooth UI progress simulation (max 95% until real 'done')
+  useEffect(() => {
+    let progressInterval: NodeJS.Timeout;
+    if (isUpdating && progress < 95) {
+      progressInterval = setInterval(() => {
+        setProgress(prev => {
+          if (prev >= 95) return 95;
+          const step = prev < 30 ? 1 : prev < 70 ? 0.5 : 0.2;
+          return prev + step;
+        });
+      }, 800);
+    }
+    return () => clearInterval(progressInterval);
+  }, [isUpdating, progress]);
+
   useEffect(() => {
     if (!isUpdating) return;
     const messages = [
-      { p: 0, t: "GitHub sunucularına bağlanılıyor..." },
-      { p: 10, t: "Yeni kod değişiklikleri (Commit) taranıyor..." },
-      { p: 25, t: "Git Pull: Değişen dosyalar yerel sunucuya indiriliyor..." },
-      { p: 40, t: "npm install: Bağımlılıklar kontrol ediliyor..." },
-      { p: 55, t: "Next.js Build: Sayfalar ve API rotaları derleniyor..." },
-      { p: 75, t: "CSS & JS dosyaları optimize ediliyor (Minify)..." },
-      { p: 90, t: "PM2: Servisler yeni sürümle yeniden başlatılıyor..." },
-      { p: 98, t: "Sistem kontrolleri yapılıyor..." },
+      { p: 0, t: "GitHub senkronizasyonu başlatılıyor..." },
+      { p: 20, t: "Yeni paketler ve bağımlılıklar yükleniyor..." },
+      { p: 50, t: "Next.js Build: Proje derleniyor (Build)..." },
+      { p: 85, t: "Optimizasyon yapılıyor ve servisler yeniden başlatılıyor..." },
     ];
     const current = [...messages].reverse().find(m => progress >= m.p);
     if (current) setStatusText(current.t);
   }, [progress, isUpdating]);
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isUpdating && progress < 100) {
-      interval = setInterval(() => {
-        setProgress(prev => {
-          if (prev >= 99) { clearInterval(interval); return 99; }
-          const increment = prev > 50 && prev < 85 ? 0.3 : 0.8; 
-          return prev + increment;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isUpdating, progress]);
-
   const handleUpdate = async () => {
-    if (!confirm("Tüm değişiklikler uygulanacak ve sistem yeniden başlatılacak. Onaylıyor musunuz?")) return;
+    if (!confirm("Sistem gerçek zamanlı olarak güncellenecektir. Onaylıyor musunuz?")) return;
     setIsUpdating(true);
     setProgress(0);
     try {
       const res = await fetch("/api/system/update", { method: "POST" });
       const data = await res.json();
-      if (data.success) {
-        setTimeout(() => {
-          setProgress(100);
-          setIsUpdating(false);
-          setIsDone(true);
-          const now = new Date().toLocaleString("tr-TR");
-          localStorage.setItem("last_update_check", now);
-          setLastChecked(now);
-        }, 90000); // 1.5 min
-      } else throw new Error(data.error);
+      if (!data.success) throw new Error(data.error);
     } catch (err) {
       alert("Hata: " + (err instanceof Error ? err.message : "Bağlantı Hatası"));
       setIsUpdating(false);
@@ -112,7 +131,7 @@ export function UpdateChecker() {
         </div>
         <div className="bg-card p-4 rounded-xl border border-border shadow-sm flex items-center gap-4">
           <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center"><Activity className="w-5 h-5 text-emerald-500" /></div>
-          <div><p className="text-[10px] font-semibold text-muted-foreground uppercase">Sistem</p><p className="text-sm font-semibold text-foreground">Stabil</p></div>
+          <div><p className="text-[10px] font-semibold text-muted-foreground uppercase">Canlı İzleme</p><p className="text-sm font-semibold text-foreground">Açık</p></div>
         </div>
         <div className="bg-card p-4 rounded-xl border border-border shadow-sm flex items-center gap-4">
           <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center"><Clock className="w-5 h-5 text-muted-foreground" /></div>
@@ -124,8 +143,8 @@ export function UpdateChecker() {
         <div className="p-8 space-y-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-8">
             <div className="space-y-2 text-center md:text-left">
-              <h3 className="text-xl font-bold text-foreground">Sistem Güncelleme Merkezi</h3>
-              <p className="text-sm text-muted-foreground max-w-md">En son özellikleri ve hata düzeltmelerini GitHub üzerinden çekerek sisteme uygular.</p>
+              <h3 className="text-xl font-bold text-foreground">Gerçek Zamanlı Güncelleme</h3>
+              <p className="text-sm text-muted-foreground max-w-md">Sistem, sunucudaki build sürecini anlık olarak takip eder ve işlem bitince sizi bilgilendirir.</p>
             </div>
             <button
               onClick={handleUpdate}
@@ -133,26 +152,26 @@ export function UpdateChecker() {
               className="flex items-center justify-center gap-3 px-10 py-4 bg-primary text-primary-foreground text-sm font-bold rounded-xl shadow-lg hover:opacity-95 transition-all active:scale-95 disabled:opacity-50 shrink-0"
             >
               {isUpdating ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
-              {isUpdating ? "GÜNCELLENİYOR..." : "ŞİMDİ GÜNCELLE"}
+              {isUpdating ? "İŞLEM TAKİP EDİLİYOR" : "GÜNCELLEMEYİ BAŞLAT"}
             </button>
           </div>
 
-          {/* New: Recent Changes List */}
+          {/* Changes List */}
           <div className="bg-muted/30 rounded-xl p-6 space-y-4 border border-border">
             <div className="flex items-center gap-2 text-foreground mb-2">
               <GitCommit className="w-4 h-4 text-primary" />
-              <span className="text-xs font-semibold uppercase tracking-tight">Gelen Yenilikler & Değişen Dosyalar</span>
+              <span className="text-xs font-semibold uppercase tracking-tight">Yeni Gelen Değişiklikler</span>
             </div>
             <div className="space-y-4">
               {loadingCommits ? (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground animate-pulse"><RefreshCw className="w-3 h-3 animate-spin" /> Yükleniyor...</div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground animate-pulse"><RefreshCw className="w-3 h-3 animate-spin" /> Bekleyiniz...</div>
               ) : (
                 commits.map((c) => (
-                  <div key={c.sha} className="flex items-start gap-3 group">
+                  <div key={c.sha} className="flex items-start gap-3">
                     <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] font-medium text-foreground leading-tight">{c.commit.message}</p>
-                      <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-tight">{new Date(c.commit.author.date).toLocaleString("tr-TR")}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1 tracking-tight">{new Date(c.commit.author.date).toLocaleString("tr-TR")}</p>
                     </div>
                   </div>
                 ))
@@ -160,7 +179,7 @@ export function UpdateChecker() {
             </div>
           </div>
 
-          {/* Progress Section */}
+          {/* Real-time Progress Section */}
           {isUpdating && (
             <div className="space-y-5 pt-4 animate-in fade-in slide-in-from-top-4 duration-500">
               <div className="flex items-center justify-between px-1">
@@ -175,13 +194,13 @@ export function UpdateChecker() {
                   <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,.15)_25%,transparent_25%,transparent_50%,rgba(255,255,255,.15)_50%,rgba(255,255,255,.15)_75%,transparent_75%,transparent)] bg-[length:1rem_1rem] animate-[progress-stripe_1s_linear_infinite]" />
                 </div>
               </div>
-              <p className="text-[11px] text-center text-muted-foreground italic">Build işlemi sunucu performansına bağlı olarak 1-2 dakika sürebilir.</p>
+              <p className="text-[11px] text-center text-muted-foreground italic">Build tamamlandığında bu pencere otomatik olarak onay verecektir.</p>
             </div>
           )}
 
           <div className="flex items-center justify-between pt-6 border-t border-border text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
-            <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500" /> {isUpdating ? "İşlem Sürüyor" : "Sistem Stabil"}</div>
-            <div>Son Senkron: {lastChecked || "Hiç yapılmadı"}</div>
+            <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500" /> Durum: {isUpdating ? "Canlı Takip" : "Stabil"}</div>
+            <div>Son Senkron: {lastChecked || "Henüz yapılmadı"}</div>
           </div>
         </div>
       </div>
@@ -190,11 +209,11 @@ export function UpdateChecker() {
         <DialogContent className="sm:max-w-md bg-card border-border shadow-2xl">
           <DialogHeader className="flex flex-col items-center justify-center pt-8">
             <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mb-6 border border-emerald-500/20"><CheckCircle2 className="w-12 h-12 text-emerald-500" /></div>
-            <DialogTitle className="text-2xl font-bold text-foreground">Güncelleme Başarılı!</DialogTitle>
-            <DialogDescription className="text-center pt-3 text-muted-foreground leading-relaxed">Değişiklikler başarıyla uygulandı ve sistem yeniden başlatıldı. Yeni sürümü kullanmaya başlayabilirsiniz.</DialogDescription>
+            <DialogTitle className="text-2xl font-bold text-foreground">İşlem Tamamlandı!</DialogTitle>
+            <DialogDescription className="text-center pt-3 text-muted-foreground leading-relaxed">Sunucudaki build süreci başarıyla bitti. Panel yeni sürümle tazelemek için hazır.</DialogDescription>
           </DialogHeader>
           <DialogFooter className="sm:justify-center pb-8 pt-4">
-            <Button onClick={() => window.location.reload()} className="bg-primary text-primary-foreground font-bold px-12 py-6 rounded-xl text-md shadow-lg shadow-primary/20 hover:opacity-95">PANELİ YENİLE</Button>
+            <Button onClick={() => window.location.reload()} className="bg-primary text-primary-foreground font-bold px-12 py-6 rounded-xl text-md shadow-lg shadow-primary/20 hover:opacity-95">HEMEN YENİLE</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
