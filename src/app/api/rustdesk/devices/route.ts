@@ -1,59 +1,68 @@
 import { NextResponse } from "next/server";
-import Database from "better-sqlite3";
-import path from "path";
+import { exec } from "child_process";
+import { promisify } from "util";
 
-// RustDesk hbbs'nin SQLite veritabanı yolu
+const execAsync = promisify(exec);
 const DB_PATH = "/home/rd/rustdesk/db_v2.sqlite3";
 
 export async function GET() {
   try {
-    // Read-only modda aç (güvenli - hbbs'yi etkilemez)
-    const db = new Database(DB_PATH, { readonly: true });
+    // Python3 ile SQLite oku (her Linux'ta built-in gelir, build gerektirmez)
+    const pythonScript = `
+import sqlite3, json, sys
 
-    // peer tablosundaki tüm cihazları çek
-    // RustDesk'in peer tablosu: id, uuid, pk, created_at, user, status, note, region, strategy_id, last_online
-    const rows = db.prepare(`
-      SELECT 
-        id,
-        COALESCE(hostname, id) as hostname,
-        COALESCE(ip, '-') as ip,
-        COALESCE(os, 'Windows') as os,
-        COALESCE(username, '-') as username,
-        status,
-        last_online,
-        note
-      FROM peer 
-      ORDER BY last_online DESC
-    `).all() as any[];
+try:
+    conn = sqlite3.connect('${DB_PATH}')
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    
+    # Hangi tablolar var?
+    c.execute("SELECT name FROM sqlite_master WHERE type='table'")
+    tables = [r[0] for r in c.fetchall()]
+    
+    # peer tablosu varsa oku
+    if 'peer' in tables:
+        c.execute("SELECT * FROM peer LIMIT 100")
+        rows = [dict(r) for r in c.fetchall()]
+        print(json.dumps({'ok': True, 'tables': tables, 'data': rows}))
+    else:
+        print(json.dumps({'ok': False, 'tables': tables, 'data': []}))
+    
+    conn.close()
+except Exception as e:
+    print(json.dumps({'ok': False, 'error': str(e), 'tables': [], 'data': []}))
+`.trim();
 
-    db.close();
+    const { stdout, stderr } = await execAsync(`python3 -c "${pythonScript.replace(/"/g, '\\"').replace(/\n/g, ' ')}"`);
+    
+    if (stderr) console.error("[SQLITE PY ERROR]:", stderr);
+    
+    const result = JSON.parse(stdout.trim());
+    console.log("[SQLITE TABLES]:", result.tables);
+    console.log("[SQLITE ROWS]:", result.data?.length, "cihaz bulundu");
 
-    const devices = rows.map((row: any) => ({
-      id: row.id,
-      name: row.hostname || row.id,
-      ip: row.ip || "-",
-      os: row.os || "Windows",
-      user: row.username || "-",
-      status: row.status === 1 ? "online" : "offline",
+    if (!result.ok || !result.data?.length) {
+      return NextResponse.json([]);
+    }
+
+    // Kolonları dinamik olarak oku (hangi kolonlar varsa onları kullan)
+    const devices = result.data.map((row: any) => ({
+      id: row.id || row.peer_id || "-",
+      name: row.hostname || row.name || row.alias || row.note || row.id || "Cihaz",
+      ip: row.ip || row.last_ip || "-",
+      os: row.os || row.platform || "Windows",
+      user: row.username || row.user || row.alias || "-",
+      status: (row.status === 1 || row.online === 1 || row.status === "online") ? "online" : "offline",
       lastSeen: row.last_online
-        ? new Date(row.last_online * 1000).toLocaleString("tr-TR")
-        : "Bilinmiyor",
-      group: row.note || "Genel",
+        ? new Date(Number(row.last_online) * 1000).toLocaleString("tr-TR")
+        : row.created_at || "Bilinmiyor",
+      group: row.group || row.note || "Genel",
     }));
 
-    console.log(`[SQLITE] ${devices.length} cihaz bulundu.`);
     return NextResponse.json(devices);
 
   } catch (error: any) {
-    console.error("[SQLITE ERROR]:", error.message);
-    // Eğer tablo adı farklıysa hangi tablolar var diye kontrol et
-    try {
-      const db = new Database(DB_PATH, { readonly: true });
-      const tables = db.prepare(`SELECT name FROM sqlite_master WHERE type='table'`).all();
-      db.close();
-      console.log("[SQLITE TABLES]:", tables);
-    } catch (e) {}
-    
+    console.error("[SQLITE FATAL]:", error.message);
     return NextResponse.json([]);
   }
 }
