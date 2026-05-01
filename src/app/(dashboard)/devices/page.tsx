@@ -1,7 +1,7 @@
 "use client";
 
 import { useAppStore, Device } from "@/lib/store";
-import { Search, Monitor, Laptop, Server, Play, MoreHorizontal, Plus, Filter, Smartphone, Trash2, LayoutGrid, List as ListIcon, ChevronRight } from "lucide-react";
+import { Search, Monitor, Laptop, Server, Play, MoreHorizontal, Plus, Filter, Smartphone, Trash2, LayoutGrid, List as ListIcon, ChevronRight, Edit2 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -249,29 +249,37 @@ function DeviceRow({ d, onDelete }: { d: Device, onDelete: (id: string, name: st
         </span>
       </td>
       <td className="px-6 py-4 text-right">
-        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+        <div className="flex items-center justify-end gap-2 transition-all">
           <Button 
             disabled={d.status !== "online"}
             size="sm"
             className={`h-8 px-4 rounded-md text-xs font-semibold ${
               d.status === "online" 
-                ? "bg-primary text-primary-foreground hover:opacity-90" 
+                ? "bg-primary text-primary-foreground hover:opacity-90 shadow-sm" 
                 : "bg-secondary text-muted-foreground cursor-not-allowed"
             }`}
             onClick={() => window.location.href = `rustdesk://${d.id}`}
           >
             <Play className="w-3 h-3 mr-1.5 fill-current" /> Bağlan
           </Button>
+          
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="h-8 w-8 rounded-md border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            title="Düzenle"
+          >
+            <Edit2 className="w-4 h-4" />
+          </Button>
+
           <Button 
             variant="ghost" 
             size="icon" 
-            className="h-8 w-8 rounded-md text-muted-foreground hover:text-destructive"
+            className="h-8 w-8 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
             onClick={() => onDelete(d.id, d.name)}
+            title="Sil"
           >
             <Trash2 className="w-4 h-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md text-muted-foreground hover:text-foreground">
-            <MoreHorizontal className="w-4 h-4" />
           </Button>
         </div>
       </td>
