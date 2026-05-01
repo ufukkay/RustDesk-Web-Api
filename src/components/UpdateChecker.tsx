@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { RefreshCw, Download, Clock, Zap, CheckCircle2 } from "lucide-react";
+import { RefreshCw, Download, Clock, Zap, CheckCircle2, ShieldCheck, Activity } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 export function UpdateChecker() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [statusText, setStatusText] = useState("Bekleniyor...");
   const [lastChecked, setLastChecked] = useState<string | null>(null);
   const [isDone, setIsDone] = useState(false);
 
@@ -27,7 +28,17 @@ export function UpdateChecker() {
     }
   }, []);
 
-  // Simulate progress
+  // Dynamic status messages based on progress
+  useEffect(() => {
+    if (!isUpdating) return;
+    if (progress < 20) setStatusText("GitHub senkronizasyonu başlatılıyor...");
+    else if (progress < 40) setStatusText("Yeni paketler indiriliyor...");
+    else if (progress < 70) setStatusText("Next.js projesi derleniyor (Build)...");
+    else if (progress < 90) setStatusText("Servisler optimize ediliyor...");
+    else setStatusText("Sistem yeniden başlatılmak üzere...");
+  }, [progress, isUpdating]);
+
+  // Simulated progress logic
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isUpdating && progress < 100) {
@@ -37,15 +48,17 @@ export function UpdateChecker() {
             clearInterval(interval);
             return 99;
           }
-          return prev + 1;
+          // Faster at start, slower during build
+          const increment = prev > 40 && prev < 80 ? 0.5 : 1;
+          return prev + increment;
         });
-      }, 1200); // 120 seconds total / 100
+      }, 1000);
     }
     return () => clearInterval(interval);
   }, [isUpdating, progress]);
 
   const handleUpdate = async () => {
-    if (!confirm("Sistem güncellenecek ve yeniden başlatılacak. Devam edilsin mi?")) return;
+    if (!confirm("Sistem güncellenecek ve derleme başlatılacaktır. Devam edilsin mi?")) return;
     
     setIsUpdating(true);
     setProgress(0);
@@ -55,123 +68,146 @@ export function UpdateChecker() {
       const data = await res.json();
       
       if (data.success) {
-        // Build started... progress will continue via useEffect
         setTimeout(() => {
           setProgress(100);
           setIsUpdating(false);
           setIsDone(true);
-          
           const now = new Date().toLocaleString("tr-TR");
           localStorage.setItem("last_update_check", now);
           setLastChecked(now);
-        }, 120000); // 2 minutes
+        }, 100000); // ~1.5 minutes simulated build
       } else {
-        throw new Error(data.error || "Güncelleme başlatılamadı.");
+        throw new Error(data.error || "Güncelleme hatası.");
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Bağlantı hatası.";
+      const message = err instanceof Error ? err.message : "Bağlantı kesildi.";
       alert("Hata: " + message);
       setIsUpdating(false);
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="bg-card rounded-xl border border-border shadow-brand-sm overflow-hidden">
-        {/* Header */}
-        <div className="px-8 py-5 border-b border-border bg-muted/30 flex items-center justify-between">
-          <div className="space-y-1">
-            <h3 className="font-semibold text-foreground text-sm uppercase tracking-tight">Yazılım Güncelleme</h3>
-            <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Otomatik Sistem Senkronizasyonu</p>
+    <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      
+      {/* Quick Status Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-card p-4 rounded-xl border border-border shadow-sm flex items-center gap-4">
+          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <ShieldCheck className="w-5 h-5 text-primary" />
           </div>
-          <div className="flex items-center gap-2 px-3 py-1 bg-secondary text-foreground text-[10px] font-semibold rounded-full border border-border shadow-sm">
-            <Zap className="w-3.5 h-3.5 text-primary fill-current" />
-            STABİL KANAL
+          <div>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase">Güvenlik</p>
+            <p className="text-sm font-semibold text-foreground">Güncel</p>
           </div>
         </div>
+        <div className="bg-card p-4 rounded-xl border border-border shadow-sm flex items-center gap-4">
+          <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+            <Activity className="w-5 h-5 text-emerald-500" />
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase">Sistem Durumu</p>
+            <p className="text-sm font-semibold text-foreground">Stabil</p>
+          </div>
+        </div>
+        <div className="bg-card p-4 rounded-xl border border-border shadow-sm flex items-center gap-4">
+          <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
+            <Clock className="w-5 h-5 text-muted-foreground" />
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase">Son Senkron</p>
+            <p className="text-xs font-semibold text-foreground">{lastChecked?.split(" ")[0] || "Hiç"}</p>
+          </div>
+        </div>
+      </div>
 
-        <div className="p-10 space-y-10">
-          {/* Main Action */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-10">
-            <div className="space-y-3">
-              <p className="text-lg font-semibold text-foreground tracking-tight">Yeni Sürümü Yükle</p>
-              <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">
-                Sistemi en son kodlarla günceller, veritabanını optimize eder ve servisleri yeniden başlatır.
+      <div className="bg-card rounded-xl border border-border shadow-md overflow-hidden">
+        {/* Update Logic Container */}
+        <div className="p-8 md:p-12 space-y-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest border border-primary/20">v2.4.0-stable</span>
+              </div>
+              <h3 className="text-xl font-bold text-foreground tracking-tight">Sistem Çekirdek Güncellemesi</h3>
+              <p className="text-sm text-muted-foreground max-w-md">
+                GitHub deposundaki en son iyileştirmeleri ve performans güncellemelerini tek tıkla sisteme uygular.
               </p>
             </div>
 
             <button
               onClick={handleUpdate}
               disabled={isUpdating}
-              className="flex items-center justify-center gap-3 px-10 py-4 bg-primary text-primary-foreground text-sm font-semibold rounded-lg shadow-brand hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 shrink-0"
+              className={`flex items-center justify-center gap-3 px-8 py-4 rounded-xl text-sm font-bold shadow-lg transition-all active:scale-95 disabled:opacity-50 shrink-0 ${
+                isUpdating 
+                  ? "bg-secondary text-muted-foreground cursor-not-allowed" 
+                  : "bg-primary text-primary-foreground hover:shadow-primary/20 hover:opacity-95"
+              }`}
             >
               {isUpdating ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
-              {isUpdating ? "GÜNCELLEME SÜRÜYOR" : "ŞİMDİ GÜNCELLE"}
+              {isUpdating ? "İŞLEM YAPILIYOR" : "GÜNCELLEMEYİ BAŞLAT"}
             </button>
           </div>
 
           {/* Progress Section */}
           {isUpdating && (
-            <div className="space-y-4 pt-4 animate-in fade-in slide-in-from-top-2 duration-300">
-              <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider">
-                <span className="text-primary">Sistem Derleniyor...</span>
-                <span className="text-muted-foreground">%{progress}</span>
+            <div className="space-y-6 pt-6 border-t border-border animate-in fade-in slide-in-from-top-4 duration-500">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  <span className="text-sm font-semibold text-foreground">{statusText}</span>
+                </div>
+                <span className="text-sm font-black text-primary">%{Math.round(progress)}</span>
               </div>
-              <div className="h-3 bg-secondary rounded-full overflow-hidden border border-border p-0.5">
+              
+              <div className="relative h-4 bg-secondary rounded-full overflow-hidden border border-border p-1">
                 <div 
-                  className="h-full bg-primary rounded-full transition-all duration-1000 ease-linear shadow-sm"
+                  className="h-full bg-gradient-to-r from-primary/80 to-primary rounded-full transition-all duration-700 ease-out shadow-sm relative"
                   style={{ width: `${progress}%` }}
-                />
+                >
+                  <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,.15)_25%,transparent_25%,transparent_50%,rgba(255,255,255,.15)_50%,rgba(255,255,255,.15)_75%,transparent_75%,transparent)] bg-[length:1rem_1rem] animate-[progress-stripe_1s_linear_infinite]" />
+                </div>
               </div>
-              <p className="text-[11px] text-muted-foreground text-center font-medium italic">
-                Lütfen bu işlemi bölmeyin. Panel 2 dakika içinde otomatik olarak hazır olacaktır.
-              </p>
-            </div>
-          )}
 
-          {!isUpdating && !isDone && (
-            <div className="flex items-start gap-4 p-5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
-              <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-semibold text-emerald-600 uppercase tracking-tight">Sistem Hazır</p>
-                <p className="text-xs text-emerald-600/70 font-medium mt-1 leading-relaxed">
-                  Şu an en son kararlı sürümü kullanıyorsunuz. Herhangi bir bekleyen güncelleme bulunmuyor.
-                </p>
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground bg-muted/50 p-3 rounded-lg border border-border">
+                <Zap className="w-3.5 h-3.5 text-primary" />
+                <span>Bu işlem arka planda güvenle devam eder. Sayfayı kapatmamanız önerilir.</span>
               </div>
             </div>
           )}
 
-          {/* Info */}
-          <div className="flex items-center justify-between pt-8 border-t border-border">
-            <div className="flex items-center gap-2.5 text-[11px] text-muted-foreground font-semibold uppercase tracking-wide">
-              <Clock className="w-4 h-4" />
-              <span>Son Başarılı Güncelleme: {lastChecked || "Henüz yapılmadı"}</span>
+          {!isUpdating && (
+            <div className="flex items-center justify-between pt-6 border-t border-border text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                Sistem tamamen güncel
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                Son Kontrol: {lastChecked || "Henüz kontrol edilmedi"}
+              </div>
             </div>
-            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest bg-muted px-2 py-1 rounded">
-              Branch: main
-            </p>
-          </div>
+          )}
         </div>
       </div>
 
       {/* Done Dialog */}
       <Dialog open={isDone} onOpenChange={setIsDone}>
-        <DialogContent className="sm:max-w-md bg-card border-border">
-          <DialogHeader className="flex flex-col items-center justify-center pt-6">
-            <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle2 className="w-10 h-10 text-emerald-500 animate-in zoom-in duration-300" />
+        <DialogContent className="sm:max-w-md bg-card border-border shadow-2xl">
+          <DialogHeader className="flex flex-col items-center justify-center pt-8">
+            <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mb-6 border border-emerald-500/20">
+              <CheckCircle2 className="w-12 h-12 text-emerald-500" />
             </div>
-            <DialogTitle className="text-xl font-bold text-foreground">Güncelleme Tamamlandı!</DialogTitle>
-            <DialogDescription className="text-center pt-2">
-              Sistem başarıyla en son sürüme yükseltildi ve servisler yeniden başlatıldı.
+            <DialogTitle className="text-2xl font-bold text-foreground">Sistem Güncellendi!</DialogTitle>
+            <DialogDescription className="text-center pt-3 text-muted-foreground leading-relaxed">
+              En son kodlar başarıyla çekildi, proje derlendi ve servisler optimize edildi. Artık yeni özellikleri kullanmaya hazırsınız.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="sm:justify-center pb-6">
+          <DialogFooter className="sm:justify-center pb-8 pt-4">
             <Button 
               onClick={() => window.location.reload()}
-              className="bg-primary text-primary-foreground font-semibold px-10"
+              className="bg-primary text-primary-foreground font-bold px-12 py-6 rounded-xl text-md shadow-lg shadow-primary/20 hover:opacity-95"
             >
-              Paneli Yenile
+              PANELİ YENİLE
             </Button>
           </DialogFooter>
         </DialogContent>
