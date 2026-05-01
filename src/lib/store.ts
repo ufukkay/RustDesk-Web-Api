@@ -59,18 +59,6 @@ export const useAppStore = create<AppState>()(
       logout: () => set({ isAuthenticated: false, user: null }),
 
       devices: [], // Canlı veri için boşaltıldı
-      updateDeviceStatus: (id, status) => set((state) => ({
-        devices: state.devices.map(d =>
-          d.id === id ? { ...d, status, lastSeen: status === "online" ? "Şimdi" : "Az önce" } : d
-        ),
-      })),
-      updateDeviceStatuses: () => set((state) => ({
-        devices: state.devices.map(d => ({
-          ...d,
-          status: Math.random() > 0.25 ? "online" : "offline",
-          lastSeen: Math.random() > 0.25 ? "Şimdi" : "Az önce",
-        })),
-      })),
       setDevices: (devices) => set({ devices }),
       addDevice: (device) => set((state) => ({ devices: [device, ...state.devices] })),
       deleteDevice: (id) => set((state) => ({ devices: state.devices.filter(d => d.id !== id) })),
