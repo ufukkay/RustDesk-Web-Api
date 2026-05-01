@@ -22,12 +22,13 @@ export interface Technician {
 
 interface AppState {
   isAuthenticated: boolean;
-  user: any | null;
+  user: { name: string; email: string; role: string } | null;
   login: (username: string) => void;
   logout: () => void;
-  
+
   devices: Device[];
   updateDeviceStatus: (id: string, status: "online" | "offline") => void;
+  updateDeviceStatuses: () => void;
   setDevices: (devices: Device[]) => void;
   addDevice: (device: Device) => void;
 
@@ -37,14 +38,14 @@ interface AppState {
 }
 
 const INITIAL_DEVICES: Device[] = [
-  { id: "983214556", name: "MUHASEBE-PC", os: "Windows 11", user: "Ayşe Yılmaz", status: "online", lastSeen: "Şimdi", ip: "192.168.1.45" },
-  { id: "445123998", name: "YAZILIM-MAC", os: "macOS Sonoma", user: "Ufuk Kaya", status: "online", lastSeen: "Şimdi", ip: "192.168.1.12" },
-  { id: "112998334", name: "DEPO-TERMINAL", os: "Windows 10", user: "Depo Görevlisi", status: "offline", lastSeen: "2 saat önce", ip: "192.168.2.100" },
-  { id: "776543221", name: "SVR-DB-01", os: "Ubuntu 22.04", user: "Sistem", status: "online", lastSeen: "Şimdi", ip: "10.0.0.5" },
+  { id: "983214556", name: "MUHASEBE-PC",    os: "Windows 11",   user: "Ayşe Yılmaz",    status: "online",  lastSeen: "Şimdi",       ip: "192.168.1.45" },
+  { id: "445123998", name: "YAZILIM-MAC",    os: "macOS Sonoma", user: "Ufuk Kaya",       status: "online",  lastSeen: "Şimdi",       ip: "192.168.1.12" },
+  { id: "112998334", name: "DEPO-TERMINAL",  os: "Windows 10",   user: "Depo Görevlisi",  status: "offline", lastSeen: "2 saat önce", ip: "192.168.2.100" },
+  { id: "776543221", name: "SVR-DB-01",      os: "Ubuntu 22.04", user: "Sistem",          status: "online",  lastSeen: "Şimdi",       ip: "10.0.0.5" },
 ];
 
 const INITIAL_TECHNICIANS: Technician[] = [
-  { id: "1", name: "Ufuk Kaya", email: "ufuk@firma.com", role: "Admin", status: "Aktif", lastLogin: "Şimdi" },
+  { id: "1", name: "Ufuk Kaya",    email: "ufuk@firma.com",  role: "Admin",     status: "Aktif", lastLogin: "Şimdi" },
   { id: "2", name: "Ahmet Yılmaz", email: "ahmet@firma.com", role: "Teknisyen", status: "Aktif", lastLogin: "2 saat önce" },
 ];
 
@@ -53,12 +54,24 @@ export const useAppStore = create<AppState>()(
     (set) => ({
       isAuthenticated: false,
       user: null,
-      login: (username) => set({ isAuthenticated: true, user: { name: username, email: `${username.toLowerCase()}@firma.com` } }),
+      login: (username) => set({
+        isAuthenticated: true,
+        user: { name: username, email: `${username.toLowerCase()}@firma.com`, role: "Admin" },
+      }),
       logout: () => set({ isAuthenticated: false, user: null }),
-      
+
       devices: INITIAL_DEVICES,
       updateDeviceStatus: (id, status) => set((state) => ({
-        devices: state.devices.map(d => d.id === id ? { ...d, status, lastSeen: status === "online" ? "Şimdi" : "Az önce" } : d)
+        devices: state.devices.map(d =>
+          d.id === id ? { ...d, status, lastSeen: status === "online" ? "Şimdi" : "Az önce" } : d
+        ),
+      })),
+      updateDeviceStatuses: () => set((state) => ({
+        devices: state.devices.map(d => ({
+          ...d,
+          status: Math.random() > 0.25 ? "online" : "offline",
+          lastSeen: Math.random() > 0.25 ? "Şimdi" : "Az önce",
+        })),
       })),
       setDevices: (devices) => set({ devices }),
       addDevice: (device) => set((state) => ({ devices: [device, ...state.devices] })),
@@ -67,8 +80,6 @@ export const useAppStore = create<AppState>()(
       addTechnician: (tech) => set((state) => ({ technicians: [...state.technicians, tech] })),
       deleteTechnician: (id) => set((state) => ({ technicians: state.technicians.filter(t => t.id !== id) })),
     }),
-    {
-      name: 'rustdesk-store', // localStorage'da tutulacak isim, sayfayı yenileyince silinmez.
-    }
+    { name: 'rustdesk-store' }
   )
 );
