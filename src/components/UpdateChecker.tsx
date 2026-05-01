@@ -1,209 +1,109 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { RefreshCw, CheckCircle, AlertCircle, Download, ExternalLink, Tag, Clock } from "lucide-react";
-
-const CURRENT_VERSION = "1.4.0";
-const GITHUB_REPO = "ufukkay/RustDesk-Web-Api";
-
-interface Release {
-  tag_name: string;
-  name: string;
-  body: string;
-  published_at: string;
-  html_url: string;
-}
-
-function semverGt(a: string, b: string): boolean {
-  const pa = a.replace(/^v/, "").split(".").map(Number);
-  const pb = b.replace(/^v/, "").split(".").map(Number);
-  for (let i = 0; i < 3; i++) {
-    if ((pa[i] || 0) > (pb[i] || 0)) return true;
-    if ((pa[i] || 0) < (pb[i] || 0)) return false;
-  }
-  return false;
-}
+import { useState, useEffect } from "react";
+import { RefreshCw, Download, Clock, Zap, CheckCircle2 } from "lucide-react";
 
 export function UpdateChecker() {
-  const [status, setStatus] = useState<"idle" | "checking" | "latest" | "available" | "error">("idle");
-  const [release, setRelease] = useState<Release | null>(null);
-  const [error, setError] = useState("");
-
-  const checkForUpdates = useCallback(async () => {
-    setStatus("checking");
-    setRelease(null);
-    setError("");
-    try {
-      const res = await fetch(
-        `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`,
-        { headers: { Accept: "application/vnd.github+json" } }
-      );
-      
-      if (res.status === 404) {
-        setStatus("latest");
-        return;
-      }
-
-      if (!res.ok) throw new Error("GitHub API yanıt vermedi.");
-      const data: Release = await res.json();
-      setRelease(data);
-      if (semverGt(data.tag_name, CURRENT_VERSION)) {
-        setStatus("available");
-      } else {
-        setStatus("latest");
-      }
-    } catch (e: any) {
-      setError(e.message || "Bilinmeyen hata");
-      setStatus("error");
-    }
-  }, []);
-
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateMsg, setUpdateMsg] = useState("");
+  const [lastChecked, setLastChecked] = useState<string | null>(null);
 
-  const installUpdate = async () => {
-    if (!confirm("Sistem güncellenecek ve panel birkaç dakika kapalı kalacaktır. Onaylıyor musunuz?")) return;
+  useEffect(() => {
+    const saved = localStorage.getItem("last_update_check");
+    if (saved) setLastChecked(saved);
+  }, []);
+
+  const handleUpdate = async () => {
+    if (!confirm("En son kodlar GitHub'dan çekilecek ve sistem yeniden derlenecektir. Devam edilsin mi?")) return;
     
     setIsUpdating(true);
-    setUpdateMsg("Kodlar çekiliyor ve derleniyor, lütfen bekleyin...");
+    setUpdateMsg("GitHub bağlantısı kuruluyor, kodlar senkronize ediliyor...");
     
     try {
       const res = await fetch("/api/system/update", { method: "POST" });
       const data = await res.json();
       
       if (data.success) {
-        setUpdateMsg("İşlem başlatıldı! Sunucu arka planda derleme yapıyor. Yaklaşık 2 dakika sonra sayfa otomatik yenilenecek...");
-        // Sayfayı 2 dakika sonra yenile (Build süresi tahmini)
+        const now = new Date().toLocaleString("tr-TR");
+        localStorage.setItem("last_update_check", now);
+        setLastChecked(now);
+        setUpdateMsg("Kodlar başarıyla çekildi! Derleme yapılıyor, panel 2 dakika içinde hazır olacak...");
+        
+        // Sayfayı 2 dakika sonra yenile
         setTimeout(() => window.location.reload(), 120000);
       } else {
         throw new Error(data.error || "Güncelleme başlatılamadı.");
       }
     } catch (e: any) {
-      setError(e.message);
-      setStatus("error");
+      alert("Hata: " + e.message);
       setIsUpdating(false);
     }
   };
 
-  const formatDate = (iso: string) =>
-    new Date(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
-
   return (
-    <div className="bg-white rounded-brand-lg border border-brand-ink/5 shadow-brand-sm overflow-hidden animate-in zoom-in-95 duration-300">
+    <div className="bg-white dark:bg-card rounded-brand-lg border border-brand-ink/5 dark:border-white/5 shadow-brand-sm overflow-hidden animate-in zoom-in-95 duration-300">
       {/* Header */}
-      <div className="px-6 py-5 border-b border-brand-ink/5 bg-brand-bg/10 flex items-center justify-between">
+      <div className="px-6 py-5 border-b border-brand-ink/5 dark:border-white/5 bg-brand-bg/10 dark:bg-white/5 flex items-center justify-between">
         <div>
-          <h3 className="font-black text-brand-ink text-sm uppercase tracking-tight">Yazılım Güncellemesi</h3>
-          <p className="text-[11px] text-slate-400 font-bold mt-1 uppercase tracking-wider">GitHub Versiyon Kontrolü</p>
+          <h3 className="font-black text-brand-ink dark:text-white text-sm uppercase tracking-tight">Sistem Bakımı</h3>
+          <p className="text-[11px] text-slate-400 font-bold mt-1 uppercase tracking-wider">GitHub Senkronizasyonu</p>
         </div>
         <div className="flex items-center gap-2 text-[11px] font-black bg-brand-yellow text-brand-ink px-3 py-1.5 rounded-full shadow-brand-sm ring-1 ring-brand-ink/10">
-          <Tag className="w-3.5 h-3.5" />
-          v{CURRENT_VERSION} · MEVCUT
+          <Zap className="w-3.5 h-3.5 fill-current" />
+          STABİL KANAL
         </div>
       </div>
 
       <div className="p-8 space-y-6">
-        {/* Check button */}
-        <button
-          onClick={checkForUpdates}
-          disabled={status === "checking"}
-          className="flex items-center gap-3 px-6 py-3 bg-brand-yellow text-brand-ink text-[13px] font-black rounded-brand shadow-brand-sm ring-1 ring-brand-ink/10 hover:bg-brand-yellow/90 transition-all active:scale-95 disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 ${status === "checking" ? "animate-spin" : ""}`} />
-          {status === "checking" ? "KONTROL EDİLİYOR..." : "GÜNCELLEMELERİ KONTROL ET"}
-        </button>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <p className="text-sm font-black text-brand-ink dark:text-white uppercase tracking-tight">Yazılımı Güncelle</p>
+            <p className="text-[12px] text-slate-500 font-medium leading-relaxed max-w-sm">
+              Bu buton GitHub'daki en son kodları çeker ve sistemi otomatik olarak derleyip yeniden başlatır.
+            </p>
+          </div>
 
-        {/* Status: up to date */}
-        {status === "latest" && (
-          <div className="flex items-start gap-4 p-5 bg-emerald-50 border border-emerald-100 rounded-brand-lg">
-            <CheckCircle className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
+          <button
+            onClick={handleUpdate}
+            disabled={isUpdating}
+            className="flex items-center justify-center gap-3 px-8 py-4 bg-brand-yellow text-brand-ink text-[14px] font-black rounded-brand shadow-brand ring-1 ring-brand-ink/10 hover:bg-brand-yellow/90 transition-all active:scale-95 disabled:opacity-50 shrink-0"
+          >
+            {isUpdating ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+            {isUpdating ? "GÜNCELLENİYOR..." : "ŞİMDİ GÜNCELLE"}
+          </button>
+        </div>
+
+        {isUpdating ? (
+          <div className="flex items-start gap-4 p-5 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-brand-lg">
+            <RefreshCw className="w-6 h-6 text-amber-600 shrink-0 mt-0.5 animate-spin" />
             <div>
-              <p className="text-sm font-black text-emerald-900 uppercase tracking-tight">Sisteminiz Güncel</p>
-              <p className="text-[12px] text-emerald-700 font-bold mt-1 leading-relaxed">
-                Şu an en son kararlı sürümü kullanıyorsunuz. Bir işlem yapmanıza gerek yoktur.
+              <p className="text-sm font-black text-amber-900 dark:text-amber-400 uppercase tracking-tight">Güncelleme Devam Ediyor</p>
+              <p className="text-[12px] text-amber-700 dark:text-amber-500 font-bold mt-1 leading-relaxed">
+                {updateMsg}
               </p>
             </div>
           </div>
-        )}
-
-        {/* Status: update available */}
-        {status === "available" && release && (
-          <div className="space-y-4">
-            <div className="flex items-start gap-4 p-5 bg-blue-50 border border-blue-100 rounded-brand-lg">
-              <Download className="w-6 h-6 text-blue-600 shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <p className="text-sm font-black text-blue-900 uppercase tracking-tight">Yeni Sürüm Tespit Edildi!</p>
-                  <span className="text-[11px] font-black text-white bg-blue-600 px-3 py-1 rounded-full shadow-brand-sm">
-                    {release.tag_name}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 text-[11px] font-black text-blue-400 mt-2 uppercase tracking-widest">
-                  <Clock className="w-3.5 h-3.5" />
-                  Yayınlanma: {formatDate(release.published_at)}
-                </div>
-              </div>
-            </div>
-
-            {/* Release notes */}
-            {release.body && (
-              <div className="p-5 bg-slate-50 border border-slate-200 rounded-brand-lg">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Sürüm Notları</p>
-                <div className="text-[12px] text-slate-600 font-medium whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
-                  {release.body}
-                </div>
-              </div>
-            )}
-
-            <div className="flex flex-wrap gap-3">
-              <a
-                href={release.html_url}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2.5 px-5 py-3 bg-brand-ink text-white text-[13px] font-black rounded-brand shadow-brand hover:opacity-90 transition-all"
-              >
-                <ExternalLink className="w-4 h-4" />
-                GITHUB'DA İNCELE
-              </a>
-
-              <button
-                onClick={installUpdate}
-                disabled={isUpdating}
-                className="inline-flex items-center gap-2.5 px-6 py-3 bg-brand-yellow text-brand-ink text-[13px] font-black rounded-brand shadow-brand-sm ring-1 ring-brand-ink/10 hover:bg-brand-yellow/90 transition-all disabled:opacity-50"
-              >
-                {isUpdating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                {isUpdating ? "GÜNCELLENİYOR..." : "ŞİMDİ GÜNCELLE"}
-              </button>
-            </div>
-
-            {isUpdating && (
-              <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-100 rounded-brand text-amber-700 font-bold text-[12px]">
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                {updateMsg}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Error */}
-        {status === "error" && (
-          <div className="flex items-start gap-4 p-5 bg-red-50 border border-red-100 rounded-brand-lg">
-            <AlertCircle className="w-6 h-6 text-red-600 shrink-0 mt-0.5" />
+        ) : (
+          <div className="flex items-start gap-4 p-5 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/20 rounded-brand-lg">
+            <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-black text-red-900 uppercase tracking-tight">Bağlantı Hatası</p>
-              <p className="text-[12px] text-red-600 font-bold mt-1 leading-relaxed">
-                GitHub sunucularına erişilemedi: {error}
+              <p className="text-sm font-black text-emerald-900 dark:text-emerald-400 uppercase tracking-tight">Sistem Aktif</p>
+              <p className="text-[12px] text-emerald-700 dark:text-emerald-500 font-bold mt-1 leading-relaxed">
+                Yazılım şu an en son çekilen kodlarla çalışıyor. İstediğiniz zaman tekrar senkronize edebilirsiniz.
               </p>
             </div>
           </div>
         )}
 
         {/* Info */}
-        <div className="text-[11px] text-slate-400 font-bold flex items-center gap-2.5 pt-4 border-t border-brand-ink/5 uppercase tracking-wide">
-          <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-          <span>
-            Kaynak Repo: <a href={`https://github.com/${GITHUB_REPO}`} target="_blank" rel="noreferrer" className="text-brand-ink hover:underline">ufukkay/RustDesk-Web-Api</a>
-          </span>
+        <div className="flex items-center justify-between pt-6 border-t border-brand-ink/5 dark:border-white/5">
+          <div className="flex items-center gap-2.5 text-[11px] text-slate-400 font-bold uppercase tracking-wide">
+            <Clock className="w-3.5 h-3.5" />
+            <span>Son Güncelleme: {lastChecked || "Henüz yapılmadı"}</span>
+          </div>
+          <p className="text-[10px] text-slate-300 font-bold uppercase tracking-widest">
+            Branch: main
+          </p>
         </div>
       </div>
     </div>
