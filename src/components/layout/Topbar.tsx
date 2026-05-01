@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Monitor, Users, Settings, Bell, Search, LogOut, User as UserIcon, ChevronDown } from "lucide-react";
+import { LayoutDashboard, Monitor, Users, Settings, Bell, Search, LogOut, User as UserIcon, ChevronDown, Moon, Sun } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
+import { useTheme } from "next-themes";
 
 const navItems = [
   { href: "/dashboard",   label: "Genel Bakış",  icon: LayoutDashboard },
@@ -19,6 +20,11 @@ export function Topbar() {
   const { user, logout } = useAppStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // Avoid hydration mismatch
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -78,6 +84,14 @@ export function Topbar() {
 
       {/* User menu & Actions */}
       <div className="flex items-center gap-3 shrink-0">
+        <button
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="w-10 h-10 flex items-center justify-center rounded-brand border border-brand-ink/10 hover:bg-brand-ink/5 text-slate-500 hover:text-brand-ink transition-colors shrink-0"
+          aria-label="Koyu/Aydınlık Mod"
+        >
+          {mounted && (theme === "dark" ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />)}
+        </button>
+
         <button className="relative w-10 h-10 flex items-center justify-center rounded-brand border border-brand-ink/10 hover:bg-brand-ink/5 text-slate-500 hover:text-brand-ink transition-colors shrink-0">
           <Bell className="w-4.5 h-4.5" />
           <span className="absolute top-3 right-3 w-2 h-2 bg-brand-yellow rounded-full ring-2 ring-white" />

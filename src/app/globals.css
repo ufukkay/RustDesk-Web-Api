@@ -42,14 +42,47 @@
     --input: rgba(14, 17, 22, 0.08);
     --ring: #FFCC00;
   }
+
+  .dark {
+    --background: #0E1116;
+    --foreground: #FAFAF7;
+    
+    --card: #161B22;
+    --card-foreground: #FAFAF7;
+    
+    --popover: #161B22;
+    --popover-foreground: #FAFAF7;
+    
+    --primary: #FFCC00;
+    --primary-foreground: #0E1116;
+    
+    --secondary: rgba(250, 250, 247, 0.05);
+    --secondary-foreground: #FAFAF7;
+    
+    --muted: rgba(250, 250, 247, 0.08);
+    --muted-foreground: #8B92A0;
+    
+    --accent: #FFCC00;
+    --accent-foreground: #0E1116;
+    
+    --border: rgba(250, 250, 247, 0.1);
+    --input: rgba(250, 250, 247, 0.1);
+    --ring: #FFCC00;
+  }
 }
 
 @utility shadow-brand {
   box-shadow: 0 4px 14px rgba(14, 17, 22, 0.06);
 }
+.dark .shadow-brand {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
 
 @utility shadow-brand-sm {
   box-shadow: 0 1px 2px rgba(14, 17, 22, 0.04);
+}
+.dark .shadow-brand-sm {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 /* Custom RustDesk animations */
