@@ -58,6 +58,32 @@ export function UpdateChecker() {
     }
   }, []);
 
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateMsg, setUpdateMsg] = useState("");
+
+  const installUpdate = async () => {
+    if (!confirm("Sistem güncellenecek ve panel birkaç dakika kapalı kalacaktır. Onaylıyor musunuz?")) return;
+    
+    setIsUpdating(true);
+    setUpdateMsg("Kodlar çekiliyor ve derleniyor, lütfen bekleyin...");
+    
+    try {
+      const res = await fetch("/api/system/update", { method: "POST" });
+      const data = await res.json();
+      
+      if (data.success) {
+        setUpdateMsg("Güncelleme başarılı! Panel 30 saniye içinde yeniden başlayacak...");
+        setTimeout(() => window.location.reload(), 30000);
+      } else {
+        throw new Error(data.error || "Güncelleme başarısız.");
+      }
+    } catch (e: any) {
+      setError(e.message);
+      setStatus("error");
+      setIsUpdating(false);
+    }
+  };
+
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
 
@@ -128,15 +154,33 @@ export function UpdateChecker() {
               </div>
             )}
 
-            <a
-              href={release.html_url}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2.5 px-5 py-3 bg-brand-ink text-white text-[13px] font-black rounded-brand shadow-brand hover:opacity-90 transition-all"
-            >
-              <ExternalLink className="w-4 h-4" />
-              GÜNCELLEMEYİ GITHUB'DA İNCELE
-            </a>
+            <div className="flex flex-wrap gap-3">
+              <a
+                href={release.html_url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2.5 px-5 py-3 bg-brand-ink text-white text-[13px] font-black rounded-brand shadow-brand hover:opacity-90 transition-all"
+              >
+                <ExternalLink className="w-4 h-4" />
+                GITHUB'DA İNCELE
+              </a>
+
+              <button
+                onClick={installUpdate}
+                disabled={isUpdating}
+                className="inline-flex items-center gap-2.5 px-6 py-3 bg-brand-yellow text-brand-ink text-[13px] font-black rounded-brand shadow-brand-sm ring-1 ring-brand-ink/10 hover:bg-brand-yellow/90 transition-all disabled:opacity-50"
+              >
+                {isUpdating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                {isUpdating ? "GÜNCELLENİYOR..." : "ŞİMDİ GÜNCELLE"}
+              </button>
+            </div>
+
+            {isUpdating && (
+              <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-100 rounded-brand text-amber-700 font-bold text-[12px]">
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                {updateMsg}
+              </div>
+            )}
           </div>
         )}
 
