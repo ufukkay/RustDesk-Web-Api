@@ -96,69 +96,69 @@ export default function TechniciansPage() {
           { label: "Yöneticiler", value: technicians.filter(t => t.role === "Admin").length, sub: "Tam yetkili" },
           { label: "Bugün Aktif", value: technicians.length, sub: "Sisteme girenler" },
         ].map((s) => (
-          <div key={s.label} className="bg-white p-5 rounded-brand border border-brand-ink/5 shadow-brand-sm">
-            <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider">{s.label}</p>
+          <div key={s.label} className="bg-card p-5 rounded-brand border border-border shadow-brand-sm">
+            <p className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider">{s.label}</p>
             <div className="flex items-end gap-2 mt-2">
-              <p className="text-2xl font-black text-brand-ink leading-none">{s.value}</p>
-              <p className="text-[11px] text-slate-400 font-bold pb-0.5">{s.sub}</p>
+              <p className="text-2xl font-black text-foreground leading-none">{s.value}</p>
+              <p className="text-[11px] text-muted-foreground font-bold pb-0.5">{s.sub}</p>
             </div>
           </div>
         ))}
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-brand-lg border border-brand-ink/5 shadow-brand-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-brand-ink/5 flex items-center justify-between bg-brand-bg/10">
+      <div className="bg-card rounded-brand-lg border border-border shadow-brand-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-muted/20">
           <div className="relative w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-            <Input placeholder="Teknisyen ara..." className="pl-9 h-9 bg-white border-brand-ink/10 text-xs rounded-lg shadow-brand-sm" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input placeholder="Teknisyen ara..." className="pl-9 h-9 bg-card border-border text-xs rounded-lg shadow-brand-sm" />
           </div>
-          <Button variant="outline" className="h-9 text-[11px] font-black border-brand-ink/10 hover:bg-brand-ink/5 rounded-lg">
+          <Button variant="outline" className="h-9 text-[11px] font-black border-border hover:bg-secondary rounded-lg">
             <Mail className="w-3.5 h-3.5 mr-2" /> Toplu Davet Gönder
           </Button>
         </div>
         
         <table className="w-full">
           <thead>
-            <tr className="bg-brand-bg/5 border-b border-brand-ink/5">
-              <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Kullanıcı</th>
-              <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">E-posta</th>
-              <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Rol</th>
-              <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Durum</th>
-              <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Son Giriş</th>
-              <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">İşlem</th>
+            <tr className="bg-muted/30 border-b border-border">
+              <th className="px-6 py-4 text-left text-[10px] font-black text-muted-foreground uppercase tracking-widest">Kullanıcı</th>
+              <th className="px-6 py-4 text-left text-[10px] font-black text-muted-foreground uppercase tracking-widest">E-posta</th>
+              <th className="px-6 py-4 text-left text-[10px] font-black text-muted-foreground uppercase tracking-widest">Rol</th>
+              <th className="px-6 py-4 text-left text-[10px] font-black text-muted-foreground uppercase tracking-widest">Durum</th>
+              <th className="px-6 py-4 text-left text-[10px] font-black text-muted-foreground uppercase tracking-widest">Son Giriş</th>
+              <th className="px-6 py-4 text-right text-[10px] font-black text-muted-foreground uppercase tracking-widest">İşlem</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-brand-ink/5">
+          <tbody className="divide-y divide-border">
             {technicians.map(t => (
-              <tr key={t.id} className="hover:bg-brand-bg/10 transition-colors group">
+              <tr key={t.id} className="hover:bg-muted/20 transition-colors group">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-brand-ink font-black text-xs ring-1 ring-brand-ink/10 shadow-brand-sm ${t.role === "Admin" ? "bg-brand-yellow" : "bg-slate-100"}`}>
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-brand-ink font-black text-xs ring-1 ring-border shadow-brand-sm ${t.role === "Admin" ? "bg-brand-yellow" : "bg-muted"}`}>
                       {t.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
                     </div>
                     <div>
-                      <p className="text-[13.5px] font-black text-brand-ink">{t.name}</p>
-                      <p className="text-[11px] text-slate-400 font-bold mt-0.5 tracking-tight">@{t.email.split("@")[0]}</p>
+                      <p className="text-[13.5px] font-black text-foreground">{t.name}</p>
+                      <p className="text-[11px] text-muted-foreground font-bold mt-0.5 tracking-tight">@{t.email.split("@")[0]}</p>
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-[13px] font-bold text-slate-500">{t.email}</td>
+                <td className="px-6 py-4 text-[13px] font-bold text-muted-foreground">{t.email}</td>
                 <td className="px-6 py-4">
                   <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black ${
-                    t.role === "Admin" ? "bg-brand-yellow/10 text-brand-ink ring-1 ring-brand-yellow/20" : "bg-slate-50 text-slate-500 ring-1 ring-slate-200"
+                    t.role === "Admin" ? "bg-brand-yellow/20 text-brand-yellow ring-1 ring-brand-yellow/30" : "bg-muted text-muted-foreground ring-1 ring-border"
                   }`}>
                     {t.role === "Admin" && <Shield className="w-3 h-3" />}
                     {t.role === "Admin" ? "Yönetici" : "Teknisyen"}
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 text-[11px] font-black rounded-full ring-1 ring-emerald-100 w-fit">
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 text-emerald-500 text-[11px] font-black rounded-full ring-1 ring-emerald-500/20 w-fit">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-brand-pulse" />
                     {t.status}
                   </div>
                 </td>
-                <td className="px-6 py-4 text-[13px] font-medium text-slate-500">{t.lastLogin}</td>
+                <td className="px-6 py-4 text-[13px] font-medium text-muted-foreground">{t.lastLogin}</td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-brand-ink/5 text-slate-400 hover:text-brand-ink">

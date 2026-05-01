@@ -86,15 +86,19 @@ export function Topbar() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="w-9 h-9 flex items-center justify-center rounded-md border border-border hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors shrink-0"
+              className="w-10 h-10 flex items-center justify-center rounded-full border border-border hover:bg-secondary text-muted-foreground hover:text-brand-yellow transition-all duration-300 hover:rotate-12 active:scale-90 bg-card shadow-sm group"
               aria-label="Koyu/Aydınlık Mod"
             >
-              {mounted && (theme === "dark" ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />)}
+              {mounted && (
+                theme === "dark" 
+                  ? <Sun className="w-5 h-5 transition-all group-hover:scale-110" /> 
+                  : <Moon className="w-5 h-5 transition-all group-hover:scale-110" />
+              )}
             </button>
 
-            <button className="relative w-9 h-9 flex items-center justify-center rounded-md border border-border hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors shrink-0">
-              <Bell className="w-4.5 h-4.5" />
-              <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-brand-yellow rounded-full ring-2 ring-white dark:ring-card" />
+            <button className="relative w-10 h-10 flex items-center justify-center rounded-full border border-border hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors shrink-0 bg-card shadow-sm">
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-brand-yellow rounded-full ring-2 ring-white dark:ring-card" />
             </button>
           </div>
 
