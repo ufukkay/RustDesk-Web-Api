@@ -36,7 +36,9 @@ export function UpdateChecker() {
   useEffect(() => {
     const saved = localStorage.getItem("last_update_check");
     if (saved) {
-      setLastChecked(saved);
+      requestAnimationFrame(() => {
+        setLastChecked(saved);
+      });
     }
     fetchCommits();
   }, [fetchCommits]);
