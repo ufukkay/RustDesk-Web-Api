@@ -1,37 +1,22 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, Download, Clock, Zap, CheckCircle2, ListFilter, GitCommit } from "lucide-react";
-
-interface Commit {
-  sha: string;
-  commit: {
-    message: string;
-    author: {
-      date: string;
-    };
-  };
-}
+import { useState, useEffect } from "react";
+import { RefreshCw, Download, Clock, Zap, CheckCircle2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 export function UpdateChecker() {
   const [isUpdating, setIsUpdating] = useState(false);
-  const [updateMsg, setUpdateMsg] = useState("");
+  const [progress, setProgress] = useState(0);
   const [lastChecked, setLastChecked] = useState<string | null>(null);
-  const [commits, setCommits] = useState<Commit[]>([]);
-  const [loadingCommits, setLoadingCommits] = useState(true);
-
-  // Memoized fetch function to avoid re-renders and declaration order issues
-  const fetchCommits = useCallback(async () => {
-    try {
-      const res = await fetch("https://api.github.com/repos/ufukkay/RustDesk-Web-Api/commits?per_page=5");
-      const data = await res.json();
-      if (Array.isArray(data)) setCommits(data);
-    } catch {
-      console.error("Commits çekilemedi");
-    } finally {
-      setLoadingCommits(false);
-    }
-  }, []);
+  const [isDone, setIsDone] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("last_update_check");
@@ -40,135 +25,157 @@ export function UpdateChecker() {
         setLastChecked(saved);
       });
     }
-    fetchCommits();
-  }, [fetchCommits]);
+  }, []);
+
+  // Simulate progress
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isUpdating && progress < 100) {
+      interval = setInterval(() => {
+        setProgress(prev => {
+          if (prev >= 99) {
+            clearInterval(interval);
+            return 99;
+          }
+          return prev + 1;
+        });
+      }, 1200); // 120 seconds total / 100
+    }
+    return () => clearInterval(interval);
+  }, [isUpdating, progress]);
 
   const handleUpdate = async () => {
-    if (!confirm("En son kodlar GitHub&apos;dan çekilecek ve sistem yeniden derlenecektir. Devam edilsin mi?")) return;
+    if (!confirm("Sistem güncellenecek ve yeniden başlatılacak. Devam edilsin mi?")) return;
     
     setIsUpdating(true);
-    setUpdateMsg("Kodlar senkronize ediliyor...");
+    setProgress(0);
     
     try {
       const res = await fetch("/api/system/update", { method: "POST" });
       const data = await res.json();
       
       if (data.success) {
-        const now = new Date().toLocaleString("tr-TR");
-        localStorage.setItem("last_update_check", now);
-        setLastChecked(now);
-        setUpdateMsg("İşlem Başarılı! Derleme yapılıyor, 2 dk içinde hazır...");
-        
-        setTimeout(() => window.location.reload(), 120000);
+        // Build started... progress will continue via useEffect
+        setTimeout(() => {
+          setProgress(100);
+          setIsUpdating(false);
+          setIsDone(true);
+          
+          const now = new Date().toLocaleString("tr-TR");
+          localStorage.setItem("last_update_check", now);
+          setLastChecked(now);
+        }, 120000); // 2 minutes
       } else {
         throw new Error(data.error || "Güncelleme başlatılamadı.");
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Güncelleme başlatılamadı.";
+      const message = err instanceof Error ? err.message : "Bağlantı hatası.";
       alert("Hata: " + message);
       setIsUpdating(false);
     }
   };
 
   return (
-    <div className="bg-card rounded-brand-lg border border-border shadow-brand-sm overflow-hidden animate-in zoom-in-95 duration-300 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="px-6 py-4 border-b border-border bg-muted/30 flex items-center justify-between">
-        <div className="space-y-0.5">
-          <h3 className="font-semibold text-foreground text-sm">Sistem Güncelleme</h3>
-          <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">GitHub Senkronizasyonu</p>
+    <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="bg-card rounded-xl border border-border shadow-brand-sm overflow-hidden">
+        {/* Header */}
+        <div className="px-8 py-5 border-b border-border bg-muted/30 flex items-center justify-between">
+          <div className="space-y-1">
+            <h3 className="font-semibold text-foreground text-sm uppercase tracking-tight">Yazılım Güncelleme</h3>
+            <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Otomatik Sistem Senkronizasyonu</p>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1 bg-secondary text-foreground text-[10px] font-semibold rounded-full border border-border shadow-sm">
+            <Zap className="w-3.5 h-3.5 text-primary fill-current" />
+            STABİL KANAL
+          </div>
         </div>
-        <div className="flex items-center gap-1.5 text-[10px] font-semibold bg-secondary text-foreground px-3 py-1 rounded-full border border-border shadow-sm">
-          <Zap className="w-3 h-3 text-primary" />
-          STABİL KANAL
-        </div>
-      </div>
 
-      <div className="p-8 space-y-8">
-        {/* Main Action */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <p className="text-sm font-black text-brand-ink dark:text-white uppercase tracking-tight">Yazılımı Güncelle</p>
-            <p className="text-[12px] text-slate-500 font-medium leading-relaxed max-w-sm">
-              Bu buton GitHub&apos;daki en son kodları çeker ve sistemi otomatik olarak derleyip yeniden başlatır.
+        <div className="p-10 space-y-10">
+          {/* Main Action */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-10">
+            <div className="space-y-3">
+              <p className="text-lg font-semibold text-foreground tracking-tight">Yeni Sürümü Yükle</p>
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">
+                Sistemi en son kodlarla günceller, veritabanını optimize eder ve servisleri yeniden başlatır.
+              </p>
+            </div>
+
+            <button
+              onClick={handleUpdate}
+              disabled={isUpdating}
+              className="flex items-center justify-center gap-3 px-10 py-4 bg-primary text-primary-foreground text-sm font-semibold rounded-lg shadow-brand hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 shrink-0"
+            >
+              {isUpdating ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+              {isUpdating ? "GÜNCELLEME SÜRÜYOR" : "ŞİMDİ GÜNCELLE"}
+            </button>
+          </div>
+
+          {/* Progress Section */}
+          {isUpdating && (
+            <div className="space-y-4 pt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider">
+                <span className="text-primary">Sistem Derleniyor...</span>
+                <span className="text-muted-foreground">%{progress}</span>
+              </div>
+              <div className="h-3 bg-secondary rounded-full overflow-hidden border border-border p-0.5">
+                <div 
+                  className="h-full bg-primary rounded-full transition-all duration-1000 ease-linear shadow-sm"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground text-center font-medium italic">
+                Lütfen bu işlemi bölmeyin. Panel 2 dakika içinde otomatik olarak hazır olacaktır.
+              </p>
+            </div>
+          )}
+
+          {!isUpdating && !isDone && (
+            <div className="flex items-start gap-4 p-5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+              <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-emerald-600 uppercase tracking-tight">Sistem Hazır</p>
+                <p className="text-xs text-emerald-600/70 font-medium mt-1 leading-relaxed">
+                  Şu an en son kararlı sürümü kullanıyorsunuz. Herhangi bir bekleyen güncelleme bulunmuyor.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Info */}
+          <div className="flex items-center justify-between pt-8 border-t border-border">
+            <div className="flex items-center gap-2.5 text-[11px] text-muted-foreground font-semibold uppercase tracking-wide">
+              <Clock className="w-4 h-4" />
+              <span>Son Başarılı Güncelleme: {lastChecked || "Henüz yapılmadı"}</span>
+            </div>
+            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest bg-muted px-2 py-1 rounded">
+              Branch: main
             </p>
           </div>
-
-          <button
-            onClick={handleUpdate}
-            disabled={isUpdating}
-            className="flex items-center justify-center gap-3 px-8 py-4 bg-brand-yellow text-brand-ink text-[14px] font-black rounded-brand shadow-brand ring-1 ring-brand-ink/10 hover:bg-brand-yellow/90 transition-all active:scale-95 disabled:opacity-50 shrink-0"
-          >
-            {isUpdating ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
-            {isUpdating ? "GÜNCELLENİYOR..." : "ŞİMDİ GÜNCELLE"}
-          </button>
-        </div>
-
-        {/* Change Log */}
-        <div className="bg-brand-bg/30 dark:bg-white/5 rounded-brand-lg p-6 space-y-4">
-          <div className="flex items-center gap-2 text-brand-ink dark:text-white">
-            <ListFilter className="w-4 h-4" />
-            <span className="text-[12px] font-black uppercase tracking-tight">Son Yapılan Değişiklikler</span>
-          </div>
-          
-          <div className="space-y-3">
-            {loadingCommits ? (
-              <div className="flex items-center gap-2 text-[11px] text-slate-400 animate-pulse">
-                <RefreshCw className="w-3 h-3 animate-spin" />
-                Değişiklik listesi yükleniyor...
-              </div>
-            ) : (
-              commits.map((c) => (
-                <div key={c.sha} className="flex items-start gap-3 group">
-                  <GitCommit className="w-4 h-4 text-brand-yellow mt-0.5 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[12.5px] font-bold text-brand-ink dark:text-slate-200 truncate group-hover:text-brand-yellow transition-colors cursor-default">
-                      {c.commit.message}
-                    </p>
-                    <p className="text-[10px] text-slate-400 font-medium mt-1 uppercase tracking-tight">
-                      {new Date(c.commit.author.date).toLocaleString("tr-TR")}
-                    </p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Status Message */}
-        {isUpdating ? (
-          <div className="flex items-start gap-4 p-5 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-brand-lg border-l-4 border-l-brand-yellow">
-            <RefreshCw className="w-6 h-6 text-amber-600 shrink-0 mt-0.5 animate-spin" />
-            <div>
-              <p className="text-sm font-black text-amber-900 dark:text-amber-400 uppercase tracking-tight">Güncelleme Devam Ediyor</p>
-              <p className="text-[12px] text-amber-700 dark:text-amber-500 font-bold mt-1 leading-relaxed">
-                {updateMsg}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-start gap-4 p-5 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/20 rounded-brand-lg border-l-4 border-l-emerald-500">
-            <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-black text-emerald-900 dark:text-emerald-400 uppercase tracking-tight">Sistem Stabil</p>
-              <p className="text-[12px] text-emerald-700 dark:text-emerald-500 font-bold mt-1 leading-relaxed">
-                Yazılım şu an en son çekilen kodlarla çalışıyor. Sisteminizi başarıyla güncellediniz.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Info */}
-        <div className="flex items-center justify-between pt-6 border-t border-brand-ink/5 dark:border-white/5">
-          <div className="flex items-center gap-2.5 text-[11px] text-slate-400 font-bold uppercase tracking-wide">
-            <Clock className="w-3.5 h-3.5" />
-            <span>Son Güncelleme: {lastChecked || "Henüz yapılmadı"}</span>
-          </div>
-          <p className="text-[10px] text-slate-300 font-bold uppercase tracking-widest">
-            Branch: main
-          </p>
         </div>
       </div>
+
+      {/* Done Dialog */}
+      <Dialog open={isDone} onOpenChange={setIsDone}>
+        <DialogContent className="sm:max-w-md bg-card border-border">
+          <DialogHeader className="flex flex-col items-center justify-center pt-6">
+            <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mb-4">
+              <CheckCircle2 className="w-10 h-10 text-emerald-500 animate-in zoom-in duration-300" />
+            </div>
+            <DialogTitle className="text-xl font-bold text-foreground">Güncelleme Tamamlandı!</DialogTitle>
+            <DialogDescription className="text-center pt-2">
+              Sistem başarıyla en son sürüme yükseltildi ve servisler yeniden başlatıldı.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center pb-6">
+            <Button 
+              onClick={() => window.location.reload()}
+              className="bg-primary text-primary-foreground font-semibold px-10"
+            >
+              Paneli Yenile
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
