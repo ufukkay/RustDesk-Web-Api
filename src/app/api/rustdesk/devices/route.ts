@@ -2,52 +2,86 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   const HOST = "http://192.168.0.184:3000";
-  const ENDPOINTS = ["/api/devices", "/api/ab", "/api/v1/devices"]; 
-  const KEY = "5XE+DKQ46fl1EgSLWqKV9qkV+nGT4VLBrhJKYUrFbD0=";
+  const USERNAME = "admin";
+  const PASSWORD = "admin";
 
-  for (const endpoint of ENDPOINTS) {
-    try {
-      console.log(`[RUSTDESK DEBUG] İstek atılıyor: ${HOST}${endpoint}`);
-      
-      const response = await fetch(`${HOST}${endpoint}`, {
+  try {
+    console.log("[RUSTDESK AUTH] Giriş yapılıyor...");
+    
+    // 1. Sunucuya Giriş Yap ve Token Al
+    const loginRes = await fetch(`${HOST}/api/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: USERNAME,
+        password: PASSWORD,
+        id: "rustdesk-portal",
+        device_name: "Admin Portal"
+      })
+    });
+
+    if (!loginRes.ok) {
+      const errorText = await loginRes.text();
+      console.error("[RUSTDESK AUTH] Giriş Başarısız:", loginRes.status, errorText);
+      return NextResponse.json({ error: "Giriş yapılamadı" }, { status: 401 });
+    }
+
+    const loginData = await loginRes.json();
+    const token = loginData.access_token || loginData.token || loginData.data?.token;
+
+    if (!token) {
+      console.error("[RUSTDESK AUTH] Token alınamadı!");
+      return NextResponse.json({ error: "Token alınamadı" }, { status: 500 });
+    }
+
+    console.log("[RUSTDESK AUTH] Giriş başarılı, cihazlar çekiliyor...");
+
+    // 2. Token ile Cihazları/Adres Defterini Çek
+    // RustDesk Pro/Community genelde /api/devices veya /api/ab kullanır
+    const devicesRes = await fetch(`${HOST}/api/devices`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!devicesRes.ok) {
+      // Eğer /api/devices yoksa /api/ab dene
+      const abRes = await fetch(`${HOST}/api/ab`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${KEY}`
-        },
-        cache: 'no-store'
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`[RUSTDESK DEBUG] ${endpoint} Hatası: ${response.status} - ${errorText}`);
-        continue; // Diğer endpointi dene
-      }
-
-      const data = await response.json();
-      console.log(`[RUSTDESK DEBUG] ${endpoint} Başarılı! Veri geldi.`);
       
-      const rawDevices = Array.isArray(data) ? data : (data.data || data.list || []);
+      if (!abRes.ok) throw new Error("Cihaz listesi çekilemedi.");
       
-      if (rawDevices.length > 0) {
-        const devices = rawDevices.map((device: any) => ({
-          id: device.id || device.guid || device.id_str || "-",
-          name: device.hostname || device.name || device.alias || "Cihaz",
-          os: device.os || "Windows",
-          user: device.username || device.alias || "-",
-          status: device.online || device.status === "online" ? "online" : "offline",
-          lastSeen: device.updated_at || "Şimdi",
-          ip: device.ip || "-",
-          group: device.group || "Genel"
-        }));
-        return NextResponse.json(devices);
-      }
-    } catch (error: any) {
-      console.error(`[RUSTDESK DEBUG] ${endpoint} Bağlantı Hatası:`, error.message);
+      const abData = await abRes.json();
+      return NextResponse.json(formatDevices(abData));
     }
-  }
 
-  // Hiçbir yerden veri gelmezse en azından terminale bilgi verelim
-  console.warn("[RUSTDESK DEBUG] Hiçbir endpoint'ten cihaz listesi çekilemedi.");
-  return NextResponse.json([]);
+    const devicesData = await devicesRes.json();
+    return NextResponse.json(formatDevices(devicesData));
+
+  } catch (error: any) {
+    console.error("[RUSTDESK API ERROR]:", error.message);
+    return NextResponse.json([]);
+  }
+}
+
+// Gelen veriyi portal formatına çeviren yardımcı fonksiyon
+function formatDevices(data: any) {
+  const list = Array.isArray(data) ? data : (data.data || data.list || []);
+  return list.map((d: any) => ({
+    id: d.id || d.guid || "-",
+    name: d.hostname || d.name || d.alias || "Cihaz",
+    os: d.os || "Windows",
+    user: d.username || d.alias || "-",
+    status: d.online || d.status === "online" ? "online" : "offline",
+    lastSeen: d.updated_at || "Şimdi",
+    ip: d.ip || "-",
+    group: d.group || "Genel"
+  }));
 }
