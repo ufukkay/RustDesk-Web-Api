@@ -44,11 +44,12 @@ export default function TechniciansPage() {
         </div>
 
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary text-primary-foreground font-semibold px-6 rounded-md">
-              <UserPlus className="w-4 h-4 mr-2" /> Yeni Teknisyen
-            </Button>
-          </DialogTrigger>
+          <Button 
+            onClick={() => setIsOpen(true)}
+            className="bg-primary text-primary-foreground font-semibold px-6 rounded-md"
+          >
+            <UserPlus className="w-4 h-4 mr-2" /> Yeni Teknisyen
+          </Button>
           <DialogContent className="sm:max-w-md bg-card border-border rounded-lg">
             <DialogHeader>
               <DialogTitle className="text-foreground font-semibold">Yeni Teknisyen Davet Et</DialogTitle>
