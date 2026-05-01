@@ -23,7 +23,7 @@ export interface Technician {
   email: string;
   password?: string; // Şifre alanı eklendi
   role: "Admin" | "Teknisyen";
-  status: "Aktif" | "Pasif";
+  status: "Aktif" | "Pasif" | "Çevrimiçi";
   lastLogin: string;
 }
 
