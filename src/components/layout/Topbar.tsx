@@ -24,7 +24,15 @@ export function Topbar() {
   const [mounted, setMounted] = useState(false);
 
   // Avoid hydration mismatch
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    let isMounted = true;
+    if (isMounted) {
+      setMounted(true);
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
