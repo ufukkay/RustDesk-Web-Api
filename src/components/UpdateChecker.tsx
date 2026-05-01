@@ -19,6 +19,10 @@ export function UpdateChecker() {
       
       if (data.success) {
         setStatus("success");
+        // 3 saniye sonra sayfayı otomatik yenile
+        setTimeout(() => {
+          window.location.reload();
+        }, 3000);
       } else {
         throw new Error(data.error || "Güncelleme başlatılamadı.");
       }
