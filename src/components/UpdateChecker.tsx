@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { RefreshCw, Download, Clock, Zap, CheckCircle2, ListFilter, GitCommit } from "lucide-react";
 
 interface Commit {
@@ -20,26 +20,29 @@ export function UpdateChecker() {
   const [commits, setCommits] = useState<Commit[]>([]);
   const [loadingCommits, setLoadingCommits] = useState(true);
 
-  useEffect(() => {
-    const saved = localStorage.getItem("last_update_check");
-    if (saved) setLastChecked(saved);
-    fetchCommits();
-  }, []);
-
-  const fetchCommits = async () => {
+  // Memoized fetch function to avoid re-renders and declaration order issues
+  const fetchCommits = useCallback(async () => {
     try {
       const res = await fetch("https://api.github.com/repos/ufukkay/RustDesk-Web-Api/commits?per_page=5");
       const data = await res.json();
       if (Array.isArray(data)) setCommits(data);
-    } catch (e) {
+    } catch {
       console.error("Commits çekilemedi");
     } finally {
       setLoadingCommits(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("last_update_check");
+    if (saved) {
+      setLastChecked(saved);
+    }
+    fetchCommits();
+  }, [fetchCommits]);
 
   const handleUpdate = async () => {
-    if (!confirm("En son kodlar GitHub'dan çekilecek ve sistem yeniden derlenecektir. Devam edilsin mi?")) return;
+    if (!confirm("En son kodlar GitHub&apos;dan çekilecek ve sistem yeniden derlenecektir. Devam edilsin mi?")) return;
     
     setIsUpdating(true);
     setUpdateMsg("Kodlar senkronize ediliyor...");
@@ -58,8 +61,9 @@ export function UpdateChecker() {
       } else {
         throw new Error(data.error || "Güncelleme başlatılamadı.");
       }
-    } catch (e: any) {
-      alert("Hata: " + e.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Güncelleme başlatılamadı.";
+      alert("Hata: " + message);
       setIsUpdating(false);
     }
   };
@@ -84,7 +88,7 @@ export function UpdateChecker() {
           <div className="space-y-2">
             <p className="text-sm font-black text-brand-ink dark:text-white uppercase tracking-tight">Yazılımı Güncelle</p>
             <p className="text-[12px] text-slate-500 font-medium leading-relaxed max-w-sm">
-              Bu buton GitHub'daki en son kodları çeker ve sistemi otomatik olarak derleyip yeniden başlatır.
+              Bu buton GitHub&apos;daki en son kodları çeker ve sistemi otomatik olarak derleyip yeniden başlatır.
             </p>
           </div>
 
