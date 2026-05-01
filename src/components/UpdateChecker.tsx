@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { RefreshCw, Download, Clock, Zap, CheckCircle2, ShieldCheck, Activity, GitCommit, ArrowRight, Play, X } from "lucide-react";
+import { RefreshCw, Download, Clock, Zap, CheckCircle2, ShieldCheck, Activity, GitCommit, Play, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -48,7 +48,7 @@ export function UpdateChecker() {
     fetchCommits();
   }, [fetchCommits]);
 
-  // Polling for installation status
+  // Real-time FAST polling
   useEffect(() => {
     let pollInterval: NodeJS.Timeout;
     if (step === "installing") {
@@ -56,57 +56,58 @@ export function UpdateChecker() {
         try {
           const res = await fetch("/api/system/update/status");
           const data = await res.json();
+          
           if (data.status === "done") {
+            setProgress(100);
             setStep("done");
             const now = new Date().toLocaleString("tr-TR");
             localStorage.setItem("last_update_check", now);
             setLastChecked(now);
             clearInterval(pollInterval);
           } else if (data.status === "error") {
-            alert("Kurulum hatası: " + data.message);
+            alert("Hata: " + data.message);
             setStep("idle");
             clearInterval(pollInterval);
           }
         } catch (e) {
-          console.error("Durum kontrolü yapılamadı.");
+          console.error("Takip hatası.");
         }
-      }, 3000);
+      }, 1000); // Check every 1 second for maximum speed
     }
     return () => clearInterval(pollInterval);
   }, [step]);
 
-  // Progress simulation
+  // Fast UI progress (no artificial caps)
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if ((step === "downloading" || step === "installing") && progress < 98) {
+    if (step === "downloading" && progress < 100) {
       interval = setInterval(() => {
         setProgress(prev => {
-          if (prev >= 98) return 98;
-          const increment = step === "downloading" ? 2 : (prev > 60 ? 0.3 : 0.7);
-          return prev + increment;
+          if (prev >= 100) {
+            setStep("ready");
+            return 100;
+          }
+          return prev + 10; // Very fast download simulation
         });
-      }, step === "downloading" ? 100 : 800);
+      }, 100);
+    } else if (step === "installing" && progress < 99) {
+      interval = setInterval(() => {
+        setProgress(prev => (prev < 99 ? prev + 1 : 99));
+      }, 500); // Just a slow crawl to show activity, but will jump to 100% on signal
     }
     return () => clearInterval(interval);
   }, [step, progress]);
 
-  const startDownload = async () => {
+  const startDownload = () => {
     setStep("downloading");
     setProgress(0);
-    setStatusText("Güncelleme dosyaları hazırlanıyor...");
-    
-    // Simulate/Trigger Fetch
-    setTimeout(() => {
-      setStep("ready");
-      setProgress(100);
-      setStatusText("Dosyalar indirildi, kuruluma hazır.");
-    }, 4000);
+    setStatusText("Dosyalar çekiliyor...");
   };
 
   const startInstall = async () => {
     setStep("installing");
     setProgress(0);
-    setStatusText("Yeni sürüm kuruluyor ve derleniyor...");
+    setStatusText("Sunucuda işlem başlatıldı...");
     try {
       const res = await fetch("/api/system/update", { method: "POST" });
       const data = await res.json();
@@ -137,67 +138,62 @@ export function UpdateChecker() {
       </div>
 
       <div className="bg-card rounded-xl border border-border shadow-md overflow-hidden">
-        <div className="p-10 space-y-8 text-center md:text-left">
+        <div className="p-8 space-y-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-            <div className="space-y-2">
-              <h3 className="text-xl font-black text-foreground uppercase tracking-tight">Kurulum Sihirbazı</h3>
-              <p className="text-sm text-muted-foreground max-w-md">Sistem güncellemelerini iki aşamalı olarak güvenle yönetin.</p>
+            <div className="space-y-1">
+              <h3 className="text-xl font-black text-foreground uppercase tracking-tight">Sürüm Kontrolü</h3>
+              <p className="text-sm text-muted-foreground">Sunucuyla gerçek zamanlı senkronizasyon.</p>
             </div>
             
             {step === "idle" && (
               <button
                 onClick={startDownload}
-                className="flex items-center justify-center gap-3 px-10 py-4 bg-primary text-primary-foreground text-sm font-bold rounded-xl shadow-lg hover:opacity-95 transition-all active:scale-95 shrink-0"
+                className="flex items-center justify-center gap-3 px-8 py-4 bg-primary text-primary-foreground text-sm font-bold rounded-xl shadow-lg hover:opacity-95 transition-all active:scale-95 shrink-0"
               >
                 <Download className="w-5 h-5" />
-                GÜNCELLEMELERİ İNDİR
+                GÜNCELLEMELERİ ÇEK
               </button>
             )}
 
             {(step === "downloading" || step === "installing") && (
-              <div className="flex items-center gap-3 px-8 py-4 bg-secondary text-muted-foreground text-sm font-bold rounded-xl shrink-0">
+              <div className="flex items-center gap-3 px-6 py-3 bg-secondary text-muted-foreground text-sm font-bold rounded-xl">
                 <RefreshCw className="w-5 h-5 animate-spin" />
-                LÜTFEN BEKLEYİN...
+                İŞLEM SÜRÜYOR...
               </div>
             )}
             
             {step === "ready" && (
-              <div className="flex items-center gap-3 px-8 py-4 bg-emerald-500/10 text-emerald-600 text-sm font-bold rounded-xl border border-emerald-500/20 shrink-0">
-                <CheckCircle2 className="w-5 h-5" />
+              <div className="px-6 py-3 bg-emerald-500/10 text-emerald-600 text-sm font-bold rounded-xl border border-emerald-500/20">
                 DOSYALAR HAZIR
               </div>
             )}
           </div>
 
-          {/* Progress (Visible during download or install) */}
           {(step === "downloading" || step === "installing") && (
-            <div className="space-y-4 animate-in zoom-in-95 duration-300">
-              <div className="flex items-center justify-between px-1">
-                <span className="text-xs font-bold text-primary uppercase tracking-widest">{statusText}</span>
-                <span className="text-sm font-black text-primary">%{Math.round(progress)}</span>
+            <div className="space-y-3 animate-in slide-in-from-top-2">
+              <div className="flex items-center justify-between text-[11px] font-bold text-primary uppercase">
+                <span>{statusText}</span>
+                <span>%{Math.round(progress)}</span>
               </div>
-              <div className="h-4 bg-secondary rounded-full overflow-hidden border border-border p-1">
-                <div className="h-full bg-primary rounded-full transition-all duration-500 ease-out relative" style={{ width: `${progress}%` }}>
-                  <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,.15)_25%,transparent_25%,transparent_50%,rgba(255,255,255,.15)_50%,rgba(255,255,255,.15)_75%,transparent_75%,transparent)] bg-[length:1rem_1rem] animate-[progress-stripe_1s_linear_infinite]" />
-                </div>
+              <div className="h-3 bg-secondary rounded-full overflow-hidden border border-border">
+                <div className="h-full bg-primary rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
               </div>
             </div>
           )}
 
-          {/* Changelog */}
           <div className="bg-muted/30 rounded-xl p-6 border border-border">
             <div className="flex items-center gap-2 text-foreground mb-4">
               <GitCommit className="w-4 h-4 text-primary" />
-              <span className="text-xs font-bold uppercase">Sürüm Notları</span>
+              <span className="text-xs font-bold uppercase tracking-widest">Son Değişiklikler</span>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {loadingCommits ? (
                 <div className="h-4 bg-secondary/50 rounded w-1/2 animate-pulse" />
               ) : (
                 commits.map((c) => (
                   <div key={c.sha} className="flex items-start gap-3">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                    <p className="text-[13px] font-medium text-foreground leading-tight text-left">{c.commit.message}</p>
+                    <div className="w-1 h-1 rounded-full bg-primary mt-2 shrink-0" />
+                    <p className="text-[13px] font-medium text-foreground">{c.commit.message}</p>
                   </div>
                 ))
               )}
@@ -208,34 +204,17 @@ export function UpdateChecker() {
 
       {/* STEP 2: READY DIALOG */}
       <Dialog open={step === "ready"} onOpenChange={(open) => !open && setStep("idle")}>
-        <DialogContent className="sm:max-w-md bg-card border-border shadow-2xl p-0 overflow-hidden">
-          <div className="bg-primary/10 p-8 flex flex-col items-center border-b border-border">
-            <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center shadow-lg mb-4">
-              <Download className="w-8 h-8 text-primary-foreground" />
-            </div>
-            <DialogTitle className="text-2xl font-black text-foreground uppercase tracking-tight text-center">Dosyalar İndirildi!</DialogTitle>
+        <DialogContent className="sm:max-w-md bg-card border-border shadow-2xl p-8 text-center">
+          <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <Download className="w-8 h-8 text-primary" />
           </div>
-          <div className="p-8">
-            <DialogDescription className="text-center text-md text-muted-foreground leading-relaxed">
-              Güncelleme paketleri başarıyla çekildi. Şimdi sistemi yeni sürüme yükseltmek ister misiniz? 
-              <br/><br/>
-              <span className="text-xs font-semibold text-primary/80 uppercase tracking-widest bg-primary/5 px-2 py-1 rounded">Bu işlem 1-2 dakika sürebilir.</span>
-            </DialogDescription>
-            <div className="grid grid-cols-2 gap-4 mt-8">
-              <Button 
-                variant="outline" 
-                onClick={() => setStep("idle")}
-                className="h-12 font-bold border-border text-muted-foreground hover:bg-secondary rounded-xl"
-              >
-                <X className="w-4 h-4 mr-2" /> DAHA SONRA
-              </Button>
-              <Button 
-                onClick={startInstall}
-                className="h-12 font-bold bg-primary text-primary-foreground hover:opacity-95 rounded-xl shadow-lg shadow-primary/20"
-              >
-                <Play className="w-4 h-4 mr-2" /> ŞİMDİ YÜKLE
-              </Button>
-            </div>
+          <DialogTitle className="text-2xl font-black text-foreground uppercase tracking-tight">Yükleme Hazır!</DialogTitle>
+          <DialogDescription className="pt-2 text-muted-foreground text-md">
+            Kodlar indirildi. Şimdi sisteme yüklemek istiyor musunuz?
+          </DialogDescription>
+          <div className="grid grid-cols-2 gap-4 mt-10">
+            <Button variant="outline" onClick={() => setStep("idle")} className="h-12 font-bold rounded-xl border-border">VAZGEÇ</Button>
+            <Button onClick={startInstall} className="h-12 font-bold bg-primary text-primary-foreground rounded-xl shadow-lg shadow-primary/20">ŞİMDİ YÜKLE</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -246,16 +225,9 @@ export function UpdateChecker() {
           <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-emerald-500/20">
             <CheckCircle2 className="w-12 h-12 text-emerald-500" />
           </div>
-          <DialogTitle className="text-2xl font-black text-foreground uppercase tracking-tight">Sistem Güncel!</DialogTitle>
-          <DialogDescription className="pt-4 text-muted-foreground">
-            Yeni sürüm başarıyla yüklendi. Değişikliklerin etkili olması için paneli yenilemeniz gerekiyor.
-          </DialogDescription>
-          <Button 
-            onClick={() => window.location.reload()}
-            className="w-full mt-10 h-14 bg-emerald-500 text-white font-black text-lg rounded-2xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-all"
-          >
-            PANELİ ŞİMDİ YENİLE
-          </Button>
+          <DialogTitle className="text-2xl font-black text-foreground uppercase tracking-tight">Tamamlandı!</DialogTitle>
+          <DialogDescription className="pt-4 text-muted-foreground">Sistem başarıyla yeni sürüme geçirildi.</DialogDescription>
+          <Button onClick={() => window.location.reload()} className="w-full mt-10 h-14 bg-emerald-500 text-white font-black rounded-2xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-all">PANELİ YENİLE</Button>
         </DialogContent>
       </Dialog>
     </div>
