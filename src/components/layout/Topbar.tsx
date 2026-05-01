@@ -41,69 +41,59 @@ export function Topbar() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  return (
-    <header className="h-16 bg-white border-b border-brand-ink/5 flex items-center px-8 gap-8 sticky top-0 z-30 w-full backdrop-blur-md">
-      {/* Logo: RustDesk "R" Mark */}
-      <div className="flex items-center gap-3 shrink-0">
-        <div className="w-8 h-8 bg-brand-yellow rounded-[9px] flex items-center justify-center shadow-brand-sm font-black text-brand-ink text-lg tracking-tighter ring-1 ring-brand-ink/10 inset-shadow-sm">
-          R
-        </div>
-        <div className="flex flex-col leading-none">
-          <div className="flex items-center gap-2">
-            <span className="font-extrabold text-brand-ink dark:text-white text-sm tracking-tight">RustDesk Portal</span>
-            <div className="px-1.5 py-0.5 rounded-full bg-emerald-500 text-white text-[8px] font-black tracking-widest leading-none">CANLI</div>
+  return <header className="h-16 border-b border-border bg-white dark:bg-card sticky top-0 z-40">
+      <div className="h-full px-6 flex items-center justify-between">
+        
+        {/* Logo Section */}
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="w-9 h-9 bg-brand-yellow rounded-lg flex items-center justify-center text-brand-ink font-black text-lg">
+            R
           </div>
-          <span className="text-[10px] text-slate-400 font-bold mt-0.5 tracking-wide uppercase">RustDesk Admin</span>
+          <div className="flex flex-col leading-none">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-foreground text-[14px] tracking-tight">RustDesk Portal</span>
+              <div className="px-1.5 py-0.5 rounded-full bg-emerald-500 text-white text-[8px] font-black tracking-widest leading-none uppercase">Canlı</div>
+            </div>
+            <span className="text-[10px] text-muted-foreground font-medium mt-0.5 uppercase tracking-wide">Yönetim Paneli</span>
+          </div>
         </div>
-      </div>
 
-      {/* Nav links */}
-      <nav className="flex items-center gap-1">
-        {navItems.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href || pathname.startsWith(href + "/");
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex items-center gap-2 px-4 py-2 rounded-brand font-bold text-[13px] transition-all duration-150 ${
-                active
-                  ? "bg-brand-yellow text-brand-ink shadow-brand-sm"
-                  : "text-slate-500 hover:text-brand-ink hover:bg-brand-ink/5"
-              }`}
-            >
-              <Icon className={`w-4 h-4 ${active ? "text-brand-ink" : "text-slate-400"}`} />
-              {label}
-            </Link>
-          );
-        })}
-      </nav>
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center gap-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md text-[13px] font-medium transition-colors ${
+                  isActive 
+                    ? "bg-brand-yellow/10 text-brand-ink dark:text-brand-yellow" 
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                }`}
+              >
+                <Icon className={`w-4 h-4 ${isActive ? "text-brand-ink dark:text-brand-yellow" : ""}`} />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
 
-      {/* Search — pushes to right */}
-      <div className="relative ml-auto hidden lg:block w-72">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-        <Input
-          placeholder="Cihaz veya kullanıcı ara…"
-          className="pl-10 h-10 bg-white border-brand-ink/10 text-brand-ink text-sm rounded-brand focus-visible:ring-brand-yellow shadow-brand-sm"
-        />
-        <kbd className="absolute right-3 top-1/2 -translate-y-1/2 font-mono text-[10px] font-bold bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded border border-slate-200 pointer-events-none">
-          ⌘K
-        </kbd>
-      </div>
+        {/* User actions */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="w-9 h-9 flex items-center justify-center rounded-md border border-border hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors shrink-0"
+            aria-label="Koyu/Aydınlık Mod"
+          >
+            {mounted && (theme === "dark" ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />)}
+          </button>
 
-      {/* User menu & Actions */}
-      <div className="flex items-center gap-3 shrink-0">
-        <button
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="w-10 h-10 flex items-center justify-center rounded-brand border border-brand-ink/10 hover:bg-brand-ink/5 text-slate-500 hover:text-brand-ink transition-colors shrink-0"
-          aria-label="Koyu/Aydınlık Mod"
-        >
-          {mounted && (theme === "dark" ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />)}
-        </button>
-
-        <button className="relative w-10 h-10 flex items-center justify-center rounded-brand border border-brand-ink/10 hover:bg-brand-ink/5 text-slate-500 hover:text-brand-ink transition-colors shrink-0">
-          <Bell className="w-4.5 h-4.5" />
-          <span className="absolute top-3 right-3 w-2 h-2 bg-brand-yellow rounded-full ring-2 ring-white" />
-        </button>
+          <button className="relative w-9 h-9 flex items-center justify-center rounded-md border border-border hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors shrink-0">
+            <Bell className="w-4.5 h-4.5" />
+            <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-brand-yellow rounded-full ring-2 ring-white dark:ring-card" />
+          </button>
 
         <div className="relative" ref={menuRef}>
           <button

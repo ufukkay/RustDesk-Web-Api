@@ -71,15 +71,15 @@ export function UpdateChecker() {
   };
 
   return (
-    <div className="bg-white dark:bg-card rounded-brand-lg border border-brand-ink/5 dark:border-white/5 shadow-brand-sm overflow-hidden animate-in zoom-in-95 duration-300">
+    <div className="bg-card rounded-brand-lg border border-border shadow-brand-sm overflow-hidden animate-in zoom-in-95 duration-300 max-w-4xl mx-auto">
       {/* Header */}
-      <div className="px-6 py-5 border-b border-brand-ink/5 dark:border-white/5 bg-brand-bg/10 dark:bg-white/5 flex items-center justify-between">
-        <div>
-          <h3 className="font-black text-brand-ink dark:text-white text-sm uppercase tracking-tight">Sistem Bakımı</h3>
-          <p className="text-[11px] text-slate-400 font-bold mt-1 uppercase tracking-wider">GitHub Senkronizasyonu</p>
+      <div className="px-6 py-4 border-b border-border bg-muted/30 flex items-center justify-between">
+        <div className="space-y-0.5">
+          <h3 className="font-semibold text-foreground text-sm">Sistem Güncelleme</h3>
+          <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">GitHub Senkronizasyonu</p>
         </div>
-        <div className="flex items-center gap-2 text-[11px] font-black bg-brand-yellow text-brand-ink px-3 py-1.5 rounded-full shadow-brand-sm ring-1 ring-brand-ink/10">
-          <Zap className="w-3.5 h-3.5 fill-current" />
+        <div className="flex items-center gap-1.5 text-[10px] font-semibold bg-secondary text-foreground px-3 py-1 rounded-full border border-border shadow-sm">
+          <Zap className="w-3 h-3 text-primary" />
           STABİL KANAL
         </div>
       </div>

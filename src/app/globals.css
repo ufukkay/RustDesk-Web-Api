@@ -4,7 +4,7 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
-  /* Theme mapping */
+  /* Google-like Minimalist mapping */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -27,48 +27,60 @@
 
   --color-brand-yellow: #FFCC00;
   --color-brand-ink: #0E1116;
-  --color-brand-bg: #FAFAF7;
   
-  --radius-brand: 10px;
-  --radius-brand-lg: 14px;
+  --radius-brand: 8px;
+  --radius-brand-lg: 12px;
 }
 
 @layer base {
   :root {
-    --background: #FAFAF7;
-    --foreground: #0E1116;
+    --background: #FFFFFF;
+    --foreground: #202124; /* Google Text Color */
+    
     --card: #FFFFFF;
-    --card-foreground: #0E1116;
+    --card-foreground: #202124;
+    
     --popover: #FFFFFF;
-    --popover-foreground: #0E1116;
+    --popover-foreground: #202124;
+    
     --primary: #FFCC00;
     --primary-foreground: #0E1116;
-    --secondary: rgba(14, 17, 22, 0.05);
-    --secondary-foreground: #0E1116;
-    --muted: rgba(14, 17, 22, 0.08);
-    --muted-foreground: #5C6573;
+    
+    --secondary: #F1F3F4; /* Google Secondary BG */
+    --secondary-foreground: #202124;
+    
+    --muted: #F8F9FA;
+    --muted-foreground: #5F6368; /* Google Muted Text */
+    
     --accent: #FFCC00;
     --accent-foreground: #0E1116;
-    --destructive: #B43030;
+    
+    --destructive: #D93025; /* Google Red */
     --destructive-foreground: #FFFFFF;
-    --border: rgba(14, 17, 22, 0.08);
-    --input: rgba(14, 17, 22, 0.08);
+    
+    --border: #DADCE0; /* Google Border Color */
+    --input: #DADCE0;
     --ring: #FFCC00;
   }
 
   .dark {
     --background: #0E1116;
-    --foreground: #FAFAF7;
+    --foreground: #E8EAED;
+    
     --card: #161B22;
-    --card-foreground: #FAFAF7;
+    --card-foreground: #E8EAED;
+    
     --popover: #161B22;
-    --popover-foreground: #FAFAF7;
-    --secondary: rgba(250, 250, 247, 0.05);
-    --secondary-foreground: #FAFAF7;
-    --muted: rgba(250, 250, 247, 0.08);
-    --muted-foreground: #8B92A0;
-    --border: rgba(250, 250, 247, 0.1);
-    --input: rgba(250, 250, 247, 0.1);
+    --popover-foreground: #E8EAED;
+    
+    --secondary: rgba(232, 234, 237, 0.05);
+    --secondary-foreground: #E8EAED;
+    
+    --muted: rgba(232, 234, 237, 0.08);
+    --muted-foreground: #9AA0A6;
+    
+    --border: rgba(232, 234, 237, 0.1);
+    --input: rgba(232, 234, 237, 0.1);
   }
 }
 
@@ -76,20 +88,18 @@
 body {
   background-color: var(--background);
   color: var(--foreground);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
 @utility shadow-brand {
-  box-shadow: 0 4px 14px rgba(14, 17, 22, 0.06);
+  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, .30), 0 1px 3px 1px rgba(60, 64, 67, .15);
 }
 .dark .shadow-brand {
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, .30), 0 1px 3px 1px rgba(0, 0, 0, .15);
 }
 
 @utility shadow-brand-sm {
-  box-shadow: 0 1px 2px rgba(14, 17, 22, 0.04);
-}
-.dark .shadow-brand-sm {
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, .10);
 }
 
 /* Custom RustDesk animations */

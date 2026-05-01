@@ -24,7 +24,7 @@ export interface Technician {
 interface AppState {
   isAuthenticated: boolean;
   user: { name: string; email: string; role: string } | null;
-  login: (username: string, password?: string) => void;
+  login: (username: string) => void;
   logout: () => void;
 
   devices: Device[];
@@ -38,18 +38,6 @@ interface AppState {
   deleteTechnician: (id: string) => void;
 }
 
-const INITIAL_DEVICES: Device[] = [
-  { id: "983214556", name: "MUHASEBE-PC",    os: "Windows 11",   user: "Ayşe Yılmaz",    status: "online",  lastSeen: "Şimdi",       ip: "192.168.1.45", group: "Finans" },
-  { id: "445123998", name: "YAZILIM-MAC",    os: "macOS Sonoma", user: "Ufuk Kaya",       status: "online",  lastSeen: "Şimdi",       ip: "192.168.1.12", group: "IT" },
-  { id: "112998334", name: "DEPO-TERMINAL",  os: "Windows 10",   user: "Depo Görevlisi",  status: "offline", lastSeen: "2 saat önce", ip: "192.168.2.100", group: "Lojistik" },
-  { id: "776543221", name: "SVR-DB-01",      os: "Ubuntu 22.04", user: "Sistem",          status: "online",  lastSeen: "Şimdi",       ip: "10.0.0.5",     group: "Sunucu" },
-];
-
-const INITIAL_TECHNICIANS: Technician[] = [
-  { id: "1", name: "Ufuk Kaya",    email: "ufuk@firma.com",  role: "Admin",     status: "Aktif", lastLogin: "Şimdi" },
-  { id: "2", name: "Ahmet Yılmaz", email: "ahmet@firma.com", role: "Teknisyen", status: "Aktif", lastLogin: "2 saat önce" },
-];
-
 export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
@@ -61,7 +49,7 @@ export const useAppStore = create<AppState>()(
       }),
       logout: () => set({ isAuthenticated: false, user: null }),
 
-      devices: INITIAL_DEVICES,
+      devices: [], // Canlı veri için boşaltıldı
       updateDeviceStatus: (id, status) => set((state) => ({
         devices: state.devices.map(d =>
           d.id === id ? { ...d, status, lastSeen: status === "online" ? "Şimdi" : "Az önce" } : d
@@ -77,7 +65,7 @@ export const useAppStore = create<AppState>()(
       setDevices: (devices) => set({ devices }),
       addDevice: (device) => set((state) => ({ devices: [device, ...state.devices] })),
 
-      technicians: INITIAL_TECHNICIANS,
+      technicians: [], // Canlı veri için boşaltıldı
       addTechnician: (tech) => set((state) => ({ technicians: [...state.technicians, tech] })),
       deleteTechnician: (id) => set((state) => ({ technicians: state.technicians.filter(t => t.id !== id) })),
     }),

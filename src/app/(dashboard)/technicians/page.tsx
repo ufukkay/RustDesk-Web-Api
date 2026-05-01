@@ -35,21 +35,23 @@ export default function TechniciansPage() {
   };
 
   return (
-    <div className="p-8 space-y-6 animate-in fade-in duration-500">
+    <div className="p-8 space-y-8 max-w-[1400px] mx-auto animate-in fade-in duration-500">
       {/* Title & Add */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-black text-brand-ink">Teknisyenler</h1>
-          <p className="text-[11px] text-slate-400 font-bold mt-1 uppercase tracking-wider">Yetkili Kullanıcı Yönetimi</p>
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Teknisyenler</h1>
+          <p className="text-sm text-muted-foreground">Yetkili kullanıcıları yönetin.</p>
         </div>
 
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger render={<Button className="bg-brand-yellow text-brand-ink hover:bg-brand-yellow/90 font-black shadow-brand-sm ring-1 ring-brand-ink/10 h-10 px-5 rounded-brand" />}>
-            <UserPlus className="w-4 h-4 mr-2" /> Yeni Teknisyen
+          <DialogTrigger asChild>
+            <Button className="bg-primary text-primary-foreground font-semibold px-6 rounded-md">
+              <UserPlus className="w-4 h-4 mr-2" /> Yeni Teknisyen
+            </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md bg-white border-brand-ink/10 rounded-brand-lg">
+          <DialogContent className="sm:max-w-md bg-card border-border rounded-lg">
             <DialogHeader>
-              <DialogTitle className="text-brand-ink font-black">Yeni Teknisyen Davet Et</DialogTitle>
+              <DialogTitle className="text-foreground font-semibold">Yeni Teknisyen Davet Et</DialogTitle>
             </DialogHeader>
             <div className="grid gap-5 py-4">
               <div className="space-y-2">
