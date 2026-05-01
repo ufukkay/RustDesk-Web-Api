@@ -8,10 +8,9 @@ DB_PATH = "/home/rd/rustdesk/db_v2.sqlite3"
 def debug_log(msg):
     print(f"DEBUG: {msg}", file=sys.stderr)
 
-# Binary (bytes) verileri JSON'a çevrilebilir hale getiren yardımcı fonksiyon
 def bytes_handler(obj):
     if isinstance(obj, bytes):
-        return obj.hex() # Binary veriyi hex formatında metne çevir
+        return obj.hex()
     return str(obj)
 
 try:
@@ -28,9 +27,15 @@ try:
 
     data = []
     if 'peer' in tables:
-        c.execute("SELECT * FROM peer LIMIT 1000")
-        for r in c.fetchall():
-            # Her satırdaki bytes verileri metne çeviriyoruz
+        c.execute("SELECT * FROM peer LIMIT 500")
+        rows = c.fetchall()
+        
+        if len(rows) > 0:
+            # İLK CİHAZIN VERİLERİNİ TERMİNALE BAS (DEBUG İÇİN)
+            first_row = dict(rows[0])
+            debug_log(f"ÖRNEK CİHAZ VERİSİ: {json.dumps(first_row, default=bytes_handler)}")
+
+        for r in rows:
             row_dict = {}
             for key in r.keys():
                 val = r[key]
@@ -39,12 +44,8 @@ try:
                 else:
                     row_dict[key] = val
             data.append(row_dict)
-        
-        debug_log(f"{len(data)} cihaz verisi başarıyla işlendi.")
 
-    # default=str parametresi ile kalan her şeyi stringe çeviriyoruz (garanti olsun)
     print(json.dumps({'ok': True, 'tables': tables, 'data': data}, default=str))
-
     conn.close()
 except Exception as e:
     debug_log(f"Hata: {str(e)}")
