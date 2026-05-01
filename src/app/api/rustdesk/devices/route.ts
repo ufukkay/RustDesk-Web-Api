@@ -11,7 +11,7 @@ const INFO_FILE = path.join(process.cwd(), "scripts", "device_info.json");
 export async function GET() {
   try {
     const scriptPath = path.join(process.cwd(), "scripts", "read_db.py");
-    const { stdout, stderr } = await execAsync(`python3 "${scriptPath}"`);
+    const { stdout } = await execAsync(`python3 "${scriptPath}"`);
 
     const result = JSON.parse(stdout.trim());
     if (!result.ok) return NextResponse.json([]);
@@ -38,6 +38,21 @@ export async function GET() {
 
       const isOnline = (now - lastHeartbeat) < 90;
 
+      // Yerel ağ bilgilerini işle
+      let localNets: any[] = [];
+      if (extra.local_network_raw) {
+        const ips = typeof extra.local_network_raw === 'string' 
+          ? extra.local_network_raw.split(',') 
+          : extra.local_network_raw;
+          
+        localNets = Array.isArray(ips) ? ips.map((ip: string, i: number) => ({
+          name: `Ağ Kartı ${i + 1}`,
+          ipv4: ip.trim(),
+          mac: "-",
+          mask: "-"
+        })) : [];
+      }
+
       return {
         id: deviceId,
         name: row.hostname || row.id,
@@ -53,13 +68,12 @@ export async function GET() {
         ram: extra.ram || extra.memory || "-",
         disk: extra.disk || extra.storage || "-",
         version: extra.version || "-",
-        // Detaylı Ağ Bilgisi
-        net_details: extra.net_details || []
+        net_details: localNets.length > 0 ? localNets : (extra.net_details || [])
       };
     });
 
     return NextResponse.json(devices);
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json([]);
   }
 }
