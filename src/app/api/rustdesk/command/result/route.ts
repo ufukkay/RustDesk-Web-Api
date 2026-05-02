@@ -6,39 +6,49 @@ const RESULTS_FILE = path.join(process.cwd(), "scripts", "command_results.json")
 
 export async function POST(req: Request) {
   try {
-    const { deviceId, output } = await req.json();
+    const { deviceId, output, isBase64 } = await req.json();
     if (!deviceId) return NextResponse.json({ ok: false });
 
-    let results: Record<string, string> = {};
+    let finalOutput = output;
+    
+    // Eğer veri Base64 ise çöz (Özel karakter sorunlarını önler)
+    if (isBase64) {
+      finalOutput = Buffer.from(output, 'base64').toString('utf-8');
+    }
+
+    let results: Record<string, any> = {};
     if (fs.existsSync(RESULTS_FILE)) {
       try { results = JSON.parse(fs.readFileSync(RESULTS_FILE, "utf-8")); } catch (e) {}
     }
 
-    // Sonucu kaydet (Her cihaz için sadece son terminal çıktısını tutuyoruz)
-    results[String(deviceId)] = output;
+    // Sonucu ve zaman damgasını kaydet
+    results[String(deviceId)] = {
+      output: finalOutput,
+      timestamp: Date.now()
+    };
     
     fs.writeFileSync(RESULTS_FILE, JSON.stringify(results, null, 2));
-    
-    console.log(`[RESULT RECEIVED] Device: ${deviceId}`);
     return NextResponse.json({ ok: true });
   } catch (error) {
     return NextResponse.json({ ok: false });
   }
 }
 
-// Sonucu okumak için GET metodu
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const deviceId = searchParams.get("deviceId");
-  
   if (!deviceId) return NextResponse.json({ output: "" });
 
   if (fs.existsSync(RESULTS_FILE)) {
     try {
       const results = JSON.parse(fs.readFileSync(RESULTS_FILE, "utf-8"));
-      return NextResponse.json({ output: results[String(deviceId)] || "" });
+      const data = results[String(deviceId)];
+      
+      // Eğer sonuç 1 dakikadan eskiyse temiz say
+      if (data && (Date.now() - data.timestamp < 60000)) {
+        return NextResponse.json({ output: data.output });
+      }
     } catch (e) {}
   }
-  
   return NextResponse.json({ output: "" });
 }
