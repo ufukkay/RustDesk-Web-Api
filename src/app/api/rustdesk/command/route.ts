@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     switch (action) {
       case "restart": finalCommand = "shutdown /r /t 5 /f"; break;
       case "shutdown": finalCommand = "shutdown /s /t 5 /f"; break;
-      case "lock": finalCommand = "rundll32.exe user32.dll,LockWorkStation"; break;
+      case "lock": finalCommand = "tsdiscon"; break; // SYSTEM yetkisiyle kilit ekranina atar
       case "refresh": finalCommand = "refresh_info"; break; // Özel kod
       case "terminal": finalCommand = command || ""; break;
     }
