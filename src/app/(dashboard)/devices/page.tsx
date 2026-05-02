@@ -243,7 +243,7 @@ function DeviceRow({ d, onDelete }: { d: Device, onDelete: (id: string, name: st
             {d.os.includes("Windows") ? <Monitor className="w-4.5 h-4.5" /> : d.os.includes("mac") ? <Laptop className="w-4.5 h-4.5" /> : d.os.includes("Android") ? <Smartphone className="w-4.5 h-4.5" /> : <Server className="w-4.5 h-4.5" />}
           </div>
           <Link href={`/devices/${d.id}`} className="hover:opacity-80 transition-opacity">
-            <p className="text-sm font-medium text-foreground">{d.name}</p>
+            <p className="text-sm font-bold text-foreground">{d.name}</p>
             <p className="text-[11px] text-muted-foreground mt-0.5 font-mono">ID: {d.id} · {d.os}</p>
           </Link>
         </div>
