@@ -80,6 +80,22 @@ export async function POST(req: Request) {
         }
         break;
 
+      case "refresh":
+        if (!deviceIp) {
+          result = { success: false, output: "", message: "Cihaz IP bulunamadı." };
+        } else {
+          try {
+            // Uzak cihazda calisacak profesyonel bilgi toplama scripti
+            const collectCmd = `powershell -Command \"$disk = (Get-CimInstance Win32_LogicalDisk | Where-Object {$_.DeviceID -eq 'C:'}); $diskSpace = \\\"{0:N1} GB / {1:N1} GB\\\" -f ($disk.FreeSpace/1GB), ($disk.Size/1GB); $ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object {$_.InterfaceAlias -notlike '*Loopback*'}).IPAddress[0]; $os = (Get-CimInstance Win32_OperatingSystem).Caption; Invoke-RestMethod -Method Post -Uri 'http://192.168.0.184:3000/api/heartbeat' -Body (@{id='${deviceId}'; disk=$diskSpace; ip=$ip; os=$os} | ConvertTo-Json)\"`;
+            
+            execSync(collectCmd, { timeout: 10000 });
+            result = { success: true, output: "Cihaz verileri güncellendi.", message: "Bilgi toplama komutu başarıyla tamamlandı." };
+          } catch (e: any) {
+            result = { success: false, output: "", message: `Veri çekilemedi. Cihazda WinRM/SSH kapalı olabilir.` };
+          }
+        }
+        break;
+
       case "lock":
         if (!deviceIp) {
           result = { success: false, output: "", message: "Cihaz IP bulunamadı." };

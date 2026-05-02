@@ -12,20 +12,33 @@ export async function POST(req: Request) {
 
     if (deviceId) {
       let statusData: Record<string, number> = {};
+      let infoData: Record<string, any> = {};
       
       if (fs.existsSync(STATUS_FILE)) {
-        try {
-          statusData = JSON.parse(fs.readFileSync(STATUS_FILE, "utf-8"));
-        } catch (e) { statusData = {}; }
+        try { statusData = JSON.parse(fs.readFileSync(STATUS_FILE, "utf-8")); } catch (e) {}
+      }
+      if (fs.existsSync(INFO_FILE)) {
+        try { infoData = JSON.parse(fs.readFileSync(INFO_FILE, "utf-8")); } catch (e) {}
       }
 
-      // Bu cihazın son görülme zamanını kaydet (Timestamp)
+      // Kalp atışını kaydet
       statusData[String(deviceId)] = Math.floor(Date.now() / 1000);
       
-      // Dosyaya yaz
-      fs.writeFileSync(STATUS_FILE, JSON.stringify(statusData, null, 2));
+      // Ekstra bilgileri (disk, ip, hostname vb.) kaydet
+      if (!infoData[String(deviceId)]) infoData[String(deviceId)] = {};
       
-      console.log(`[HEARTBEAT] Cihaz aktif: ${deviceId}`);
+      if (body.disk) infoData[String(deviceId)].disk = body.disk;
+      if (body.ip) infoData[String(deviceId)].ip = body.ip;
+      if (body.hostname) infoData[String(deviceId)].hostname = body.hostname;
+      if (body.cpu) infoData[String(deviceId)].cpu = body.cpu;
+      if (body.ram) infoData[String(deviceId)].ram = body.ram;
+      if (body.os) infoData[String(deviceId)].os = body.os;
+
+      // Dosyalara yaz
+      fs.writeFileSync(STATUS_FILE, JSON.stringify(statusData, null, 2));
+      fs.writeFileSync(INFO_FILE, JSON.stringify(infoData, null, 2));
+      
+      console.log(`[HEARTBEAT] Cihaz aktif ve güncellendi: ${deviceId}`);
     }
 
     return NextResponse.json({ ok: true });
