@@ -123,7 +123,7 @@ export default function DeviceDetailsPage() {
                 <p className="opacity-50 mb-2"># RustDesk Remote Management Console v1.0</p>
                 <p className="opacity-50 mb-4"># Bağlantı kuruluyor: {device.id}...</p>
                 <div className="space-y-1">
-                   <p><span className="text-white/40">C:\Users\Admin></span> systeminfo | findstr /B /C:"OS Name"</p>
+                   <p><span className="text-white/40">C:\Users\Admin{">"}</span> systeminfo | findstr /B /C:"OS Name"</p>
                    <p>OS Name:                   {device.os}</p>
                    <p className="animate-pulse">_</p>
                 </div>
