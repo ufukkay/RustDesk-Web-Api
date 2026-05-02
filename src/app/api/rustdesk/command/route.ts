@@ -5,82 +5,94 @@ import path from "path";
 
 const INFO_FILE = path.join(process.cwd(), "scripts", "device_info.json");
 
+function getDeviceIp(deviceId: string): string {
+  let deviceIp = "";
+  
+  // device_info.json'dan IP çek
+  if (fs.existsSync(INFO_FILE)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(INFO_FILE, "utf-8"));
+      const info = data[String(deviceId)];
+      if (info) {
+        deviceIp = (info.ip || "").replace(/^::ffff:/, "");
+      }
+    } catch (e) {}
+  }
+
+  // Veritabanından IP çek (yedek)
+  if (!deviceIp) {
+    try {
+      const dbPath = "/home/rd/rustdesk/db_v2.sqlite3";
+      const output = execSync(`sqlite3 ${dbPath} "SELECT info FROM peer WHERE id='${deviceId}'" 2>/dev/null`).toString().trim();
+      if (output) {
+        const parsed = JSON.parse(output);
+        deviceIp = (parsed.ip || "").replace(/^::ffff:/, "");
+      }
+    } catch (e) {}
+  }
+
+  return deviceIp;
+}
+
 export async function POST(req: Request) {
   try {
     const { deviceId, action, command } = await req.json();
 
     if (!deviceId) {
-      return NextResponse.json({ success: false, message: "Cihaz ID gerekli." });
+      return NextResponse.json({ success: false, message: "Cihaz ID gerekli.", output: "" });
     }
 
-    // Cihaz IP'sini bul
-    let deviceIp = "";
-    if (fs.existsSync(INFO_FILE)) {
-      try {
-        const data = JSON.parse(fs.readFileSync(INFO_FILE, "utf-8"));
-        const info = data[String(deviceId)];
-        if (info) {
-          deviceIp = (info.ip || "").replace(/^::ffff:/, "");
-        }
-      } catch (e) {}
-    }
-
-    // Veritabanından IP çek (yedek)
-    if (!deviceIp) {
-      try {
-        const dbPath = "/home/rd/rustdesk/db_v2.sqlite3";
-        const output = execSync(`sqlite3 ${dbPath} "SELECT info FROM peer WHERE id='${deviceId}'" 2>/dev/null`).toString().trim();
-        if (output) {
-          const parsed = JSON.parse(output);
-          deviceIp = (parsed.ip || "").replace(/^::ffff:/, "");
-        }
-      } catch (e) {}
-    }
-
-    if (!deviceIp) {
-      return NextResponse.json({ 
-        success: false, 
-        message: `Cihaz IP adresi bulunamadı. Cihaz çevrimdışı olabilir.` 
-      });
-    }
+    const deviceIp = getDeviceIp(deviceId);
 
     let result = { success: false, output: "", message: "" };
 
     switch (action) {
       case "restart":
-        // Windows: shutdown /r /t 5 /f
-        try {
-          const output = execSync(
-            `ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${deviceIp} "shutdown /r /t 5 /f" 2>&1 || echo "SSH bağlantısı kurulamadı. Alternatif: RustDesk üzerinden bağlanıp komutu çalıştırın."`,
-            { timeout: 10000 }
-          ).toString();
-          result = { success: true, output, message: `${deviceId} yeniden başlatılıyor...` };
-        } catch (e: any) {
-          result = { success: false, output: "", message: `Yeniden başlatma komutu gönderilemedi. Alternatif: Uzaktan bağlanıp komutu elle çalıştırın.` };
+        if (!deviceIp) {
+          result = { success: false, output: "", message: "Cihaz IP bulunamadı." };
+        } else {
+          // Önce SSH dene, başarısız olursa bilgilendir
+          try {
+            const output = execSync(
+              `ssh -o StrictHostKeyChecking=no -o ConnectTimeout=3 ${deviceIp} "shutdown /r /t 5 /f" 2>&1`,
+              { timeout: 8000 }
+            ).toString();
+            result = { success: true, output, message: "Yeniden başlatma komutu gönderildi." };
+          } catch (e) {
+            result = { success: false, output: "", message: `SSH bağlantısı kurulamadı (${deviceIp}). Cihazda OpenSSH etkin olmayabilir. RustDesk üzerinden bağlanıp komutu elle çalıştırabilirsiniz.` };
+          }
         }
         break;
 
       case "shutdown":
-        try {
-          const output = execSync(
-            `ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${deviceIp} "shutdown /s /t 5 /f" 2>&1 || echo "SSH bağlantısı kurulamadı."`,
-            { timeout: 10000 }
-          ).toString();
-          result = { success: true, output, message: `${deviceId} kapatılıyor...` };
-        } catch (e: any) {
-          result = { success: false, output: "", message: `Kapatma komutu gönderilemedi.` };
+        if (!deviceIp) {
+          result = { success: false, output: "", message: "Cihaz IP bulunamadı." };
+        } else {
+          try {
+            const output = execSync(
+              `ssh -o StrictHostKeyChecking=no -o ConnectTimeout=3 ${deviceIp} "shutdown /s /t 5 /f" 2>&1`,
+              { timeout: 8000 }
+            ).toString();
+            result = { success: true, output, message: "Kapatma komutu gönderildi." };
+          } catch (e) {
+            result = { success: false, output: "", message: `SSH bağlantısı kurulamadı (${deviceIp}). RustDesk üzerinden bağlanıp komutu elle çalıştırabilirsiniz.` };
+          }
         }
         break;
 
       case "lock":
-        try {
-          const output = execSync(
-            `ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${deviceIp} "rundll32.exe user32.dll,LockWorkStation" 2>&1 || echo "SSH bağlantısı kurulamadı."`,
-            { timeout: 10000 }
-          ).toString();
-          result = { success: true, output, message: `${deviceId} ekranı kilitleniyor...` };
-        } catch (e: any) {
-          result = { success: false, output: "", message: `Kilitleme komutu gönderilemedi.` };
+        if (!deviceIp) {
+          result = { success: false, output: "", message: "Cihaz IP bulunamadı." };
+        } else {
+          try {
+            const output = execSync(
+              `ssh -o StrictHostKeyChecking=no -o ConnectTimeout=3 ${deviceIp} "rundll32.exe user32.dll,LockWorkStation" 2>&1`,
+              { timeout: 8000 }
+            ).toString();
+            result = { success: true, output, message: "Ekran kilitleme komutu gönderildi." };
+          } catch (e) {
+            result = { success: false, output: "", message: `SSH bağlantısı kurulamadı (${deviceIp}).` };
+          }
         }
         break;
 
@@ -89,16 +101,132 @@ export async function POST(req: Request) {
           result = { success: false, output: "", message: "Komut belirtilmedi." };
           break;
         }
+
+        const cmd = command.trim();
+
+        // Güvenli komut listesi - tehlikeli komutları engelle
+        const dangerousPatterns = ["rm -rf", "mkfs", "dd if=", ":(){ :|:", "> /dev/"];
+        if (dangerousPatterns.some(p => cmd.toLowerCase().includes(p))) {
+          result = { success: false, output: "", message: "Bu komut güvenlik nedeniyle engellendi." };
+          break;
+        }
+
+        // Özel komutlar
+        if (cmd.startsWith("ping ") && !cmd.includes(deviceIp)) {
+          // Normal ping komutu
+          try {
+            const output = execSync(`${cmd} -c 4 2>&1`, { timeout: 15000 }).toString();
+            result = { success: true, output, message: "" };
+          } catch (e: any) {
+            result = { success: true, output: e.stdout?.toString() || "Ping başarısız.", message: "" };
+          }
+          break;
+        }
+
+        if (cmd === "ping" || cmd === "ping device") {
+          // Cihaza ping at
+          if (deviceIp) {
+            try {
+              const output = execSync(`ping -c 4 ${deviceIp} 2>&1`, { timeout: 15000 }).toString();
+              result = { success: true, output: `Hedef: ${deviceIp}\n${output}`, message: "" };
+            } catch (e: any) {
+              result = { success: true, output: e.stdout?.toString() || `${deviceIp} adresine ulaşılamıyor.`, message: "" };
+            }
+          } else {
+            result = { success: false, output: "", message: "Cihaz IP bulunamadı." };
+          }
+          break;
+        }
+
+        if (cmd === "status" || cmd === "durum") {
+          // Sistem durumu
+          try {
+            const uptime = execSync("uptime 2>&1").toString().trim();
+            const memory = execSync("free -h 2>&1 | head -3").toString().trim();
+            const disk = execSync("df -h / 2>&1 | tail -1").toString().trim();
+            const hbbs = execSync("systemctl is-active rustdesk-hbbs 2>&1").toString().trim();
+            const hbbr = execSync("systemctl is-active rustdesk-hbbr 2>&1").toString().trim();
+            
+            result = { 
+              success: true, 
+              output: `=== SUNUCU DURUMU ===\n\nUptime: ${uptime}\n\nBellek:\n${memory}\n\nDisk: ${disk}\n\nHBBS: ${hbbs}\nHBBR: ${hbbr}`,
+              message: "" 
+            };
+          } catch (e: any) {
+            result = { success: true, output: e.stdout?.toString() || "Durum alınamadı.", message: "" };
+          }
+          break;
+        }
+
+        if (cmd === "help" || cmd === "yardım") {
+          result = {
+            success: true,
+            output: `
+╔══════════════════════════════════════════════╗
+║        RustDesk Yönetim Terminali           ║
+╠══════════════════════════════════════════════╣
+║                                              ║
+║  ÖZEL KOMUTLAR:                              ║
+║  ─────────────────────────────────────────   ║
+║  help / yardım    → Bu yardım mesajı        ║
+║  status / durum   → Sunucu durumu            ║
+║  ping             → Cihaza ping at           ║
+║  ping <ip>        → Belirli IP'ye ping at    ║
+║  ports            → Port durumları           ║
+║  services         → Servis durumları         ║
+║  logs             → Son hbbs logları         ║
+║                                              ║
+║  SUNUCU KOMUTLARI:                           ║
+║  ─────────────────────────────────────────   ║
+║  Standart Linux komutları çalıştırılabilir:  ║
+║  ls, cat, top, df, free, netstat, vb.        ║
+║                                              ║
+╚══════════════════════════════════════════════╝`,
+            message: ""
+          };
+          break;
+        }
+
+        if (cmd === "ports") {
+          try {
+            const output = execSync("ss -tulpn | grep -E '21115|21116|21117|21118|21119|3000' 2>&1").toString();
+            result = { success: true, output: `=== AKTİF PORTLAR ===\n${output}`, message: "" };
+          } catch (e: any) {
+            result = { success: true, output: e.stdout?.toString() || "Port bilgisi alınamadı.", message: "" };
+          }
+          break;
+        }
+
+        if (cmd === "services" || cmd === "servisler") {
+          try {
+            const hbbs = execSync("systemctl status rustdesk-hbbs --no-pager -l 2>&1 | head -10").toString();
+            const hbbr = execSync("systemctl status rustdesk-hbbr --no-pager -l 2>&1 | head -10").toString();
+            result = { success: true, output: `=== HBBS ===\n${hbbs}\n=== HBBR ===\n${hbbr}`, message: "" };
+          } catch (e: any) {
+            result = { success: true, output: e.stdout?.toString() || "Servis bilgisi alınamadı.", message: "" };
+          }
+          break;
+        }
+
+        if (cmd === "logs") {
+          try {
+            const output = execSync("journalctl -u rustdesk-hbbs --no-pager -n 20 2>&1").toString();
+            result = { success: true, output: `=== SON HBBS LOGLARI ===\n${output}`, message: "" };
+          } catch (e: any) {
+            result = { success: true, output: e.stdout?.toString() || "Log alınamadı.", message: "" };
+          }
+          break;
+        }
+
+        // Genel sunucu komutu çalıştır
         try {
-          const output = execSync(
-            `ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${deviceIp} "${command.replace(/"/g, '\\"')}" 2>&1`,
-            { timeout: 15000 }
-          ).toString();
-          result = { success: true, output: output || "(Çıktı yok)", message: "Komut başarıyla çalıştırıldı." };
+          const output = execSync(`${cmd} 2>&1`, { timeout: 15000, cwd: "/home/rd" }).toString();
+          result = { success: true, output: output || "(Çıktı yok)", message: "" };
         } catch (e: any) {
+          const errOutput = e.stdout?.toString() || e.stderr?.toString() || "";
           result = { 
             success: false, 
-            output: e.stdout?.toString() || e.stderr?.toString() || "Komut çalıştırılamadı. SSH bağlantısı mevcut olmayabilir.", 
+            output: errOutput || `Komut çalıştırılamadı: ${cmd}`, 
             message: "Komut hatası." 
           };
         }
@@ -108,10 +236,9 @@ export async function POST(req: Request) {
         result = { success: false, output: "", message: `Bilinmeyen aksiyon: ${action}` };
     }
 
-    // Log kaydet
-    console.log(`[COMMAND] Device: ${deviceId}, IP: ${deviceIp}, Action: ${action}, Success: ${result.success}`);
-    
+    console.log(`[COMMAND] Device: ${deviceId}, Action: ${action}, Success: ${result.success}`);
     return NextResponse.json(result);
+
   } catch (error) {
     console.error("Command API Error:", error);
     return NextResponse.json({ success: false, message: "Sunucu hatası.", output: "" });
