@@ -67,13 +67,22 @@ export default function DeviceDetailsPage() {
 
         // Sonucu beklemek için pollamaya başla
         let attempts = 0;
+        const maxAttempts = 30; // 30 saniye bekle
         const pollInterval = setInterval(async () => {
           attempts++;
+          
+          setTerminalHistory(prev => {
+            const newHistory = [...prev];
+            const lastIdx = newHistory.length - 1;
+            newHistory[lastIdx].output = `Komut kuyruğa alındı, cihazdan yanıt bekleniyor... (${attempts}/${maxAttempts})`;
+            return newHistory;
+          });
+
           try {
             const resRes = await fetch(`/api/rustdesk/command/result?deviceId=${device.id}`);
             const resData = await resRes.json();
             
-            if (resData.output && attempts < 15) {
+            if (resData.output && attempts < maxAttempts) {
               setTerminalHistory(prev => {
                 const newHistory = [...prev];
                 const lastIdx = newHistory.length - 1;
@@ -88,17 +97,17 @@ export default function DeviceDetailsPage() {
             }
           } catch (e) {}
 
-          if (attempts >= 15) {
+          if (attempts >= maxAttempts) {
             setTerminalHistory(prev => {
               const newHistory = [...prev];
               const lastIdx = newHistory.length - 1;
-              newHistory[lastIdx].output = "Zaman aşımı: Cihazdan yanıt gelmedi.";
+              newHistory[lastIdx].output = "Zaman aşımı: Cihazdan yanıt gelmedi. Lütfen cihazın internet bağlantısını ve agent durumunu kontrol edin.";
               newHistory[lastIdx].status = "error";
               return newHistory;
             });
             clearInterval(pollInterval);
           }
-        }, 2000);
+        }, 1000);
       }
       
       setActionStatus(prev => ({ ...prev, [action]: data.success ? "success" : "error" }));

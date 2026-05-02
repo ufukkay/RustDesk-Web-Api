@@ -10,10 +10,12 @@ export async function POST(req: Request) {
     if (!deviceId) return NextResponse.json({ ok: false });
 
     let finalOutput = output;
-    
-    // Eğer veri Base64 ise çöz (Özel karakter sorunlarını önler)
-    if (isBase64) {
-      finalOutput = Buffer.from(output, 'base64').toString('utf-8');
+    if (isBase64 && output) {
+      try {
+        finalOutput = Buffer.from(output, 'base64').toString('utf-8');
+      } catch (e) {
+        console.error("Base64 decode error:", e);
+      }
     }
 
     let results: Record<string, any> = {};
@@ -21,13 +23,12 @@ export async function POST(req: Request) {
       try { results = JSON.parse(fs.readFileSync(RESULTS_FILE, "utf-8")); } catch (e) {}
     }
 
-    // Sonucu ve zaman damgasını kaydet
     results[String(deviceId)] = {
-      output: finalOutput,
+      output: finalOutput || "Komut calistirildi ama cikti bos.",
       timestamp: Date.now()
     };
     
-    console.log(`[RESULT RECEIVED] Device: ${deviceId}, Length: ${finalOutput.length}`);
+    console.log(`[RESULT] Device ${deviceId} sent ${finalOutput?.length || 0} chars`);
     fs.writeFileSync(RESULTS_FILE, JSON.stringify(results, null, 2));
     return NextResponse.json({ ok: true });
   } catch (error) {
@@ -45,9 +46,15 @@ export async function GET(req: Request) {
       const results = JSON.parse(fs.readFileSync(RESULTS_FILE, "utf-8"));
       const data = results[String(deviceId)];
       
-      // Eğer sonuç 1 dakikadan eskiyse temiz say
-      if (data && (Date.now() - data.timestamp < 60000)) {
-        return NextResponse.json({ output: data.output });
+      if (data) {
+        // Eğer data bir objeyse output'u al, değilse direkt kendisini al (Geriye dönük uyumluluk)
+        const output = typeof data === 'object' ? data.output : data;
+        const timestamp = typeof data === 'object' ? data.timestamp : Date.now();
+
+        // Sadece son 2 dakika içindeki sonuçları göster (Karışıklığı önler)
+        if (Date.now() - timestamp < 120000) {
+          return NextResponse.json({ output: output });
+        }
       }
     } catch (e) {}
   }
