@@ -70,8 +70,8 @@ export default function DashboardPage() {
                       {d.os.includes("Windows") ? <Monitor className="w-4.5 h-4.5" /> : d.os.includes("mac") ? <Laptop className="w-4.5 h-4.5" /> : <Server className="w-4.5 h-4.5" />}
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-foreground">{d.name}</p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5 font-mono">ID: {d.id} · {d.os}</p>
+                      <p className="text-sm font-bold text-foreground">ID: {d.id}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 font-mono">{d.name} · {d.os}</p>
                     </div>
                   </div>
                   <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium ${
