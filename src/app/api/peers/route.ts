@@ -25,8 +25,9 @@ export async function GET() {
       try { hardwareInfo = JSON.parse(fs.readFileSync(INFO_FILE, "utf-8")); } catch (e) {}
     }
 
-    // 3. RustDesk uygulamasının (Desktop) beklediği formatta peers listesi hazırla
-    const peers = devices.map((row: any) => {
+    const deviceList = Array.isArray(devices.data) ? devices.data : [];
+
+    const peers = deviceList.map((row: any) => {
       const deviceId = String(row.id);
       const extra = hardwareInfo[deviceId] || {};
       

@@ -21,7 +21,9 @@ export async function GET() {
       try { hardwareInfo = JSON.parse(fs.readFileSync(INFO_FILE, "utf-8")); } catch (e) {}
     }
 
-    const peers = devices.map((row: any) => ({
+    const deviceList = Array.isArray(devices.data) ? devices.data : [];
+
+    const peers = deviceList.map((row: any) => ({
       id: String(row.id),
       username: row.username || "-",
       hostname: row.hostname || "-",

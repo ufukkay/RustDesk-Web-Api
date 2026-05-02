@@ -28,7 +28,9 @@ export async function GET() {
 
     const now = Math.floor(Date.now() / 1000);
 
-    const devices = result.data.map((row: any) => {
+    const deviceList = Array.isArray(result.data) ? result.data : [];
+
+    const devices = deviceList.map((row: any) => {
       const deviceId = String(row.id);
       const lastHeartbeat = onlineStatus[deviceId] || 0;
       const extra = hardwareInfo[deviceId] || {};
