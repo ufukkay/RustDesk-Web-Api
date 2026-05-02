@@ -218,15 +218,50 @@ export async function POST(req: Request) {
           break;
         }
 
+        // Windows → Linux komut çevirisi
+        const winToLinux: Record<string, string> = {
+          "ipconfig": "ip -4 addr show | grep -E 'inet |^[0-9]' | awk '{print $0}'",
+          "ipconfig /all": "ip addr show",
+          "ipconfig/all": "ip addr show",
+          "tasklist": "ps aux --sort=-%mem | head -30",
+          "tasklist /svc": "ps aux --sort=-%mem",
+          "systeminfo": "hostnamectl && echo '' && uname -a && echo '' && free -h && echo '' && df -h /",
+          "dir": "ls -la /home/rd",
+          "dir /s": "ls -laR /home/rd",
+          "cls": "clear",
+          "whoami": "whoami",
+          "hostname": "hostname",
+          "netstat": "ss -tulpn",
+          "netstat -ano": "ss -tulpn",
+          "netstat -an": "ss -an | head -40",
+          "net user": "cat /etc/passwd | grep -v nologin | grep -v false",
+          "ver": "uname -a",
+          "type nul": "echo ''",
+          "echo %username%": "echo $USER",
+          "echo %computername%": "hostname",
+          "set": "env | sort | head -40",
+          "date": "date",
+          "time": "date +%T",
+          "shutdown /r /t 0": "echo 'Sunucu yeniden başlatma portaldan engellendi.'",
+          "shutdown /s /t 0": "echo 'Sunucu kapatma portaldan engellendi.'",
+          "sc query": "systemctl list-units --type=service --state=running | head -30",
+          "diskpart": "echo 'diskpart Linux üzerinde desteklenmemektedir. Bunun yerine: lsblk'",
+        };
+
+        // Çeviri varsa uygula, yoksa direkt çalıştır
+        const translatedCmd = winToLinux[cmd.toLowerCase()] || winToLinux[cmd] || cmd;
+        const wasTranslated = translatedCmd !== cmd;
+
         // Genel sunucu komutu çalıştır
         try {
-          const output = execSync(`${cmd} 2>&1`, { timeout: 15000, cwd: "/home/rd" }).toString();
-          result = { success: true, output: output || "(Çıktı yok)", message: "" };
+          const output = execSync(`${translatedCmd} 2>&1`, { timeout: 15000, cwd: "/home/rd" }).toString();
+          const prefix = wasTranslated ? `[Windows komutu algılandı: "${cmd}" → Linux karşılığı çalıştırıldı]\n\n` : "";
+          result = { success: true, output: prefix + (output || "(Çıktı yok)"), message: "" };
         } catch (e: any) {
           const errOutput = e.stdout?.toString() || e.stderr?.toString() || "";
           result = { 
             success: false, 
-            output: errOutput || `Komut çalıştırılamadı: ${cmd}`, 
+            output: errOutput || `Komut çalıştırılamadı: ${cmd}\nİpucu: "help" yazarak desteklenen komutları görebilirsiniz.`, 
             message: "Komut hatası." 
           };
         }
