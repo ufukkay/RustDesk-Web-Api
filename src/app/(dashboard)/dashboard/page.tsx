@@ -109,7 +109,7 @@ export default function DashboardPage() {
                   <p className="text-[13px] text-foreground leading-tight">
                     <span className="font-semibold">{a.name}</span> <span className="text-muted-foreground">{a.action}</span>
                   </p>
-                  <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-tight">{a.time}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1 tracking-tight">{a.time}</p>
                 </div>
               </div>
             ))}

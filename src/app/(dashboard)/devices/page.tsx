@@ -183,11 +183,11 @@ export default function DevicesPage() {
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-muted/30 border-b border-border">
-                  <th className="px-6 py-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Durum</th>
-                  <th className="px-6 py-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Cihaz</th>
-                  <th className="px-6 py-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Kullanıcı</th>
-                  <th className="px-6 py-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Grup</th>
-                  <th className="px-6 py-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider text-right">İşlem</th>
+                  <th className="px-6 py-4 text-[11px] font-semibold text-muted-foreground tracking-wider">Durum</th>
+                  <th className="px-6 py-4 text-[11px] font-semibold text-muted-foreground tracking-wider">Cihaz</th>
+                  <th className="px-6 py-4 text-[11px] font-semibold text-muted-foreground tracking-wider">Kullanıcı</th>
+                  <th className="px-6 py-4 text-[11px] font-semibold text-muted-foreground tracking-wider">Grup</th>
+                  <th className="px-6 py-4 text-[11px] font-semibold text-muted-foreground tracking-wider text-right">İşlem</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -205,7 +205,7 @@ export default function DevicesPage() {
             <div key={groupName} className="space-y-3">
               <div className="flex items-center gap-2 px-1">
                 <ChevronRight className="w-4 h-4 text-primary" />
-                <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">{groupName}</h2>
+                <h2 className="text-sm font-semibold text-foreground tracking-wider">{groupName}</h2>
                 <span className="text-xs text-muted-foreground">({groupDevices.length})</span>
               </div>
               <div className="bg-card rounded-brand-lg border border-border shadow-sm overflow-hidden">
