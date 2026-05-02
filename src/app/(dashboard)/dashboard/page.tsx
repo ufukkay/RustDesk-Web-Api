@@ -9,10 +9,18 @@ import { Button } from "@/components/ui/button";
 export default function DashboardPage() {
   const { devices, technicians, fetchDevices } = useAppStore();
   const [serverKey, setServerKey] = useState("Yükleniyor...");
+  const [health, setHealth] = useState({ hbbs: "...", hbbr: "..." });
 
   useEffect(() => {
     fetchDevices();
-    const interval = setInterval(() => fetchDevices(), 10000);
+    const interval = setInterval(() => {
+      fetchDevices();
+      // Servis durumunu çek
+      fetch("/api/system/health")
+        .then(res => res.json())
+        .then(data => setHealth(data))
+        .catch(() => setHealth({ hbbs: "Hata", hbbr: "Hata" }));
+    }, 10000);
     
     // Sunucu anahtarını çek
     fetch("/api/rustdesk/server-key")
@@ -27,9 +35,9 @@ export default function DashboardPage() {
   
   const stats = [
     { label: "Toplam Cihaz", value: devices.length, icon: Monitor, color: "text-blue-500", bg: "bg-blue-500/10" },
-    { label: "Çevrimiçi", value: online, icon: Activity, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-    { label: "Teknisyenler", value: technicians.length, icon: Users, color: "text-amber-500", bg: "bg-amber-500/10" },
-    { label: "Sistem Yükü", value: "%12", icon: Database, color: "text-purple-500", bg: "bg-purple-500/10" },
+    { label: "Online", value: online, icon: Activity, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+    { label: "HBBS (ID Servis)", value: health.hbbs, icon: Server, color: health.hbbs === "Çalışıyor" ? "text-emerald-500" : "text-red-500", bg: health.hbbs === "Çalışıyor" ? "bg-emerald-500/10" : "bg-red-500/10" },
+    { label: "HBBR (Relay)", value: health.hbbr, icon: Database, color: health.hbbr === "Çalışıyor" ? "text-emerald-500" : "text-red-500", bg: health.hbbr === "Çalışıyor" ? "bg-emerald-500/10" : "bg-red-500/10" },
   ];
 
   return (
