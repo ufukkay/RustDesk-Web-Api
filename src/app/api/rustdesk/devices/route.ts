@@ -66,6 +66,7 @@ export async function GET() {
           ? new Date(lastHeartbeat * 1000).toLocaleString("tr-TR") 
           : "Bilinmiyor",
         group: row.note || "Genel",
+        network: extra.network || [],
         cpu: extra.cpu || "-",
         ram: extra.ram || extra.memory || "-",
         disk: extra.disk || extra.storage || "-",
