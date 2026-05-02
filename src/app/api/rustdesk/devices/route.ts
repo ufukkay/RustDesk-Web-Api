@@ -55,7 +55,7 @@ export async function GET() {
 
       return {
         id: deviceId,
-        name: row.hostname || row.id,
+        name: row.hostname || sqliteInfo.hostname || row.username || row.id,
         ip: extra.ip || sqliteInfo.ip || row.ip || "-",
         os: extra.os || row.os || "Windows",
         user: extra.standard_user || row.user || row.username || "-",
