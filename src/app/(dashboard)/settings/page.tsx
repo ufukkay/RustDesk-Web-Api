@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Server, Mail, Save, ShieldCheck, MailCheck, AlertCircle, History, Layout, Globe, Key } from "lucide-react";
+import { Server, Mail, Save, ShieldCheck, MailCheck, AlertCircle, History, Layout, Globe, Key, Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { UpdateChecker } from "@/components/UpdateChecker";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ export default function SettingsPage() {
   const { serverConfig, setServerConfig } = useAppStore();
   const [activeTab, setActiveTab] = useState<Tab>("server");
   const [isSaving, setIsSaving] = useState(false);
+  const [showToken, setShowToken] = useState(false);
   
   const [localServer, setLocalServer] = useState(serverConfig);
 
@@ -100,15 +101,22 @@ export default function SettingsPage() {
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs font-semibold text-muted-foreground uppercase">API Token / Key (Opsiyonel)</Label>
-                      <div className="relative">
-                        <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <div className="relative group">
+                        <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                         <Input 
-                          type="password"
+                          type={showToken ? "text" : "password"}
                           value={localServer.token} 
                           onChange={e => setLocalServer({...localServer, token: e.target.value})}
-                          className="bg-secondary/50 border-border h-10 pl-10" 
+                          className="bg-secondary/50 border-border h-10 pl-10 pr-10 focus:bg-card transition-all" 
                           placeholder="API Anahtarı"
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowToken(!showToken)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
                       </div>
                     </div>
                   </div>
