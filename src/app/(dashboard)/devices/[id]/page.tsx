@@ -61,9 +61,44 @@ export default function DeviceDetailsPage() {
       if (action === "terminal" && command) {
         setTerminalHistory(prev => [...prev, {
           cmd: command,
-          output: data.output || data.message || "Komut gönderildi.",
-          status: data.success ? "success" : "error"
+          output: "Komut kuyruğa alındı, cihazdan yanıt bekleniyor...",
+          status: "idle"
         }]);
+
+        // Sonucu beklemek için pollamaya başla
+        let attempts = 0;
+        const pollInterval = setInterval(async () => {
+          attempts++;
+          try {
+            const resRes = await fetch(`/api/rustdesk/command/result?deviceId=${device.id}`);
+            const resData = await resRes.json();
+            
+            if (resData.output && attempts < 15) {
+              setTerminalHistory(prev => {
+                const newHistory = [...prev];
+                const lastIdx = newHistory.length - 1;
+                newHistory[lastIdx] = {
+                  cmd: command,
+                  output: resData.output,
+                  status: "success"
+                };
+                return newHistory;
+              });
+              clearInterval(pollInterval);
+            }
+          } catch (e) {}
+
+          if (attempts >= 15) {
+            setTerminalHistory(prev => {
+              const newHistory = [...prev];
+              const lastIdx = newHistory.length - 1;
+              newHistory[lastIdx].output = "Zaman aşımı: Cihazdan yanıt gelmedi.";
+              newHistory[lastIdx].status = "error";
+              return newHistory;
+            });
+            clearInterval(pollInterval);
+          }
+        }, 2000);
       }
       
       setActionStatus(prev => ({ ...prev, [action]: data.success ? "success" : "error" }));
