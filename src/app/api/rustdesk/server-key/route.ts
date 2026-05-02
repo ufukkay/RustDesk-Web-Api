@@ -4,6 +4,7 @@ import fs from "fs";
 export async function GET() {
   try {
     const keyPaths = [
+      "/home/rd/rustdesk/id_ed25519.pub",
       "/var/lib/rustdesk-server/id_ed25519.pub",
       "/root/rustdesk/id_ed25519.pub",
       "./id_ed25519.pub"
