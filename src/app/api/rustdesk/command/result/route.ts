@@ -27,6 +27,7 @@ export async function POST(req: Request) {
       timestamp: Date.now()
     };
     
+    console.log(`[RESULT RECEIVED] Device: ${deviceId}, Length: ${finalOutput.length}`);
     fs.writeFileSync(RESULTS_FILE, JSON.stringify(results, null, 2));
     return NextResponse.json({ ok: true });
   } catch (error) {
