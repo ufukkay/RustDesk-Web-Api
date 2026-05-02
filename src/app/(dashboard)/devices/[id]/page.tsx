@@ -5,7 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { 
   Monitor, Cpu, Database, HardDrive, Activity, 
   ArrowLeft, Play, Shield, Calendar, Clock, 
-  User as UserIcon, Globe, Smartphone, Laptop, Server 
+  User as UserIcon, Globe, Smartphone, Laptop, Server,
+  RotateCcw, Power, Lock, Terminal, FileText, Send, RefreshCw, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
@@ -86,8 +87,8 @@ export default function DeviceDetailsPage() {
       {/* Main Grid */}
       <div className="grid lg:grid-cols-3 gap-8">
         
-        {/* Left Column: Stats Cards */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* Left Column: Stats & System */}
+        <div className="lg:col-span-2 space-y-8">
           <div className="grid sm:grid-cols-2 gap-4">
             {stats.map((s, i) => (
               <div key={i} className="bg-card border border-border p-6 rounded-brand-lg shadow-sm hover:shadow-brand transition-all group">
@@ -100,6 +101,44 @@ export default function DeviceDetailsPage() {
                 <p className="text-lg font-bold text-foreground leading-tight">{s.value}</p>
               </div>
             ))}
+          </div>
+
+          {/* Remote Terminal / Command Center */}
+          <div className="bg-brand-ink rounded-brand-lg overflow-hidden shadow-2xl border border-white/5">
+            <div className="px-6 py-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Terminal className="w-4 h-4 text-brand-yellow" />
+                <h3 className="font-black text-xs uppercase tracking-widest text-white/80">Uzak Terminal (Shell)</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1">
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-amber-500/50" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/50" />
+                </div>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="bg-black/40 rounded-md p-4 h-[200px] font-mono text-xs text-emerald-500 overflow-y-auto border border-white/5 custom-scrollbar">
+                <p className="opacity-50 mb-2"># RustDesk Remote Management Console v1.0</p>
+                <p className="opacity-50 mb-4"># Bağlantı kuruluyor: {device.id}...</p>
+                <div className="space-y-1">
+                   <p><span className="text-white/40">C:\Users\Admin></span> systeminfo | findstr /B /C:"OS Name"</p>
+                   <p>OS Name:                   {device.os}</p>
+                   <p className="animate-pulse">_</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  placeholder="Komut yazın (örn: shutdown /r, tasklist...)" 
+                  className="flex-1 bg-white/5 border border-white/10 rounded-md px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-yellow/50 transition-colors"
+                />
+                <Button className="bg-brand-yellow text-brand-ink font-black hover:bg-brand-yellow/90">
+                  <Send className="w-4 h-4 mr-2" /> Çalıştır
+                </Button>
+              </div>
+            </div>
           </div>
 
           {/* System Details Section */}
@@ -118,20 +157,30 @@ export default function DeviceDetailsPage() {
           </div>
         </div>
 
-        {/* Right Column: Sidebar info */}
+        {/* Right Column: RMM Actions */}
         <div className="space-y-6">
-          <div className="bg-brand-ink text-white p-8 rounded-brand-lg shadow-brand relative overflow-hidden">
-            <div className="relative z-10">
-              <h3 className="text-xl font-black mb-2">Hızlı Destek</h3>
-              <p className="text-white/60 text-sm font-medium mb-6">Bu cihaza anında bağlanarak müdahale edebilirsiniz.</p>
-              <Button className="w-full bg-brand-yellow text-brand-ink font-black hover:bg-brand-yellow/90">
-                Bağlantı Talebi Gönder
+          {/* Quick Power Actions */}
+          <div className="bg-card border border-border rounded-brand-lg p-6 space-y-6 shadow-sm">
+            <h3 className="font-black text-xs uppercase tracking-widest text-brand-ink/70 border-b border-border pb-4">Yönetim Aksiyonları</h3>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <ActionButton icon={RotateCcw} label="Yeniden Başlat" color="hover:text-blue-600 hover:bg-blue-50" />
+              <ActionButton icon={Power} label="Kapat" color="hover:text-red-600 hover:bg-red-50" />
+              <ActionButton icon={Lock} label="Ekranı Kilitle" color="hover:text-amber-600 hover:bg-amber-50" />
+              <ActionButton icon={RefreshCw} label="Verileri Güncelle" color="hover:text-emerald-600 hover:bg-emerald-50" />
+            </div>
+
+            <div className="space-y-3 pt-4 border-t border-border">
+              <Button variant="outline" className="w-full justify-start font-bold text-xs h-11 border-dashed hover:border-primary hover:text-primary transition-all">
+                <FileText className="w-4 h-4 mr-3" /> Dosya Gönder
+              </Button>
+              <Button variant="outline" className="w-full justify-start font-bold text-xs h-11 border-dashed hover:border-primary hover:text-primary transition-all">
+                <Activity className="w-4 h-4 mr-3" /> Süreçleri İzle (TaskMgr)
               </Button>
             </div>
-            {/* Decoration */}
-            <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-brand-yellow/10 rounded-full blur-3xl" />
           </div>
 
+          {/* Connection Security info */}
           <div className="bg-card border border-border p-6 rounded-brand-lg space-y-4">
             <h3 className="font-black text-[10px] uppercase tracking-widest text-muted-foreground">Bağlantı Güvenliği</h3>
             <div className="flex items-center gap-3 p-3 bg-emerald-500/5 rounded-lg border border-emerald-500/10">
@@ -163,9 +212,7 @@ export default function DeviceDetailsPage() {
                     </div>
                     <div className="grid grid-cols-1 gap-2">
                       <NetInfoRow label="IPv4" value={net.ip || net.ipv4 || "-"} />
-                      <NetInfoRow label="IPv6" value={net.ipv6 || "-"} />
                       <NetInfoRow label="MAC" value={net.mac || "-"} />
-                      <NetInfoRow label="Subnet" value={net.mask || net.subnet || "-"} />
                     </div>
                   </div>
                 ))
@@ -175,6 +222,15 @@ export default function DeviceDetailsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function ActionButton({ icon: Icon, label, color }: { icon: any, label: string, color: string }) {
+  return (
+    <button className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl border border-border bg-muted/30 transition-all ${color} group`}>
+      <Icon className="w-5 h-5 transition-transform group-hover:scale-110" />
+      <span className="text-[10px] font-black uppercase tracking-tighter text-center leading-tight">{label}</span>
+    </button>
   );
 }
 
