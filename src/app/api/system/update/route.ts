@@ -17,8 +17,7 @@ export async function POST() {
       git fetch --all && 
       git reset --hard origin/main && 
       npm install && 
-      npm run build && 
-      pm2 restart rustdesk-portal
+      (pm2 restart all || pm2 restart rustdesk-portal || echo "PM2 restart failed, but files updated")
     `.replace(/\n/g, " ");
 
     // Komutu arka planda (detached) çalıştır

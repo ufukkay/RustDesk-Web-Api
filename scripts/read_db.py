@@ -31,9 +31,12 @@ try:
         rows = c.fetchall()
         
         if len(rows) > 0:
-            # İLK CİHAZIN VERİLERİNİ TERMİNALE BAS (DEBUG İÇİN)
+            # DEBUG İÇİN TÜM KOLONLARI VE ÖRNEK VERİYİ BAS
             first_row = dict(rows[0])
-            debug_log(f"ÖRNEK CİHAZ VERİSİ: {json.dumps(first_row, default=bytes_handler)}")
+            debug_log(f"MEVCUT KOLONLAR: {list(first_row.keys())}")
+            debug_log(f"ÖRNEK VERİ: {json.dumps(first_row, default=bytes_handler)}")
+            if 'info' in first_row:
+                debug_log(f"INFO İÇERİĞİ: {first_row['info']}")
 
         for r in rows:
             row_dict = {}
