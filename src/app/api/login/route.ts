@@ -29,17 +29,31 @@ export async function POST(req: Request) {
     }
 
     // 2. RustDesk Uygulaması (Desktop) için Login Kontrolü
-    // Eğer username gelmişse bu bir kullanıcı girişidir
     if (username) {
-      // BURAYA NORMALDE VERİTABANI KONTROLÜ GELECEK
-      // Şimdilik test için ufuk/admin veya herhangi bir teknisyen girişine izin verelim
-      // Ama RustDesk'in beklediği objeyi dönelim
+      const TECH_FILE = path.join(process.cwd(), "scripts", "technicians.json");
+      let technicians = [];
+      
+      if (fs.existsSync(TECH_FILE)) {
+        try { technicians = JSON.parse(fs.readFileSync(TECH_FILE, "utf-8")); } catch (e) {}
+      }
+
+      // Kullanıcı adı ve şifre kontrolü
+      const user = technicians.find((t: any) => 
+        (t.username === username || t.email === username) && t.password === password
+      );
+
+      if (!user) {
+        console.log(`Giriş Başarısız: ${username}`);
+        return NextResponse.json({ error: "Invalid username or password" }, { status: 400 });
+      }
+
+      console.log(`Giriş Başarılı: ${username}`);
       return NextResponse.json({ 
         access_token: "token-" + Math.random().toString(36).substring(7),
         type: "access_token",
         user: { 
-          name: username,
-          email: username + "@rustdesk.local" 
+          name: user.name,
+          email: user.email 
         }
       });
     }

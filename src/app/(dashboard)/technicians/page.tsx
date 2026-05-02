@@ -15,12 +15,15 @@ import {
 import { Label } from "@/components/ui/label";
 
 export default function TechniciansPage() {
-  const { technicians, addTechnician, deleteTechnician } = useAppStore();
+  const { technicians, addTechnician, deleteTechnician, fetchTechnicians } = useAppStore();
   const [isOpen, setIsOpen] = useState(false);
-  const [newTech, setNewTech] = useState({ name: "", email: "", role: "Teknisyen" as const, password: "" });
+  const [newTech, setNewTech] = useState({ name: "", username: "", email: "", role: "Teknisyen" as const, password: "" });
+
+  useState(() => {
+    fetchTechnicians();
+  });
 
   const handleAdd = () => {
-    if (!newTech.name || !newTech.email || !newTech.password) return;
     addTechnician({
       id: Math.random().toString(36).substr(2, 9),
       ...newTech,
@@ -28,7 +31,7 @@ export default function TechniciansPage() {
       lastLogin: "Şimdi"
     });
     setIsOpen(false);
-    setNewTech({ name: "", email: "", role: "Teknisyen", password: "" });
+    setNewTech({ name: "", username: "", email: "", role: "Teknisyen", password: "" });
   };
 
   return (
@@ -52,6 +55,10 @@ export default function TechniciansPage() {
               <div className="space-y-2">
                 <Label className="text-[12px] font-black text-muted-foreground uppercase">Ad Soyad</Label>
                 <Input placeholder="Örn: Ahmet Yılmaz" value={newTech.name} onChange={e => setNewTech({...newTech, name: e.target.value})} className="bg-muted/50 border-border h-11" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[12px] font-black text-muted-foreground uppercase">Kullanıcı Adı</Label>
+                <Input placeholder="Örn: ufuk" value={newTech.username} onChange={e => setNewTech({...newTech, username: e.target.value})} className="bg-muted/50 border-border h-11" />
               </div>
               <div className="space-y-2">
                 <Label className="text-[12px] font-black text-muted-foreground uppercase">E-posta Adresi</Label>
@@ -140,7 +147,7 @@ export default function TechniciansPage() {
                         </div>
                         <div>
                           <p className="text-[13.5px] font-black text-foreground">{t.name}</p>
-                          <p className="text-[11px] text-muted-foreground font-bold mt-0.5 tracking-tight">@{t.email.split("@")[0]}</p>
+                          <p className="text-[11px] text-muted-foreground font-bold mt-0.5 tracking-tight">@{t.username || t.email.split("@")[0]}</p>
                         </div>
                       </div>
                     </td>

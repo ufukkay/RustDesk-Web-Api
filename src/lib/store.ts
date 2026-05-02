@@ -20,6 +20,7 @@ export interface Device {
 export interface Technician {
   id: string;
   name: string;
+  username: string; // Kullanıcı adı alanı eklendi
   email: string;
   password?: string; // Şifre alanı eklendi
   role: "Admin" | "Teknisyen";
@@ -39,8 +40,10 @@ interface AppState {
   deleteDevice: (id: string) => void;
 
   technicians: Technician[];
-  addTechnician: (tech: Technician) => void;
-  deleteTechnician: (id: string) => void;
+  setTechnicians: (techs: Technician[]) => void;
+  addTechnician: (tech: Technician) => Promise<void>;
+  deleteTechnician: (id: string) => Promise<void>;
+  fetchTechnicians: () => Promise<void>;
 
   serverConfig: {
     host: string;
@@ -67,9 +70,31 @@ export const useAppStore = create<AppState>()(
       addDevice: (device) => set((state) => ({ devices: [device, ...state.devices] })),
       deleteDevice: (id) => set((state) => ({ devices: state.devices.filter(d => d.id !== id) })),
 
-      technicians: [], // Canlı veri için boşaltıldı
-      addTechnician: (tech) => set((state) => ({ technicians: [...state.technicians, tech] })),
-      deleteTechnician: (id) => set((state) => ({ technicians: state.technicians.filter(t => t.id !== id) })),
+      technicians: [], 
+      setTechnicians: (technicians) => set({ technicians }),
+      addTechnician: async (tech) => {
+        await fetch("/api/technicians", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(tech)
+        });
+        set((state) => ({ technicians: [...state.technicians.filter(t => t.id !== tech.id), tech] }));
+      },
+      deleteTechnician: async (id) => {
+        await fetch("/api/technicians", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id })
+        });
+        set((state) => ({ technicians: state.technicians.filter(t => t.id !== id) }));
+      },
+      fetchTechnicians: async () => {
+        try {
+          const res = await fetch("/api/technicians");
+          const data = await res.json();
+          if (Array.isArray(data)) set({ technicians: data });
+        } catch (e) {}
+      },
 
       serverConfig: {
         host: "192.168.0.184",
