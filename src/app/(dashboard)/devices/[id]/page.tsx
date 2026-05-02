@@ -5,17 +5,25 @@ import { useParams, useRouter } from "next/navigation";
 import { 
   Monitor, Cpu, Database, HardDrive, Activity, 
   ArrowLeft, Play, Shield, Calendar, Clock, 
-  User as UserIcon, Globe, Smartphone, Laptop, Server,
-  RotateCcw, Power, Lock, Terminal, FileText, Send, RefreshCw, X
+  User as UserIcon, Globe, Laptop, Server,
+  RotateCcw, Power, Lock, Terminal, FileText, Send, RefreshCw,
+  FolderUp, AlertTriangle, CheckCircle2, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+
+type CommandStatus = "idle" | "running" | "success" | "error";
 
 export default function DeviceDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const { devices, fetchDevices } = useAppStore();
   const [mounted, setMounted] = useState(false);
+  const [terminalInput, setTerminalInput] = useState("");
+  const [terminalHistory, setTerminalHistory] = useState<{cmd: string, output: string, status: string}[]>([]);
+  const [actionStatus, setActionStatus] = useState<Record<string, CommandStatus>>({});
+  const [confirmAction, setConfirmAction] = useState<string | null>(null);
+  const terminalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -23,6 +31,62 @@ export default function DeviceDetailsPage() {
   }, [fetchDevices]);
 
   const device = devices.find(d => d.id === params.id);
+
+  // Terminal scroll
+  useEffect(() => {
+    if (terminalRef.current) {
+      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+    }
+  }, [terminalHistory]);
+
+  // Aksiyon çalıştırma
+  const runAction = async (action: string, command?: string) => {
+    if (!device) return;
+    
+    setActionStatus(prev => ({ ...prev, [action]: "running" }));
+    setConfirmAction(null);
+
+    try {
+      const res = await fetch("/api/rustdesk/command", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          deviceId: device.id,
+          action: action,
+          command: command || ""
+        })
+      });
+      const data = await res.json();
+      
+      if (action === "terminal" && command) {
+        setTerminalHistory(prev => [...prev, {
+          cmd: command,
+          output: data.output || data.message || "Komut gönderildi.",
+          status: data.success ? "success" : "error"
+        }]);
+      }
+      
+      setActionStatus(prev => ({ ...prev, [action]: data.success ? "success" : "error" }));
+      setTimeout(() => setActionStatus(prev => ({ ...prev, [action]: "idle" })), 3000);
+    } catch (error) {
+      setActionStatus(prev => ({ ...prev, [action]: "error" }));
+      if (action === "terminal" && command) {
+        setTerminalHistory(prev => [...prev, {
+          cmd: command,
+          output: "Bağlantı hatası. Cihaz çevrimdışı olabilir.",
+          status: "error"
+        }]);
+      }
+      setTimeout(() => setActionStatus(prev => ({ ...prev, [action]: "idle" })), 3000);
+    }
+  };
+
+  const handleTerminalSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!terminalInput.trim()) return;
+    runAction("terminal", terminalInput.trim());
+    setTerminalInput("");
+  };
 
   if (!mounted) return null;
 
@@ -38,6 +102,8 @@ export default function DeviceDetailsPage() {
     );
   }
 
+  const isOnline = device.status === "online";
+
   const stats = [
     { label: "İşlemci (CPU)", value: device.cpu || "Bilinmiyor", icon: Cpu, color: "text-blue-500", bg: "bg-blue-500/10" },
     { label: "Bellek (RAM)", value: device.ram || "Bilinmiyor", icon: Database, color: "text-purple-500", bg: "bg-purple-500/10" },
@@ -45,172 +111,253 @@ export default function DeviceDetailsPage() {
     { label: "IP Adresi", value: (device.ip || "-").replace(/^::ffff:/, ""), icon: Globe, color: "text-emerald-500", bg: "bg-emerald-500/10" },
   ];
 
-  return (
-    <div className="p-8 max-w-[1200px] mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={() => router.back()}
-            className="rounded-full h-10 w-10 border-border"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-black text-brand-ink tracking-tight">{device.name}</h1>
-              <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
-                device.status === "online" ? "text-emerald-600 bg-emerald-500/10" : "text-muted-foreground bg-secondary"
-              }`}>
-                <div className={`w-1.5 h-1.5 rounded-full ${device.status === "online" ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground"}`} />
-                {device.status}
-              </div>
-            </div>
-            <p className="text-muted-foreground font-medium mt-1 uppercase text-xs tracking-widest">Cihaz Kimliği: {device.id}</p>
-          </div>
-        </div>
+  const actionBar = [
+    { 
+      id: "connect", label: "Uzaktan Bağlan", icon: Play, 
+      color: "bg-brand-yellow text-brand-ink hover:bg-brand-yellow/90", 
+      onClick: () => window.open(`rustdesk://${device.id}`, "_self"),
+      needsConfirm: false
+    },
+    { 
+      id: "file-transfer", label: "Dosya Transferi", icon: FolderUp, 
+      color: "bg-blue-600 text-white hover:bg-blue-700", 
+      onClick: () => window.open(`rustdesk://file-transfer/${device.id}`, "_self"),
+      needsConfirm: false
+    },
+    { 
+      id: "restart", label: "Yeniden Başlat", icon: RotateCcw, 
+      color: "bg-orange-500 text-white hover:bg-orange-600", 
+      onClick: () => runAction("restart"),
+      needsConfirm: true
+    },
+    { 
+      id: "shutdown", label: "Kapat", icon: Power, 
+      color: "bg-red-500 text-white hover:bg-red-600", 
+      onClick: () => runAction("shutdown"),
+      needsConfirm: true
+    },
+    { 
+      id: "lock", label: "Ekranı Kilitle", icon: Lock, 
+      color: "bg-violet-500 text-white hover:bg-violet-600", 
+      onClick: () => runAction("lock"),
+      needsConfirm: false
+    },
+    { 
+      id: "refresh", label: "Verileri Güncelle", icon: RefreshCw, 
+      color: "bg-emerald-500 text-white hover:bg-emerald-600", 
+      onClick: () => { fetchDevices(); setActionStatus(prev => ({ ...prev, refresh: "success" })); setTimeout(() => setActionStatus(prev => ({ ...prev, refresh: "idle" })), 2000); },
+      needsConfirm: false
+    },
+  ];
 
-        <div className="flex items-center gap-3">
-          <Button 
-            disabled={device.status !== "online"}
-            className="bg-brand-yellow text-brand-ink hover:bg-brand-yellow/90 font-black px-8 h-12 rounded-brand shadow-brand-sm group"
-            onClick={() => window.location.href = `rustdesk://${device.id}`}
-          >
-            <Play className="w-5 h-5 mr-2 fill-current group-hover:scale-110 transition-transform" />
-            Uzaktan Bağlan
-          </Button>
+  return (
+    <div className="p-8 max-w-[1400px] mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <Button 
+          variant="outline" 
+          size="icon" 
+          onClick={() => router.back()}
+          className="rounded-full h-10 w-10 border-border"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+        <div className="flex-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-black text-brand-ink tracking-tight">{device.name}</h1>
+            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+              isOnline ? "text-emerald-600 bg-emerald-500/10 ring-1 ring-emerald-500/20" : "text-muted-foreground bg-secondary ring-1 ring-border"
+            }`}>
+              <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground"}`} />
+              {isOnline ? "ONLINE" : "OFFLINE"}
+            </div>
+          </div>
+          <p className="text-muted-foreground font-mono text-xs mt-0.5">ID: {device.id} · {device.os} · {device.user}</p>
+        </div>
+      </div>
+
+      {/* === ACTION BAR === */}
+      <div className="bg-card border border-border rounded-brand-lg p-4 shadow-brand-sm">
+        <div className="flex flex-wrap items-center gap-2">
+          {actionBar.map((action) => {
+            const status = actionStatus[action.id] || "idle";
+            const isRunning = status === "running";
+            const isSuccess = status === "success";
+            const disabled = !isOnline && action.id !== "refresh";
+
+            return (
+              <div key={action.id} className="relative">
+                {/* Onay Popup */}
+                {confirmAction === action.id && (
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-brand-ink text-white p-4 rounded-xl shadow-2xl z-50 w-56 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                    <div className="flex items-center gap-2 mb-3">
+                      <AlertTriangle className="w-4 h-4 text-amber-400" />
+                      <p className="text-xs font-black uppercase">Emin misiniz?</p>
+                    </div>
+                    <p className="text-[11px] text-white/70 mb-3">{device.name} cihazı {action.label.toLowerCase()} edilecek.</p>
+                    <div className="flex gap-2">
+                      <Button size="sm" className="flex-1 bg-red-500 hover:bg-red-600 text-white text-[10px] h-8 font-black" onClick={action.onClick}>
+                        Evet
+                      </Button>
+                      <Button size="sm" variant="outline" className="flex-1 text-[10px] h-8 font-black border-white/20 text-white hover:bg-white/10" onClick={() => setConfirmAction(null)}>
+                        İptal
+                      </Button>
+                    </div>
+                    <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-brand-ink rotate-45" />
+                  </div>
+                )}
+
+                <button
+                  disabled={disabled || isRunning}
+                  onClick={() => {
+                    if (action.needsConfirm) {
+                      setConfirmAction(confirmAction === action.id ? null : action.id);
+                    } else {
+                      action.onClick();
+                    }
+                  }}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black uppercase tracking-wide transition-all shadow-sm ${action.color} ${
+                    disabled ? "opacity-40 cursor-not-allowed" : ""
+                  } ${isRunning ? "animate-pulse" : ""}`}
+                >
+                  {isRunning ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : isSuccess ? (
+                    <CheckCircle2 className="w-4 h-4" />
+                  ) : (
+                    <action.icon className="w-4 h-4" />
+                  )}
+                  {action.label}
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
 
       {/* Main Grid */}
-      <div className="grid lg:grid-cols-3 gap-8">
-        
-        {/* Left Column: Stats & System */}
-        <div className="lg:col-span-2 space-y-8">
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Left Column */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Stats */}
           <div className="grid sm:grid-cols-2 gap-4">
             {stats.map((s, i) => (
-              <div key={i} className="bg-card border border-border p-6 rounded-brand-lg shadow-sm hover:shadow-brand transition-all group">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className={`w-12 h-12 ${s.bg} ${s.color} rounded-xl flex items-center justify-center transition-transform group-hover:scale-110`}>
-                    <s.icon className="w-6 h-6" />
+              <div key={i} className="bg-card border border-border p-5 rounded-brand-lg shadow-sm hover:shadow-brand transition-all group">
+                <div className="flex items-center gap-4 mb-3">
+                  <div className={`w-11 h-11 ${s.bg} ${s.color} rounded-xl flex items-center justify-center transition-transform group-hover:scale-110`}>
+                    <s.icon className="w-5 h-5" />
                   </div>
-                  <p className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">{s.label}</p>
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{s.label}</p>
                 </div>
                 <p className="text-lg font-bold text-foreground leading-tight">{s.value}</p>
               </div>
             ))}
           </div>
 
-          {/* Remote Terminal / Command Center */}
+          {/* Terminal */}
           <div className="bg-brand-ink rounded-brand-lg overflow-hidden shadow-2xl border border-white/5">
-            <div className="px-6 py-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
+            <div className="px-5 py-3 border-b border-white/10 bg-white/5 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Terminal className="w-4 h-4 text-brand-yellow" />
-                <h3 className="font-black text-xs uppercase tracking-widest text-white/80">Uzak Terminal (Shell)</h3>
+                <h3 className="font-black text-[11px] uppercase tracking-widest text-white/80">Uzak Terminal</h3>
+                <span className="text-[9px] bg-white/10 px-2 py-0.5 rounded-full text-white/50 font-bold">PowerShell</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="flex gap-1">
-                  <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-amber-500/50" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/50" />
-                </div>
+              <div className="flex gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-red-500/60" />
+                <div className="w-3 h-3 rounded-full bg-amber-500/60" />
+                <div className="w-3 h-3 rounded-full bg-emerald-500/60" />
               </div>
             </div>
-            <div className="p-6 space-y-4">
-              <div className="bg-black/40 rounded-md p-4 h-[200px] font-mono text-xs text-emerald-500 overflow-y-auto border border-white/5 custom-scrollbar">
-                <p className="opacity-50 mb-2"># RustDesk Remote Management Console v1.0</p>
-                <p className="opacity-50 mb-4"># Bağlantı kuruluyor: {device.id}...</p>
-                <div className="space-y-1">
-                   <p><span className="text-white/40">C:\Users\Admin{">"}</span> systeminfo | findstr /B /C:"OS Name"</p>
-                   <p>OS Name:                   {device.os}</p>
-                   <p className="animate-pulse">_</p>
+            <div ref={terminalRef} className="p-5 h-[280px] font-mono text-xs overflow-y-auto space-y-3 custom-scrollbar">
+              <p className="text-emerald-500/50">{"#"} RustDesk Remote Terminal — {device.name} ({device.id})</p>
+              <p className="text-emerald-500/50">{"#"} Komut yazıp Enter{"'"}a basın veya {"\""}Çalıştır{"\""}a tıklayın.</p>
+              
+              {terminalHistory.length === 0 && (
+                <p className="text-white/20 italic">Henüz komut çalıştırılmadı.</p>
+              )}
+
+              {terminalHistory.map((entry, i) => (
+                <div key={i} className="space-y-1">
+                  <p className="text-brand-yellow">
+                    <span className="text-white/30">PS {device.name}{"> "}</span>
+                    {entry.cmd}
+                  </p>
+                  <pre className={`whitespace-pre-wrap text-[11px] leading-relaxed ${
+                    entry.status === "error" ? "text-red-400" : "text-emerald-400"
+                  }`}>{entry.output}</pre>
                 </div>
-              </div>
+              ))}
+              <p className="text-emerald-500 animate-pulse">_</p>
+            </div>
+            <form onSubmit={handleTerminalSubmit} className="px-5 pb-5">
               <div className="flex gap-2">
                 <input 
                   type="text" 
-                  placeholder="Komut yazın (örn: shutdown /r, tasklist...)" 
-                  className="flex-1 bg-white/5 border border-white/10 rounded-md px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-yellow/50 transition-colors"
+                  value={terminalInput}
+                  onChange={(e) => setTerminalInput(e.target.value)}
+                  placeholder="Komut yazın (örn: ipconfig, systeminfo, tasklist...)" 
+                  className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-brand-yellow/50 focus:bg-white/[0.03] transition-all font-mono"
+                  disabled={!isOnline}
                 />
-                <Button className="bg-brand-yellow text-brand-ink font-black hover:bg-brand-yellow/90">
+                <Button 
+                  type="submit"
+                  disabled={!isOnline || !terminalInput.trim()}
+                  className="bg-brand-yellow text-brand-ink font-black hover:bg-brand-yellow/90 px-5"
+                >
                   <Send className="w-4 h-4 mr-2" /> Çalıştır
                 </Button>
               </div>
-            </div>
+            </form>
           </div>
+        </div>
 
-          {/* System Details Section */}
+        {/* Right Column */}
+        <div className="space-y-6">
+          {/* System Details */}
           <div className="bg-card border border-border rounded-brand-lg overflow-hidden">
-            <div className="px-6 py-4 border-b border-border bg-muted/20">
-              <h3 className="font-black text-xs uppercase tracking-widest text-brand-ink/70">Sistem Detayları</h3>
+            <div className="px-5 py-3 border-b border-border bg-muted/20">
+              <h3 className="font-black text-[10px] uppercase tracking-widest text-brand-ink/70">Sistem Detayları</h3>
             </div>
-            <div className="p-6 grid sm:grid-cols-2 gap-y-6 gap-x-12">
+            <div className="p-5 space-y-5">
               <DetailItem icon={Monitor} label="İşletim Sistemi" value={device.os} />
               <DetailItem icon={UserIcon} label="Aktif Kullanıcı" value={device.user} />
-              <DetailItem icon={Calendar} label="Kayıt Tarihi" value="Bilinmiyor" />
               <DetailItem icon={Clock} label="Son Görülme" value={device.lastSeen} />
               <DetailItem icon={Shield} label="Versiyon" value={device.version || "Bilinmiyor"} />
               <DetailItem icon={Activity} label="Grup" value={device.group || "Genel"} />
             </div>
           </div>
-        </div>
 
-        {/* Right Column: RMM Actions */}
-        <div className="space-y-6">
-          {/* Quick Power Actions */}
-          <div className="bg-card border border-border rounded-brand-lg p-6 space-y-6 shadow-sm">
-            <h3 className="font-black text-xs uppercase tracking-widest text-brand-ink/70 border-b border-border pb-4">Yönetim Aksiyonları</h3>
-            
-            <div className="grid grid-cols-2 gap-3">
-              <ActionButton icon={RotateCcw} label="Yeniden Başlat" color="hover:text-blue-600 hover:bg-blue-50" />
-              <ActionButton icon={Power} label="Kapat" color="hover:text-red-600 hover:bg-red-50" />
-              <ActionButton icon={Lock} label="Ekranı Kilitle" color="hover:text-amber-600 hover:bg-amber-50" />
-              <ActionButton icon={RefreshCw} label="Verileri Güncelle" color="hover:text-emerald-600 hover:bg-emerald-50" />
-            </div>
-
-            <div className="space-y-3 pt-4 border-t border-border">
-              <Button variant="outline" className="w-full justify-start font-bold text-xs h-11 border-dashed hover:border-primary hover:text-primary transition-all">
-                <FileText className="w-4 h-4 mr-3" /> Dosya Gönder
-              </Button>
-              <Button variant="outline" className="w-full justify-start font-bold text-xs h-11 border-dashed hover:border-primary hover:text-primary transition-all">
-                <Activity className="w-4 h-4 mr-3" /> Süreçleri İzle (TaskMgr)
-              </Button>
-            </div>
-          </div>
-
-          {/* Connection Security info */}
-          <div className="bg-card border border-border p-6 rounded-brand-lg space-y-4">
-            <h3 className="font-black text-[10px] uppercase tracking-widest text-muted-foreground">Bağlantı Güvenliği</h3>
+          {/* Connection Security */}
+          <div className="bg-card border border-border p-5 rounded-brand-lg">
+            <h3 className="font-black text-[10px] uppercase tracking-widest text-muted-foreground mb-4">Bağlantı Güvenliği</h3>
             <div className="flex items-center gap-3 p-3 bg-emerald-500/5 rounded-lg border border-emerald-500/10">
               <Shield className="w-5 h-5 text-emerald-500" />
               <div>
-                <p className="text-[13px] font-bold text-emerald-700 leading-none">Uçtan Uca Şifreli</p>
+                <p className="text-[12px] font-bold text-emerald-700 leading-none">Uçtan Uca Şifreli</p>
                 <p className="text-[10px] text-emerald-600/70 mt-1 uppercase font-bold">AES-256 Bit</p>
               </div>
             </div>
           </div>
 
-          {/* Network Details Section */}
+          {/* Network Details */}
           <div className="bg-card border border-border rounded-brand-lg overflow-hidden">
-            <div className="px-6 py-4 border-b border-border bg-muted/20 flex items-center justify-between">
-              <h3 className="font-black text-xs uppercase tracking-widest text-brand-ink/70">Ağ Kartları</h3>
+            <div className="px-5 py-3 border-b border-border bg-muted/20 flex items-center justify-between">
+              <h3 className="font-black text-[10px] uppercase tracking-widest text-brand-ink/70">Ağ Kartları</h3>
               <Globe className="w-4 h-4 text-muted-foreground" />
             </div>
-            <div className="divide-y divide-border max-h-[400px] overflow-y-auto">
+            <div className="divide-y divide-border max-h-[300px] overflow-y-auto">
               {!device.net_details || device.net_details.length === 0 ? (
-                <div className="p-8 text-center text-xs text-muted-foreground font-bold uppercase italic">
+                <div className="p-6 text-center text-xs text-muted-foreground font-bold uppercase italic">
                   Ağ bilgisi bulunamadı.
                 </div>
               ) : (
                 device.net_details.map((net: any, idx: number) => (
-                  <div key={idx} className="p-4 space-y-3 hover:bg-muted/10 transition-colors">
+                  <div key={idx} className="p-4 space-y-2 hover:bg-muted/10 transition-colors">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                      <p className="text-[11px] font-black text-brand-ink uppercase">{net.name || `Adapter ${idx + 1}`}</p>
+                      <p className="text-[10px] font-black text-brand-ink uppercase">{net.name || `Adapter ${idx + 1}`}</p>
                     </div>
-                    <div className="grid grid-cols-1 gap-2">
+                    <div className="grid grid-cols-1 gap-1.5">
                       <NetInfoRow label="IPv4" value={net.ip || net.ipv4 || "-"} />
                       <NetInfoRow label="MAC" value={net.mac || "-"} />
                     </div>
@@ -225,24 +372,15 @@ export default function DeviceDetailsPage() {
   );
 }
 
-function ActionButton({ icon: Icon, label, color }: { icon: any, label: string, color: string }) {
-  return (
-    <button className={`flex flex-col items-center justify-center gap-2 p-4 rounded-xl border border-border bg-muted/30 transition-all ${color} group`}>
-      <Icon className="w-5 h-5 transition-transform group-hover:scale-110" />
-      <span className="text-[10px] font-black uppercase tracking-tighter text-center leading-tight">{label}</span>
-    </button>
-  );
-}
-
 function DetailItem({ icon: Icon, label, value }: { icon: any, label: string, value: string }) {
   return (
-    <div className="flex items-start gap-4">
-      <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground shrink-0 mt-0.5">
-        <Icon className="w-4.5 h-4.5" />
+    <div className="flex items-start gap-3">
+      <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground shrink-0">
+        <Icon className="w-4 h-4" />
       </div>
       <div>
-        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">{label}</p>
-        <p className="text-sm font-bold text-foreground">{value}</p>
+        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{label}</p>
+        <p className="text-sm font-bold text-foreground mt-0.5">{value}</p>
       </div>
     </div>
   );
