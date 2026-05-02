@@ -27,6 +27,7 @@ export async function POST(req: Request) {
     if (!infoData[deviceIdStr]) infoData[deviceIdStr] = {};
     if (body.disk) infoData[deviceIdStr].disk = body.disk;
     if (body.ip) infoData[deviceIdStr].ip = body.ip;
+    if (body.network) infoData[deviceIdStr].network = body.network; // Detaylı ağ verisi
     if (body.hostname) infoData[deviceIdStr].hostname = body.hostname;
     if (body.cpu) infoData[deviceIdStr].cpu = body.cpu;
     if (body.ram) infoData[deviceIdStr].ram = body.ram;

@@ -380,21 +380,22 @@ export default function DeviceDetailsPage() {
               <h3 className="font-black text-[10px] uppercase tracking-widest text-brand-ink/70">Ağ Kartları</h3>
               <Globe className="w-4 h-4 text-muted-foreground" />
             </div>
-            <div className="divide-y divide-border max-h-[300px] overflow-y-auto">
-              {!device.net_details || device.net_details.length === 0 ? (
+            <div className="divide-y divide-border max-h-[400px] overflow-y-auto">
+              {!device.network || device.network.length === 0 ? (
                 <div className="p-6 text-center text-xs text-muted-foreground font-bold uppercase italic">
-                  Ağ bilgisi bulunamadı.
+                  Ağ bilgisi bulunamadı. Verileri Güncelle'ye basın.
                 </div>
               ) : (
-                device.net_details.map((net: any, idx: number) => (
+                device.network.map((net: any, idx: number) => (
                   <div key={idx} className="p-4 space-y-2 hover:bg-muted/10 transition-colors">
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                      <p className="text-[10px] font-black text-brand-ink uppercase">{net.name || `Adapter ${idx + 1}`}</p>
+                      <div className={`w-2 h-2 rounded-full ${net.ip ? "bg-emerald-500" : "bg-muted"}`} />
+                      <p className="text-[10px] font-black text-brand-ink uppercase">{net.name || `Bağdaştırıcı ${idx + 1}`}</p>
                     </div>
-                    <div className="grid grid-cols-1 gap-1.5">
-                      <NetInfoRow label="IPv4" value={net.ip || net.ipv4 || "-"} />
-                      <NetInfoRow label="MAC" value={net.mac || "-"} />
+                    <div className="grid grid-cols-1 gap-1.5 pl-4">
+                      <NetInfoRow label="IP Adresi" value={net.ip || "-"} />
+                      <NetInfoRow label="Alt Ağ" value={net.mask ? `/${net.mask}` : "-"} />
+                      <NetInfoRow label="Gateway" value={net.gw || "-"} />
                     </div>
                   </div>
                 ))
