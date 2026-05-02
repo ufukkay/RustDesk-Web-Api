@@ -1,32 +1,40 @@
 "use client";
 
 import { useAppStore } from "@/lib/store";
-import { Monitor, Wifi, WifiOff, Users, ShieldCheck, Play, Plus, Server, Laptop, Activity, ArrowRight, Mail } from "lucide-react";
-import { useEffect } from "react";
+import { Monitor, Users, Shield, Server, Laptop, Activity, Database, ChevronRight, User as UserIcon, ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export default function DashboardPage() {
   const { devices, technicians, fetchDevices } = useAppStore();
+  const [serverKey, setServerKey] = useState("Yükleniyor...");
 
   useEffect(() => {
     fetchDevices();
     const interval = setInterval(() => fetchDevices(), 10000);
+    
+    // Sunucu anahtarını çek
+    fetch("/api/rustdesk/server-key")
+      .then(res => res.json())
+      .then(data => setServerKey(data.key))
+      .catch(() => setServerKey("Okunamadı"));
+
     return () => clearInterval(interval);
   }, [fetchDevices]);
 
-  const online  = devices.filter(d => d.status === "online").length;
-  const offline = devices.length - online;
-
+  const online = devices.filter(d => d.status === "online").length;
+  
   const stats = [
-    { label: "Toplam Cihaz",    value: devices.length,     icon: Monitor,  accent: "#FFCC00", ink: "#0E1116", hint: "Tüm envanter" },
-    { label: "Çevrimiçi",       value: online,             icon: Server,   accent: "#E8F7EE", ink: "#1A8245", hint: "Anlık aktif" },
-    { label: "Çevrimdışı",      value: offline,            icon: Laptop,   accent: "#F1F2F4", ink: "#5C6573", hint: "Bağlantı yok" },
-    { label: "Aktif Teknisyen", value: technicians.length, icon: Users,    accent: "#F4ECFF", ink: "#5B30C8", hint: "Tümü aktif" },
+    { label: "Toplam Cihaz", value: devices.length, icon: Monitor, color: "text-blue-500", bg: "bg-blue-500/10" },
+    { label: "Çevrimiçi", value: online, icon: Activity, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+    { label: "Teknisyenler", value: technicians.length, icon: Users, color: "text-amber-500", bg: "bg-amber-500/10" },
+    { label: "Sistem Yükü", value: "%12", icon: Database, color: "text-purple-500", bg: "bg-purple-500/10" },
   ];
 
   return (
-    <div className="p-8 space-y-10 max-w-[1400px] mx-auto animate-in fade-in duration-500">
-      {/* Welcome Section */}
+    <div className="p-8 space-y-8 max-w-[1400px] mx-auto animate-in fade-in duration-500">
+      {/* Header */}
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold text-foreground tracking-tight">Genel Bakış</h1>
         <p className="text-sm text-muted-foreground">Sisteminizin durumunu ve aktif bağlantılarınızı takip edin.</p>
@@ -34,78 +42,98 @@ export default function DashboardPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map(({ label, value, icon: Icon, ink }) => (
-          <div key={label} className="bg-card rounded-brand-lg border border-border p-6 shadow-brand-sm hover:shadow-brand transition-all">
+        {stats.map((s) => (
+          <div key={s.label} className="bg-card rounded-brand-lg border border-border p-6 shadow-brand-sm hover:shadow-brand transition-all">
             <div className="flex items-center justify-between mb-4">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-secondary">
-                <Icon className="w-5 h-5 text-foreground" style={{ color: ink }} />
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${s.bg}`}>
+                <s.icon className={`w-5 h-5 ${s.color}`} />
               </div>
             </div>
-            <p className="text-3xl font-semibold text-foreground tracking-tight">{value}</p>
-            <p className="text-sm font-medium text-muted-foreground mt-1">{label}</p>
+            <p className="text-3xl font-black text-foreground tracking-tight">{s.value}</p>
+            <p className="text-[12px] font-bold text-muted-foreground uppercase tracking-widest mt-1">{s.label}</p>
           </div>
         ))}
       </div>
 
-      {/* Main Grid */}
-      <div className="grid lg:grid-cols-2 gap-8">
-        {/* Recent Devices */}
-        <div className="bg-card rounded-brand-lg border border-border overflow-hidden">
-          <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-muted/30">
-            <h2 className="font-semibold text-foreground text-sm">Son Cihazlar</h2>
-            <Link href="/devices" className="text-xs text-primary font-semibold hover:underline">
-              Tümünü Gör
-            </Link>
-          </div>
-          <div className="divide-y divide-border">
-            {devices.length === 0 ? (
-              <div className="p-12 text-center text-muted-foreground text-sm italic">
-                Henüz cihaz bulunmuyor. Bağlantıları bekleyin...
+      <div className="grid lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-6">
+          {/* Server Key Card */}
+          <div className="bg-brand-ink text-white p-6 rounded-brand-lg shadow-brand relative overflow-hidden group">
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="space-y-2">
+                <h3 className="text-lg font-black text-brand-yellow flex items-center gap-2">
+                  <Shield className="w-5 h-5" /> RustDesk Sunucu Anahtarı (Key)
+                </h3>
+                <p className="text-white/60 text-[11px] font-bold uppercase tracking-widest max-w-[300px]">
+                  Bağlantı hatalarını gidermek için bu anahtarı uygulamadaki "Key" alanına yapıştırın.
+                </p>
               </div>
-            ) : (
-              devices.slice(0, 6).map(d => (
-                <div key={d.id} className="px-6 py-4 flex items-center justify-between hover:bg-muted/30 transition-colors group">
-                  <div className="flex items-center gap-4">
-                    <div className="w-9 h-9 rounded-md bg-secondary flex items-center justify-center text-muted-foreground">
-                      {d.os.includes("Windows") ? <Monitor className="w-4.5 h-4.5" /> : d.os.includes("mac") ? <Laptop className="w-4.5 h-4.5" /> : <Server className="w-4.5 h-4.5" />}
+              <div className="bg-white/10 p-4 rounded-xl border border-white/10 font-mono text-[13px] select-all break-all backdrop-blur-md hover:bg-white/15 transition-all">
+                {serverKey}
+              </div>
+            </div>
+            <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-brand-yellow/10 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-1000" />
+          </div>
+
+          {/* Recent Devices Table */}
+          <div className="bg-card rounded-brand-lg border border-border shadow-brand-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-border bg-muted/20 flex items-center justify-between">
+              <h2 className="text-[11px] font-black text-brand-ink uppercase tracking-widest">Son Eklenen Cihazlar</h2>
+              <Link href="/devices">
+                <Button variant="ghost" size="sm" className="text-[10px] font-black uppercase tracking-widest hover:text-primary transition-all group">
+                  Tümünü Gör <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+            </div>
+            <div className="divide-y divide-border">
+              {devices.length === 0 ? (
+                <div className="p-12 text-center text-muted-foreground text-sm italic">Henüz cihaz bulunmuyor.</div>
+              ) : (
+                devices.slice(0, 5).map(d => (
+                  <div key={d.id} className="p-4 px-6 hover:bg-muted/10 transition-colors flex items-center justify-between group">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground group-hover:text-foreground transition-all">
+                        {d.os.includes("Windows") ? <Monitor className="w-5 h-5" /> : <Laptop className="w-5 h-5" />}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-foreground tracking-tight">{d.name}</p>
+                        <p className="text-[11px] text-muted-foreground font-mono mt-0.5">{d.id} · {d.os}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-bold text-foreground">ID: {d.id}</p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5 font-mono">{d.name} · {d.os}</p>
+                    <div className="flex items-center gap-3">
+                      <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black ${
+                        d.status === "online" ? "bg-emerald-500/10 text-emerald-500" : "bg-muted text-muted-foreground"
+                      }`}>
+                        <div className={`w-1.5 h-1.5 rounded-full ${d.status === "online" ? "bg-emerald-500 animate-brand-pulse" : "bg-muted-foreground/50"}`} />
+                        {d.status === "online" ? "ONLINE" : "OFFLINE"}
+                      </div>
                     </div>
                   </div>
-                  <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium ${
-                    d.status === "online" ? "text-emerald-600 bg-emerald-500/10" : "text-muted-foreground bg-secondary"
-                  }`}>
-                    <div className={`w-1 h-1 rounded-full ${d.status === "online" ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground"}`} />
-                    {d.status === "online" ? "Online" : "Offline"}
-                  </div>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Recent Activities - Simplified to static placeholders for now */}
-        <div className="bg-card rounded-brand-lg border border-border overflow-hidden">
-          <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-muted/30">
-            <h2 className="font-semibold text-foreground text-sm">Aktivite</h2>
-            <div className="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-600 uppercase tracking-wider">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Canlı
-            </div>
+        {/* Recent Activity */}
+        <div className="bg-card rounded-brand-lg border border-border shadow-brand-sm overflow-hidden h-fit">
+          <div className="px-6 py-4 border-b border-border bg-muted/20">
+            <h2 className="text-[11px] font-black text-brand-ink uppercase tracking-widest">Son Aktiviteler</h2>
           </div>
-          <div className="divide-y divide-border">
+          <div className="p-6 space-y-6">
             {[
-              { name: "Ufuk Kaya",   action: "Sisteme giriş yaptı",             time: "2 dk önce" },
-              { name: "Ahmet Yılmaz", action: "Muhasebe-PC bağlantısı",  time: "12 dk önce" },
-              { name: "Selin Demir",  action: "Yeni cihaz kaydı",  time: "45 dk önce" },
+              { name: "Ufuk Kaya", action: "Sisteme giriş yaptı", time: "2 dk önce" },
+              { name: "Ahmet Yılmaz", action: "Muhasebe-PC bağlantısı", time: "12 dk önce" },
+              { name: "Selin Demir", action: "Yeni cihaz kaydı", time: "45 dk önce" },
             ].map((a, i) => (
-              <div key={i} className="px-6 py-4 flex items-start gap-4 hover:bg-muted/30 transition-colors">
-                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-[11px] font-semibold text-muted-foreground shrink-0">
-                  {a.name.split(" ").map(n => n[0]).join("")}
+              <div key={i} className="flex gap-4 relative">
+                {i !== 2 && (
+                  <div className="absolute left-[17px] top-10 bottom-[-24px] w-[2px] bg-border/50" />
+                )}
+                <div className="w-[34px] h-[34px] rounded-full bg-secondary border border-border flex items-center justify-center shrink-0 z-10">
+                  <UserIcon className="w-3.5 h-3.5 text-muted-foreground" />
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="pt-1">
                   <p className="text-[13px] text-foreground leading-tight">
                     <span className="font-semibold">{a.name}</span> <span className="text-muted-foreground">{a.action}</span>
                   </p>
@@ -117,10 +145,10 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Footer Info */}
-      <div className="flex items-center gap-2 bg-muted/30 w-fit px-4 py-2 rounded-lg border border-border text-xs font-medium text-muted-foreground">
+      {/* Health Check */}
+      <div className="flex items-center gap-2 bg-muted/30 w-fit px-4 py-2 rounded-lg border border-border text-[11px] font-black uppercase tracking-widest text-muted-foreground">
         <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-        Sistem sağlıklı · Uptime: <span className="text-foreground font-semibold ml-0.5">99.9%</span>
+        Sistem Sağlıklı · Uptime: <span className="text-foreground ml-0.5">99.9%</span>
       </div>
     </div>
   );
