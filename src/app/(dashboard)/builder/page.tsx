@@ -134,6 +134,28 @@ export default function BuilderPage() {
                 </button>
               </div>
 
+              {/* Kaldırma Komutu */}
+              <div className="space-y-3 pt-4 border-t border-white/5">
+                <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Sistemden Kaldırma (Uninstall)</p>
+                <div className="relative group/cmd">
+                  <div className="bg-black/20 border border-white/5 rounded-xl p-4 font-mono text-xs text-red-400 overflow-x-auto whitespace-nowrap scrollbar-hide">
+                    <span className="text-white/20 mr-2">$</span>
+                    {`irm "http://${host}:${port}/api/rustdesk/builder/uninstall" | iex`}
+                  </div>
+                  <button
+                    onClick={() => {
+                      const cmd = `irm "http://${host}:${port}/api/rustdesk/builder/uninstall" | iex`;
+                      navigator.clipboard.writeText(cmd);
+                      alert("Kaldırma komutu kopyalandı!");
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-white/40 hover:text-red-400 transition-colors"
+                    title="Kopyala"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
               <div className="flex items-center gap-4 text-[10px] text-white/40 font-bold uppercase tracking-widest">
                 <span className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-emerald-500" /> Tam Otomatik</span>
                 <span className="flex items-center gap-1.5"><Cpu className="w-3.5 h-3.5 text-blue-400" /> RMM Ajanı Dahil</span>

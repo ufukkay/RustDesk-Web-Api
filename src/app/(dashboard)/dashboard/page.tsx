@@ -96,11 +96,26 @@ export default function DashboardPage() {
           <div className="bg-card rounded-brand-lg border border-border shadow-brand-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-border bg-muted/20 flex items-center justify-between">
               <h2 className="text-[11px] font-black text-brand-ink uppercase tracking-widest">Son Eklenen Cihazlar</h2>
-              <Link href="/devices">
-                <Button variant="ghost" size="sm" className="text-[10px] font-black uppercase tracking-widest hover:text-primary transition-all group">
-                  Tümünü Gör <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-[9px] font-black uppercase tracking-widest h-7 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                  onClick={async () => {
+                    if (confirm("Tüm offline cihazları listeden temizlemek istediğinize emin misiniz?")) {
+                      await fetch("/api/system/cleanup", { method: "POST" });
+                      fetchDevices();
+                    }
+                  }}
+                >
+                  Offline Temizle
                 </Button>
-              </Link>
+                <Link href="/devices">
+                  <Button variant="ghost" size="sm" className="text-[10px] font-black uppercase tracking-widest hover:text-primary transition-all group h-7">
+                    Tümünü Gör <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
+              </div>
             </div>
             <div className="divide-y divide-border">
               {devices.length === 0 ? (
