@@ -89,7 +89,19 @@ export const useAppStore = create<AppState>()(
       devices: [], 
       setDevices: (devices) => set({ devices }),
       addDevice: (device) => set((state) => ({ devices: [device, ...state.devices] })),
-      deleteDevice: (id) => set((state) => ({ devices: state.devices.filter(d => d.id !== id) })),
+      // Cihaz silme işlemi - Artık sunucudan da siliyor
+      deleteDevice: async (id) => {
+        try {
+          await fetch("/api/rustdesk/devices", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id })
+          });
+          set((state) => ({ devices: state.devices.filter(d => d.id !== id) }));
+        } catch (error) {
+          console.error("Cihaz silinemedi:", error);
+        }
+      },
 
       // Teknisyen listesi ve API entegrasyonu
       technicians: [], 

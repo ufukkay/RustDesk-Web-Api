@@ -96,3 +96,28 @@ export async function GET() {
     return NextResponse.json([]);
   }
 }
+
+/**
+ * DELETE /api/rustdesk/devices
+ * Bir cihazı listeden manuel olarak temizler (JSON dosyalarından siler).
+ */
+export async function DELETE(req: Request) {
+  try {
+    const { id } = await req.json();
+    if (!id) return NextResponse.json({ error: "ID gerekli" }, { status: 400 });
+
+    [STATUS_FILE, INFO_FILE].forEach(file => {
+      if (fs.existsSync(file)) {
+        const data = JSON.parse(fs.readFileSync(file, "utf-8"));
+        if (data[id]) {
+          delete data[id];
+          fs.writeFileSync(file, JSON.stringify(data, null, 2));
+        }
+      }
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json({ error: String(error) }, { status: 500 });
+  }
+}
