@@ -152,8 +152,8 @@ if (-not $rdId) {
 
 $agentId = if ($rdId) { $rdId } else { "0" }
 
-# Agent Kaynak Kodu
-$source = @"
+# Agent Kaynak Kodu (Daha guvenli derleme icin non-interpolating heredoc kullaniliyor)
+$source = @'
 using System;
 using System.Net;
 using System.Text;
@@ -166,9 +166,9 @@ using System.IO;
 
 public class RustDeskAgent {
     public static void Main() {
-        string serverUrl = "$($serverUrl)/api/heartbeat";
-        string resultUrl = "$($serverUrl)/api/rustdesk/command/result";
-        string deviceId = "$agentId"; 
+        string serverUrl = "[[SERVER_URL]]/api/heartbeat";
+        string resultUrl = "[[SERVER_URL]]/api/rustdesk/command/result";
+        string deviceId = "[[AGENT_ID]]"; 
         WebClient client = new WebClient();
         client.Encoding = Encoding.UTF8;
         
@@ -225,8 +225,9 @@ public class RustDeskAgent {
         }
     }
 }
-"@
+'@
 
+$source = $source.Replace("[[SERVER_URL]]", $serverUrl).Replace("[[AGENT_ID]]", $agentId)
 $source | Out-File -FilePath "$dir\\Agent.cs" -Encoding utf8 -Force
 
 # Derleme ve Servis Kaydı
