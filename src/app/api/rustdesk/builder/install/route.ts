@@ -94,15 +94,16 @@ if ($defPass) {
 # 3. Konfigürasyon Dosyasını Oluştur
 Write-Host ">> Sunucu ayarları sisteme işleniyor..." -ForegroundColor Cyan
 
-$tomlContent = @"
-id-server = '$targetHost'
-relay-server = '$targetHost'
-api-server = 'http://$targetHost:3000'
-key = '$serverKey'
-"@
+$tomlContent = "id-server = '$targetHost'`nrelay-server = '$targetHost'`napi-server = 'http://$targetHost:3000'`nkey = '$serverKey'"
+
+# Servisi durdur ki dosyalar kilitli kalmasın
+Stop-Service "rustdesk" -ErrorAction SilentlyContinue
+taskkill /F /IM RustDesk.exe /T 2>$null
+Start-Sleep -Seconds 2
 
 $configPaths = @(
     "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk\\config",
+    "C:\\Windows\\System32\\config\\systemprofile\\AppData\\Roaming\\RustDesk\\config",
     "$env:AppData\\RustDesk\\config",
     "$env:ProgramData\\RustDesk\\config"
 )
@@ -114,7 +115,14 @@ foreach ($path in $configPaths) {
     $tomlContent | Set-Content -Path "$path\\RustDesk2.toml" -Force
 }
 
-Get-Service "rustdesk" -ErrorAction SilentlyContinue | Restart-Service -Force
+# RustDesk CLI ile konfigürasyonu zorla uygula
+$rdExe = "C:\\Program Files\\RustDesk\\rustdesk.exe"
+if (Test-Path $rdExe) {
+    Write-Host ">> Konfigurasyon CLI uzerinden zorlaniyor..." -ForegroundColor Cyan
+    Start-Process $rdExe -ArgumentList "--config", "$tomlContent" -WindowStyle Hidden -Wait
+}
+
+Start-Service "rustdesk" -ErrorAction SilentlyContinue
 Write-Host ">> Ayarlar uygulandı." -ForegroundColor Green
 
 # 4. RMM Ajanini Kur
