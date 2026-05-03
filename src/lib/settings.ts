@@ -6,6 +6,7 @@ const SETTINGS_FILE = path.join(process.cwd(), "scripts", "settings.json");
 export interface SystemSettings {
   host: string;
   port: string;
+  serverKey?: string;
   defaultPassword?: string;
   deviceNamePrefix?: string;
 }

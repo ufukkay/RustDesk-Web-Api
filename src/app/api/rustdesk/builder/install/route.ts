@@ -16,23 +16,29 @@ export async function GET(req: Request) {
     const port = searchParams.get("port") || settings.port;
     const defaultPassword = settings.defaultPassword || "";
     
-    // Sunucu anahtarını bul (Windows yollarına öncelik ver)
-    const keyPaths = [
-      "C:\\ProgramData\\RustDesk\\config\\id_ed25519.pub",
-      "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk\\config\\id_ed25519.pub",
-      path.join(process.cwd(), "id_ed25519.pub"),
-      "./id_ed25519.pub",
-      "id_ed25519.pub"
-    ];
+    let serverKey = settings.serverKey || "YOK";
     
-    let serverKey = "YOK";
-    for (const p of keyPaths) {
-      try {
-        if (fs.existsSync(p)) {
-          serverKey = fs.readFileSync(p, "utf-8").trim();
-          if (serverKey) break;
-        }
-      } catch (e) {}
+    // Eğer ayarlarda yoksa otomatik bulmaya çalış (Windows yollarına öncelik ver)
+    if (serverKey === "YOK" || !serverKey) {
+      const keyPaths = [
+        "C:\\ProgramData\\RustDesk\\config\\id_ed25519.pub",
+        "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk\\config\\id_ed25519.pub",
+        path.join(process.cwd(), "id_ed25519.pub"),
+        "./id_ed25519.pub",
+        "id_ed25519.pub"
+      ];
+      
+      for (const p of keyPaths) {
+        try {
+          if (fs.existsSync(p)) {
+            const foundKey = fs.readFileSync(p, "utf-8").trim();
+            if (foundKey) {
+              serverKey = foundKey;
+              break;
+            }
+          }
+        } catch (e) {}
+      }
     }
 
     // C# Agent Kodu (Base64) - Stabil versiyon

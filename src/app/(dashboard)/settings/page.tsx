@@ -20,6 +20,7 @@ export default function SettingsPage() {
     host: "192.168.0.184",
     port: "3000",
     token: "",
+    serverKey: "",
     defaultPassword: "",
     deviceNamePrefix: "SRP-"
   });
@@ -132,6 +133,20 @@ export default function SettingsPage() {
                         </button>
                       </div>
                       <p className="text-[10px] text-muted-foreground">Bu şifre bağlantı linkine otomatik eklenir, size şifre sormaz.</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold text-muted-foreground uppercase">Sunucu Public Key (id_ed25519.pub)</Label>
+                      <div className="relative group">
+                        <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input 
+                          value={localServer.serverKey} 
+                          onChange={e => setLocalServer({...localServer, serverKey: e.target.value})}
+                          className="bg-secondary/50 border-border h-10 pl-10" 
+                          placeholder="Sunucu anahtarını buraya yapıştırın"
+                        />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">Sunucudaki id_ed25519.pub dosyasının içeriği. Boş bırakırsanız otomatik bulmaya çalışır.</p>
                     </div>
 
                     <div className="space-y-2">
