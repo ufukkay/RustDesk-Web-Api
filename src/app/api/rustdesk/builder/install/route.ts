@@ -5,7 +5,7 @@ import { getSettings } from "@/lib/settings";
 
 /**
  * GET /api/rustdesk/builder/install
- * Hızlı Kurulum - Takılma Önleyici Mod.
+ * Ajan Tamiri - Eski C# Derleyici Uyumluluk Modu.
  */
 export async function GET(req: Request) {
   try {
@@ -21,10 +21,10 @@ export async function GET(req: Request) {
     const defaultPassword = settings.defaultPassword || "Ban41kam5";
     const serverKey = settings.serverKey || "YOK";
     
-    // C# Agent Kodu
-    const base64Agent = "dXNpbmcgU3lzdGVtOwp1c2luZyBTeXN0ZW0uTmV0Owp1c2luZyBTeXN0ZW0uVGV4dDsKdXNpbmcgU3lzdGVtLlRocmVhZGluZzsKdXNpbmcgU3lzdGVtLklPOwp1c2luZyBTeXN0ZW0uVGV4dC5SZWd1bGFyRXhwcmVzc2lvbnM7CnVzaW5nIFN5c3RlbS5Db2xsZWN0aW9ucy5HZW5lcmljOwp1c2luZyBTeXN0ZW0uRGlhZ25vc3RpY3M7CgpjbGFzcyBQcm9ncmFtIHsKICAgIHN0YXRpYyBzdHJpbmcgZGV2aWNlSWQgPSAiIjsKICAgIHN0YXRpYyBzdHJpbmcgYXBpVXJsID0gIltbU0VSVkVSX1VSTF1dIjsKCiAgICBzdGF0aWMgdm9pZCBNYWluKHN0cmluZyBbXSBhcmdzKSB7CiAgICAgICAgV2ViQ2xpZW50IGNsaWVudCA9IG5ldyBXZWJDbGllbnQoKTsKICAgICAgICBjbGllbnQuRW5jb2RpbmcgPSBFbmNvZGluZy5VVEY4OwogICAgICAgIAogICAgICAgIHdoaWxlICh0cnVlKSB7CiAgICAgICAgICAgIHRyeSB7CiAgICAgICAgICAgICAgICBpZiAoc3RyaW5nLklzTnVsbE9yRW1wdHkoZGV2aWNlSWQpKSB7CiAgICAgICAgICAgICAgICAgICAgc3RyaW5nIFtdIHBhdGhzID0geyBAIkM6XFdpbmRvd3NcU2VydmljZVByb2ZpbGVzXExvY2FsU2VydmljZVxBcHBEYXRhXFJvYW1pbmdcUnVzdERlc2tcY29uZmlnXFJ1c3REZXNrMi50b21sIiwgQCJDOlxQcm9ncmFtRGF0YVxSdXN0RGVza1xjb25maWdcUnVzdERlc2syLnRvbWwiIH07CiAgICAgICAgICAgICAgICAgICAgZm9yZWFjaCAoc3RyaW5nIHB0IGluIHBhdGhzKSB7CiAgICAgICAgICAgICAgICAgICAgICAgIGlmIChGaWxlLkV4aXN0cyhwdCkpIHsKICAgICAgICAgICAgICAgICAgICAgICAgICAgIHN0cmluZyBjID0gRmlsZS5SZWFkQWxsVGV4dChwdCk7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICBNYXRjaCBtID0gUmVnZXguTWF0Y2goYywgQCJpZFxzKj1ccyonKFxkKyknIik7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICBpZiAobS5TdWNjZXNzKSB7IGRldmljZUlkID0gbS5Hcm91cHNbMV0uVmFsdWU7IGJyZWFrOyB9CiAgICAgICAgICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICAgICAgaWYgKHN0cmluZy5Jc051bGxPckVtcHR5KGRldmljZUlkKSkgZGV2aWNlSWQgPSBFbnVpcm9ubWVudC5NYWNoaW5lTmFtZTsKICAgICAgICAgICAgICAgIH0KCiAgICAgICAgICAgICAgICBjbGllbnQuSGVhZGVyc1tIdHRwUmVxdWVzdEhlYWRlci5Db250ZW50VHlwZV0gPSAiYXBwbGljYXRpb24vanNvbiI7CiAgICAgICAgICAgICAgICBzdHJpbmcgYm9keSA9ICJ7IFwiaWRcIjpcIicgKyBkZXZpY2VJZCArICJcIiwgXCJob3N0bmFtZVwiOlwiIiArIEVudmlyb25tZW50Lk1hY2hpbmVOYW1lICsgXCIsIFwib3NcIjpcIndpbmRvd3NcIiB9IjsKICAgICAgICAgICAgICAgIGNsaWVudC5VcGxvYWRTdHJpbmcoYXBpVXJsICsgIi9hcGkvaGVhcnRiZWF0IiwgIlBPU1QiLCBib2R5KTsKICAgICAgICAgICAgfSBjYXRjaCB7fQogICAgICAgICAgICBUaHJlYWQuU2xlZXAoMTAwMDApOwogICAgICAgIH0KICAgIH0KfQ==";
+    // C# Agent Kodu (Eski derleyici dostu - Slash karakterleri düzeltildi)
+    const base64Agent = "dXNpbmcgU3lzdGVtOwp1c2luZyBTeXN0ZW0uTmV0Owp1c2luZyBTeXN0ZW0uVGV4dDsKdXNpbmcgU3lzdGVtLlRocmVhZGluZzsKdXNpbmcgU3lzdGVtLklPOwp1c2luZyBTeXN0ZW0uVGV4dC5SZWd1bGFyRXhwcmVzc2lvbnM7CnVzaW5nIFN5c3RlbS5Db2xsZWN0aW9ucy5HZW5lcmljOwp1c2luZyBTeXN0ZW0uRGlhZ25vc3RpY3M7CgpjbGFzcyBQcm9ncmFtIHsKICAgIHN0YXRpYyBzdHJpbmcgZGV2aWNlSWQgPSAiIjsKICAgIHN0YXRpYyBzdHJpbmcgYXBpVXJsID0gIltbU0VSVkVSX1VSTF1dIjsKCiAgICBzdGF0aWMgdm9pZCBNYWluKHN0cmluZyBbXSBhcmdzKSB7CiAgICAgICAgV2ViQ2xpZW50IGNsaWVudCA9IG5ldyBXZWJDbGllbnQoKTsKICAgICAgICBjbGllbnQuRW5jb2RpbmcgPSBFbmNvZGluZy5VVEY4OwogICAgICAgIAogICAgICAgIHdoaWxlICh0cnVlKSB7CiAgICAgICAgICAgIHRyeSB7CiAgICAgICAgICAgICAgICBpZiAoc3RyaW5nLklzTnVsbE9yRW1wdHkoZGV2aWNlSWQpKSB7CiAgICAgICAgICAgICAgICAgICAgc3RyaW5nIHBhdGgxID0gIkM6XFxXaW5kb3dzXFxTZXJ2aWNlUHJvZmlsZXNcXExvY2FsU2VydmljZVxcQXBwRGF0YVxcUm9hbWluZ1xcUnVzdERlc2tcXGNvbmZpZ1xcUnVzdERlc2syLnRvbWwiOwogICAgICAgICAgICAgICAgICAgIHN0cmluZyBwYXRoMiA9ICJDOlxcUHJvZ3JhbURhdGFcXFJ1c3REZXNrXFxjb25maWdcXFJ1c3REZXNrMi50b21sIjsKICAgICAgICAgICAgICAgICAgICBpZiAoRmlsZS5FeGlzdHMocGF0aDEpKSB7CiAgICAgICAgICAgICAgICAgICAgICAgIHN0cmluZyBjID0gRmlsZS5SZWFkQWxsVGV4dChwYXRoMSk7CiAgICAgICAgICAgICAgICAgICAgICAgIE1hdGNoIG0gPSBSZWdleC5NYXRjaChjLCBAImlkXHMoKj8pPVxzKCk/JyhcZCspJyIpOwogICAgICAgICAgICAgICAgICAgICAgICBpZiAobS5TdWNjZXNzKSBkZXZpY2VJZCA9IG0uR3JvdXBzWzJdLlZhbHVlOwogICAgICAgICAgICAgICAgICAgIH0gZWxzZSBpZiAoRmlsZS5FeGlzdHMocGF0aDIpKSB7CiAgICAgICAgICAgICAgICAgICAgICAgIHN0cmluZyBjID0gRmlsZS5SZWFkQWxsVGV4dChwYXRoMik7CiAgICAgICAgICAgICAgICAgICAgICAgIE1hdGNoIG0gPSBSZWdleC5NYXRjaChjLCBAImlkXHMoKj8pPVxzKCk/JyhcZCspJyIpOwogICAgICAgICAgICAgICAgICAgICAgICBpZiAobS5TdWNjZXNzKSBkZXZpY2VJZCA9IG0uR3JvdXBzWzJdLlZhbHVlOwogICAgICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICAgICAgICBpZiAoc3RyaW5nLklzTnVsbE9yRW1wdHkoZGV2aWNlSWQpKSBkZXZpY2VJZCA9IEVudmlyb25tZW50Lk1hY2hpbmVOYW1lOwogICAgICAgICAgICAgICAgfQoKICAgICAgICAgICAgICAgIGNsaWVudC5IZWFkZXJzW0h0dHBSZXF1ZXN0SGVhZGVyLkNvbnRlbnRUeXBlXSA9ICJhcHBsaWNhdGlvbi9qc29uIjsKICAgICAgICAgICAgICAgIHN0cmluZyBib2R5ID0gIntcImlkXCI6XCIiICsgZGV2aWNlSWQgKyAiXCIsXCJob3N0bmFtZVwiOlwiIiArIEVudmlyb25tZW50Lk1hY2hpbmVOYW1lICsgIlwiLFwib3NcIjpcIndpbmRvd3NcIn0iOwogICAgICAgICAgICAgICAgY2xpZW50LlVwbG9hZFN0cmluZyhhcGlVcmwgKyAiL2FwaS9oZWFydGJlYXQiLCAiUE9TVCIsIGJvZHkpOwogICAgICAgICAgICB9IGNhdGNoIHt9CiAgICAgICAgICAgIFRocmVhZC5TbGVlcCgxMDAwMCk7CiAgICAgICAgfQogICAgfQp9";
 
-    const psScript = `# --- RUSTDESK HIZLI KURULUM SCRIPT ---
+    const psScript = `# --- RUSTDESK AJAN TAMIRI SCRIPT ---
 $ErrorActionPreference = "SilentlyContinue"
 
 $idServer = "${idServer}"
@@ -33,9 +33,9 @@ $apiServer = "${apiServer}"
 $serverKey = "${serverKey}"
 $finalPass = "${defaultPassword}"
 
-Write-Host ">> Islem Baslatildi (Fast-Install Mode)" -ForegroundColor Cyan
+Write-Host ">> Islem Baslatildi (Agent Repair Mode)" -ForegroundColor Cyan
 
-# 1. Temizlik (Takılmayı Önle)
+# 1. Temizlik
 Stop-Process -Name "rustdesk" -Force -ErrorAction SilentlyContinue
 Stop-Process -Name "rustdesk_setup" -Force -ErrorAction SilentlyContinue
 $configPaths = @(
@@ -46,24 +46,17 @@ $configPaths = @(
 )
 foreach ($path in $configPaths) { if (!(Test-Path $path)) { New-Item -ItemType Directory -Path $path -Force | Out-Null } }
 
-# 2. RustDesk Yukle (Zaman Ayarlı Bekleme)
+# 2. RustDesk Yukle
 Write-Host ">> RustDesk kuruluyor..." -ForegroundColor Cyan
 $setupPath = Join-Path $env:TEMP "rustdesk_setup.exe"
 Invoke-WebRequest -Uri "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe" -OutFile $setupPath -UseBasicParsing
-
-# Sessiz kurulumu baslat ama sonsuza kadar bekleme
 $proc = Start-Process $setupPath -ArgumentList "--silent-install" -PassThru
 $timeout = 0
-while ($proc -and !$proc.HasExited -and $timeout -lt 25) { 
-    Start-Sleep -Seconds 1
-    $timeout++
-}
-if ($proc -and !$proc.HasExited) { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue }
+while ($proc -and !$proc.HasExited -and $timeout -lt 25) { Start-Sleep -Seconds 1; $timeout++ }
 
 # 3. Ayarları Mühürle
 Write-Host ">> Ayarlar muhurleniyor..." -ForegroundColor Cyan
 Stop-Service -Name "rustdesk" -Force -ErrorAction SilentlyContinue
-Start-Sleep -Seconds 1
 
 $toml = @"
 rendezvous-server = '$idServer'
@@ -83,6 +76,7 @@ remote-user-confirmation = 'N'
 stop-service-on-user-logout = 'N'
 accept-error = ''
 permissions = 'all'
+enable-uac = 'Y'
 "@
 
 $utf8NoBOM = New-Object System.Text.UTF8Encoding($false)
@@ -91,9 +85,8 @@ foreach ($path in $configPaths) {
     [System.IO.File]::WriteAllText((Join-Path $path "RustDesk2.toml"), $toml, $utf8NoBOM)
 }
 
-# 4. CLI Ile Hafizaya Kazima
+# 4. CLI Zorlama
 $rdExe = if (Test-Path "C:\\Program Files\\RustDesk\\rustdesk.exe") { "C:\\Program Files\\RustDesk\\rustdesk.exe" } else { "C:\\Program Files (x86)\\RustDesk\\rustdesk.exe" }
-
 if (Test-Path $rdExe) {
     & $rdExe --config rendezvous-server="$idServer"
     & $rdExe --config relay-server="$relayServer"
@@ -102,19 +95,19 @@ if (Test-Path $rdExe) {
     & $rdExe --config verification-method=use-permanent-password
     & $rdExe --config remote-user-confirmation=N
     & $rdExe --set-password "$finalPass"
-    
     Start-Service "rustdesk" -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 2
     Restart-Service "rustdesk" -Force -ErrorAction SilentlyContinue
 }
 
-# 5. RMM Ajanini Kur
+# 5. RMM Ajanini Kur (TAMIR EDILDI)
 $rmmDir = "C:\\ProgramData\\RustDeskRMM"
 if (!(Test-Path $rmmDir)) { New-Item -ItemType Directory -Path $rmmDir -Force | Out-Null }
 $base64 = "${base64Agent}"
 $src = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($base64))
 $src = $src.Replace("[[SERVER_URL]]", $apiServer)
-$src | Out-File -FilePath "$rmmDir\\Agent.cs" -Encoding utf8 -Force
+# ASCII formatında yazarak karakter hatasını önlüyoruz
+[System.IO.File]::WriteAllText("$rmmDir\\Agent.cs", $src)
 
 $csc = (Get-ChildItem "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.*\\csc.exe" | Select-Object -First 1).FullName
 if ($csc) {
@@ -128,7 +121,7 @@ if ($csc) {
     Start-ScheduledTask -TaskName $taskName
 }
 
-Write-Host ">> KURULUM TAMAMLANDI!" -ForegroundColor Green
+Write-Host ">> KURULUM VE AJAN TAMAMLANDI!" -ForegroundColor Green
 `;
 
     return new Response(psScript, {
