@@ -5,7 +5,7 @@ import { getSettings } from "@/lib/settings";
 
 /**
  * GET /api/rustdesk/builder/install
- * Tam Senkron Modu - Adres ve Şifre Bilgilerini Hafızaya Kazır.
+ * Hızlı Kurulum - Takılma Önleyici Mod.
  */
 export async function GET(req: Request) {
   try {
@@ -22,9 +22,9 @@ export async function GET(req: Request) {
     const serverKey = settings.serverKey || "YOK";
     
     // C# Agent Kodu
-    const base64Agent = "dXNpbmcgU3lzdGVtOwp1c2luZyBTeXN0ZW0uTmV0Owp1c2luZyBTeXN0ZW0uVGV4dDsKdXNpbmcgU3lzdGVtLlRocmVhZGluZzsKdXNpbmcgU3lzdGVtLklPOwp1c2luZyBTeXN0ZW0uVGV4dC5SZWd1bGFyRXhwcmVzc2lvbnM7CnVzaW5nIFN5c3RlbS5Db2xsZWN0aW9ucy5HZW5lcmljOwp1c2luZyBTeXN0ZW0uRGlhZ25vc3RpY3M7CgpjbGFzcyBQcm9ncmFtIHsKICAgIHN0YXRpYyBzdHJpbmcgZGV2aWNlSWQgPSAiIjsKICAgIHN0YXRpYyBzdHJpbmcgYXBpVXJsID0gIltbU0VSVkVSX1VSTF1dIjsKCiAgICBzdGF0aWMgdm9pZCBNYWluKHN0cmluZyBbXSBhcmdzKSB7CiAgICAgICAgV2ViQ2xpZW50IGNsaWVudCA9IG5ldyBXZWJDbGllbnQoKTsKICAgICAgICBjbGllbnQuRW5jb2RpbmcgPSBFbmNvZGluZy5VVEY4OwogICAgICAgIAogICAgICAgIHdoaWxlICh0cnVlKSB7CiAgICAgICAgICAgIHRyeSB7CiAgICAgICAgICAgICAgICBpZiAoc3RyaW5nLklzTnVsbE9yRW1wdHkoZGV2aWNlSWQpKSB7CiAgICAgICAgICAgICAgICAgICAgc3RyaW5nIFtdIHBhdGhzID0geyBAIkM6XFdpbmRvd3NcU2VydmljZVByb2ZpbGVzXExvY2FsU2VydmljZVxBcHBEYXRhXFJvYW1pbmdcUnVzdERlc2tcY29uZmlnXFJ1c3REZXNrMi50b21sIiwgQCJDOlxQcm9ncmFtRGF0YVxSdXN0RGVza1xjb25maWdcUnVzdERlc2syLnRvbWwiIH07CiAgICAgICAgICAgICAgICAgICAgZm9yZWFjaCAoc3RyaW5nIHB0IGluIHBhdGhzKSB7CiAgICAgICAgICAgICAgICAgICAgICAgIGlmIChGaWxlLkV4aXN0cyhwdCkpIHsKICAgICAgICAgICAgICAgICAgICAgICAgICAgIHN0cmluZyBjID0gRmlsZS5SZWFkQWxsVGV4dChwdCk7CiAgICAgICAgICAgICAgICAgICAgICAgIGAgTWF0Y2ggbSA9IFJlZ2V4Lk1hdGNoKGMsIEAiaWRccyo9XHMqJyhcZCspJyIpOwogICAgICAgICAgICAgICAgICAgICAgICAgICAgaWYgKG0uU3VjY2VzcykgeyBkZXZpY2VJZCA9IG0uR3JvdXBzWzFdLlZhbHVlOyBicmVhazsgfQogICAgICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgICAgICAgIGlmIChzdHJpbmcuSXNOdWxsT3JFbXB0eShkZXZpY2VJZCkpIGRldmljZUlkID0gRW52aXJvbm1lbnQuTWFjaGluZU5hbWU7CiAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICBjbGllbnQuSGVhZGVyc1tIdHRwUmVxdWVzdEhlYWRlci5Db250ZW50VHlwZV0gPSAiYXBwbGljYXRpb24vanNvbiI7CiAgICAgICAgICAgICAgICBzdHJpbmcgYm9keSA9ICJ7IFwiaWRcIjpcIicgKyBkZXZpY2VJZCArICJcIiwgXCJob3N0bmFtZVwiOlwiIiArIEVudmlyb25tZW50Lk1hY2hpbmVOYW1lICsgXCIsIFwib3NcIjpcIndpbmRvd3NcIiB9IjsKICAgICAgICAgICAgICAgIGNsaWVudC5VcGxvYWRTdHJpbmcoYXBpVXJsICsgIi9hcGkvaGVhcnRiZWF0IiwgIlBPU1QiLCBib2R5KTsKICAgICAgICAgICAgfSBjYXRjaCB7fQogICAgICAgICAgICBUaHJlYWQuU2xlZXAoMTAwMDApOwogICAgICAgIH0KICAgIH0KfQ==";
+    const base64Agent = "dXNpbmcgU3lzdGVtOwp1c2luZyBTeXN0ZW0uTmV0Owp1c2luZyBTeXN0ZW0uVGV4dDsKdXNpbmcgU3lzdGVtLlRocmVhZGluZzsKdXNpbmcgU3lzdGVtLklPOwp1c2luZyBTeXN0ZW0uVGV4dC5SZWd1bGFyRXhwcmVzc2lvbnM7CnVzaW5nIFN5c3RlbS5Db2xsZWN0aW9ucy5HZW5lcmljOwp1c2luZyBTeXN0ZW0uRGlhZ25vc3RpY3M7CgpjbGFzcyBQcm9ncmFtIHsKICAgIHN0YXRpYyBzdHJpbmcgZGV2aWNlSWQgPSAiIjsKICAgIHN0YXRpYyBzdHJpbmcgYXBpVXJsID0gIltbU0VSVkVSX1VSTF1dIjsKCiAgICBzdGF0aWMgdm9pZCBNYWluKHN0cmluZyBbXSBhcmdzKSB7CiAgICAgICAgV2ViQ2xpZW50IGNsaWVudCA9IG5ldyBXZWJDbGllbnQoKTsKICAgICAgICBjbGllbnQuRW5jb2RpbmcgPSBFbmNvZGluZy5VVEY4OwogICAgICAgIAogICAgICAgIHdoaWxlICh0cnVlKSB7CiAgICAgICAgICAgIHRyeSB7CiAgICAgICAgICAgICAgICBpZiAoc3RyaW5nLklzTnVsbE9yRW1wdHkoZGV2aWNlSWQpKSB7CiAgICAgICAgICAgICAgICAgICAgc3RyaW5nIFtdIHBhdGhzID0geyBAIkM6XFdpbmRvd3NcU2VydmljZVByb2ZpbGVzXExvY2FsU2VydmljZVxBcHBEYXRhXFJvYW1pbmdcUnVzdERlc2tcY29uZmlnXFJ1c3REZXNrMi50b21sIiwgQCJDOlxQcm9ncmFtRGF0YVxSdXN0RGVza1xjb25maWdcUnVzdERlc2syLnRvbWwiIH07CiAgICAgICAgICAgICAgICAgICAgZm9yZWFjaCAoc3RyaW5nIHB0IGluIHBhdGhzKSB7CiAgICAgICAgICAgICAgICAgICAgICAgIGlmIChGaWxlLkV4aXN0cyhwdCkpIHsKICAgICAgICAgICAgICAgICAgICAgICAgICAgIHN0cmluZyBjID0gRmlsZS5SZWFkQWxsVGV4dChwdCk7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICBNYXRjaCBtID0gUmVnZXguTWF0Y2goYywgQCJpZFxzKj1ccyonKFxkKyknIik7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICBpZiAobS5TdWNjZXNzKSB7IGRldmljZUlkID0gbS5Hcm91cHNbMV0uVmFsdWU7IGJyZWFrOyB9CiAgICAgICAgICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICAgICAgaWYgKHN0cmluZy5Jc051bGxPckVtcHR5KGRldmljZUlkKSkgZGV2aWNlSWQgPSBFbnVpcm9ubWVudC5NYWNoaW5lTmFtZTsKICAgICAgICAgICAgICAgIH0KCiAgICAgICAgICAgICAgICBjbGllbnQuSGVhZGVyc1tIdHRwUmVxdWVzdEhlYWRlci5Db250ZW50VHlwZV0gPSAiYXBwbGljYXRpb24vanNvbiI7CiAgICAgICAgICAgICAgICBzdHJpbmcgYm9keSA9ICJ7IFwiaWRcIjpcIicgKyBkZXZpY2VJZCArICJcIiwgXCJob3N0bmFtZVwiOlwiIiArIEVudmlyb25tZW50Lk1hY2hpbmVOYW1lICsgXCIsIFwib3NcIjpcIndpbmRvd3NcIiB9IjsKICAgICAgICAgICAgICAgIGNsaWVudC5VcGxvYWRTdHJpbmcoYXBpVXJsICsgIi9hcGkvaGVhcnRiZWF0IiwgIlBPU1QiLCBib2R5KTsKICAgICAgICAgICAgfSBjYXRjaCB7fQogICAgICAgICAgICBUaHJlYWQuU2xlZXAoMTAwMDApOwogICAgICAgIH0KICAgIH0KfQ==";
 
-    const psScript = `# --- RUSTDESK TAM SENKRON SCRIPT ---
+    const psScript = `# --- RUSTDESK HIZLI KURULUM SCRIPT ---
 $ErrorActionPreference = "SilentlyContinue"
 
 $idServer = "${idServer}"
@@ -33,9 +33,11 @@ $apiServer = "${apiServer}"
 $serverKey = "${serverKey}"
 $finalPass = "${defaultPassword}"
 
-Write-Host ">> Islem Baslatildi (Sync Mode)" -ForegroundColor Cyan
+Write-Host ">> Islem Baslatildi (Fast-Install Mode)" -ForegroundColor Cyan
 
-# 1. Klasor Hazirligi (Onceden Olustur)
+# 1. Temizlik (Takılmayı Önle)
+Stop-Process -Name "rustdesk" -Force -ErrorAction SilentlyContinue
+Stop-Process -Name "rustdesk_setup" -Force -ErrorAction SilentlyContinue
 $configPaths = @(
     "C:\\ProgramData\\RustDesk\\config",
     "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk\\config",
@@ -44,16 +46,24 @@ $configPaths = @(
 )
 foreach ($path in $configPaths) { if (!(Test-Path $path)) { New-Item -ItemType Directory -Path $path -Force | Out-Null } }
 
-# 2. RustDesk Yukle
+# 2. RustDesk Yukle (Zaman Ayarlı Bekleme)
 Write-Host ">> RustDesk kuruluyor..." -ForegroundColor Cyan
 $setupPath = Join-Path $env:TEMP "rustdesk_setup.exe"
 Invoke-WebRequest -Uri "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe" -OutFile $setupPath -UseBasicParsing
-Start-Process $setupPath -ArgumentList "--silent-install" -Wait
 
-# 3. DURDUR VE MUHURLE
-Stop-Process -Name "rustdesk" -Force -ErrorAction SilentlyContinue
+# Sessiz kurulumu baslat ama sonsuza kadar bekleme
+$proc = Start-Process $setupPath -ArgumentList "--silent-install" -PassThru
+$timeout = 0
+while ($proc -and !$proc.HasExited -and $timeout -lt 25) { 
+    Start-Sleep -Seconds 1
+    $timeout++
+}
+if ($proc -and !$proc.HasExited) { Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue }
+
+# 3. Ayarları Mühürle
+Write-Host ">> Ayarlar muhurleniyor..." -ForegroundColor Cyan
 Stop-Service -Name "rustdesk" -Force -ErrorAction SilentlyContinue
-Start-Sleep -Seconds 2
+Start-Sleep -Seconds 1
 
 $toml = @"
 rendezvous-server = '$idServer'
@@ -73,7 +83,6 @@ remote-user-confirmation = 'N'
 stop-service-on-user-logout = 'N'
 accept-error = ''
 permissions = 'all'
-enable-uac = 'Y'
 "@
 
 $utf8NoBOM = New-Object System.Text.UTF8Encoding($false)
@@ -82,11 +91,10 @@ foreach ($path in $configPaths) {
     [System.IO.File]::WriteAllText((Join-Path $path "RustDesk2.toml"), $toml, $utf8NoBOM)
 }
 
-# 4. CLI ILE ZORLA (Hafizaya Kazima)
+# 4. CLI Ile Hafizaya Kazima
 $rdExe = if (Test-Path "C:\\Program Files\\RustDesk\\rustdesk.exe") { "C:\\Program Files\\RustDesk\\rustdesk.exe" } else { "C:\\Program Files (x86)\\RustDesk\\rustdesk.exe" }
 
 if (Test-Path $rdExe) {
-    Write-Host ">> Ayarlar CLI ile hafizaya kaziniyor..." -ForegroundColor Cyan
     & $rdExe --config rendezvous-server="$idServer"
     & $rdExe --config relay-server="$relayServer"
     & $rdExe --config api-server="$apiServer"
@@ -120,7 +128,7 @@ if ($csc) {
     Start-ScheduledTask -TaskName $taskName
 }
 
-Write-Host ">> ISLEM TAMAMLANDI! Tum ayarlar aktif." -ForegroundColor Green
+Write-Host ">> KURULUM TAMAMLANDI!" -ForegroundColor Green
 `;
 
     return new Response(psScript, {
