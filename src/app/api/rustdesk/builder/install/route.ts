@@ -60,34 +60,31 @@ Write-Host ">> Islem Baslatildi (Host: $hostIp)" -ForegroundColor Cyan
 $rmmDir = "C:\\ProgramData\\RustDeskRMM"
 if (!(Test-Path $rmmDir)) { New-Item -ItemType Directory -Path $rmmDir -Force | Out-Null }
 
-# 2. Mevcut RustDesk'i Durdur
-Stop-Service "rustdesk" -ErrorAction SilentlyContinue
-taskkill /F /IM RustDesk.exe /T 2>$null
-Start-Sleep -Seconds 2
-
-# 3. RustDesk Indir ve Kur (Filename Trick + Silent)
-Write-Host ">> RustDesk indiriliyor..." -ForegroundColor Cyan
-$url = "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe"
-$setupName = "rustdesk-host=$($hostIp)-key=$($serverKey).exe"
-$setupPath = Join-Path $env:TEMP $setupName
-
-Invoke-WebRequest -Uri $url -OutFile $setupPath -UseBasicParsing
-Write-Host ">> Sessiz kurulum yapiliyor..." -ForegroundColor Cyan
-Start-Process $setupPath -ArgumentList "--silent-install" -Wait
-
-# 4. Ayarlari Cekirdekten Yapılandır (RustDesk 1.3+ TOML Format)
-Write-Host ">> Sunucu ayarlari enjekte ediliyor..." -ForegroundColor Cyan
+# 2. Sunucu Ayarları Hazırla
+Write-Host ">> Ayarlar hazirlaniyor..." -ForegroundColor Cyan
 
 $toml = @"
+rendezvous-server = '$hostIp'
 rendezvous_server = '$hostIp'
+id-server = '$hostIp'
+id_server = '$hostIp'
+relay-server = '$hostIp'
 relay_server = '$hostIp'
+api-server = 'http://$($hostIp):3000'
+api_server = 'http://$($hostIp):3000'
+key = '$serverKey'
+key_pk = '$serverKey'
 
 [options]
 custom-rendezvous-server = '$hostIp'
-key = '$serverKey'
+custom_rendezvous_server = '$hostIp'
 relay-server = '$hostIp'
 api-server = 'http://$($hostIp):3000'
+key = '$serverKey'
 "@
+
+Write-Host ">> TOML Icerigi:" -ForegroundColor Gray
+Write-Host $toml
 
 $configPaths = @(
     "C:\\ProgramData\\RustDesk\\config",
@@ -96,19 +93,33 @@ $configPaths = @(
     "$env:AppData\\RustDesk\\config"
 )
 
-# Her ihtimale karsi tum kullanicilari tara
 Get-ChildItem "C:\\Users" -ErrorAction SilentlyContinue | ForEach-Object {
     $configPaths += "$($_.FullName)\\AppData\\Roaming\\RustDesk\\config"
 }
 
+$utf8NoBOM = New-Object System.Text.UTF8Encoding($false)
+
 foreach ($path in $configPaths) {
     if (!(Test-Path $path)) { New-Item -ItemType Directory -Path $path -Force | Out-Null }
     try {
-        [System.IO.File]::WriteAllText((Join-Path $path "RustDesk.toml"), $toml)
-        [System.IO.File]::WriteAllText((Join-Path $path "RustDesk2.toml"), $toml)
-        [System.IO.File]::WriteAllText((Join-Path $path "rustdesk.toml"), $toml)
-    } catch {}
+        [System.IO.File]::WriteAllText((Join-Path $path "RustDesk.toml"), $toml, $utf8NoBOM)
+        [System.IO.File]::WriteAllText((Join-Path $path "RustDesk2.toml"), $toml, $utf8NoBOM)
+        [System.IO.File]::WriteAllText((Join-Path $path "rustdesk.toml"), $toml, $utf8NoBOM)
+    } catch {
+        Write-Host "!! HATA: $path klasorune yazilamadi." -ForegroundColor Red
+    }
 }
+
+# 3. RustDesk Indir ve Kur (Filename Trick + Silent)
+Write-Host ">> RustDesk indiriliyor..." -ForegroundColor Cyan
+$url = "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe"
+$setupName = "rustdesk-host=$($hostIp)-key=$($serverKey).exe"
+$setupPath = Join-Path $env:TEMP $setupName
+
+if (Test-Path $setupPath) { Remove-Item $setupPath -Force }
+Invoke-WebRequest -Uri $url -OutFile $setupPath -UseBasicParsing
+Write-Host ">> Sessiz kurulum yapiliyor..." -ForegroundColor Cyan
+Start-Process $setupPath -ArgumentList "--silent-install" -Wait
 
 # 5. CLI ve Sifre Ayari
 if (Test-Path "C:\\Program Files\\RustDesk\\rustdesk.exe") {
