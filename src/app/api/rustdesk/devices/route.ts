@@ -44,17 +44,23 @@ export async function GET() {
     }
 
     const now = Math.floor(Date.now() / 1000);
-    const deviceList = Array.isArray(result.data) ? result.data : [];
+    const sqliteDevices = Array.isArray(result.data) ? result.data : [];
+    
+    // Tüm cihaz ID'lerini topla (SQLite + Agent)
+    const allIds = new Set([
+      ...sqliteDevices.map((d: any) => String(d.id)),
+      ...Object.keys(onlineStatus)
+    ]);
 
-    const devices = deviceList
-      .filter((row: any) => !blacklist[String(row.id)]) // Blacklist'tekileri atla
-      .map((row: any) => {
-        const deviceId = String(row.id);
-        const lastHeartbeat = onlineStatus[deviceId] || 0;
-        const extra = hardwareInfo[deviceId] || {};
+    const devices = Array.from(allIds)
+      .filter(id => !blacklist[id]) // Blacklist'tekileri atla
+      .map(id => {
+        const sqliteRow = sqliteDevices.find((d: any) => String(d.id) === id) || {};
+        const lastHeartbeat = onlineStatus[id] || 0;
+        const extra = hardwareInfo[id] || {};
         
         let sqliteInfo: any = {};
-        try { if (row.info) sqliteInfo = JSON.parse(row.info); } catch (e) {}
+        try { if (sqliteRow.info) sqliteInfo = JSON.parse(sqliteRow.info); } catch (e) {}
 
         const isOnline = (now - lastHeartbeat) < 90;
 
@@ -70,14 +76,14 @@ export async function GET() {
         }
 
         return {
-          id: deviceId,
-          name: extra.hostname || extra.computer_name || row.hostname || sqliteInfo.hostname || row.username || row.id,
-          ip: extra.ip || sqliteInfo.ip || row.ip || "-",
-          os: extra.os || row.os || "Windows",
-          user: extra.standard_user || row.user || row.username || "-",
+          id: id,
+          name: extra.hostname || extra.computer_name || sqliteRow.hostname || sqliteInfo.hostname || sqliteRow.username || id,
+          ip: extra.ip || sqliteInfo.ip || sqliteRow.ip || "-",
+          os: extra.os || sqliteRow.os || "Windows",
+          user: extra.standard_user || sqliteRow.user || sqliteRow.username || "-",
           status: isOnline ? "online" : "offline",
           lastSeen: lastHeartbeat > 0 ? new Date(lastHeartbeat * 1000).toLocaleString("tr-TR") : "Bilinmiyor",
-          group: row.note || "Genel",
+          group: sqliteRow.note || "Genel",
           network: extra.network || [],
           cpu: extra.cpu || "-",
           ram: extra.ram || extra.memory || "-",
