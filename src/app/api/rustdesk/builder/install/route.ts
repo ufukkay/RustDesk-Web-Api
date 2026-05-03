@@ -14,6 +14,11 @@ export async function GET(req: Request) {
     
     const host = searchParams.get("host") || settings.host;
     const port = searchParams.get("port") || settings.port;
+    
+    // Yeni eklenen detaylı ayarları al (yoksa host'u kullan)
+    const idServer = settings.idServer || host;
+    const relayServer = settings.relayServer || host;
+    const apiServer = settings.apiServer || `http://${host}:${port}`;
     const defaultPassword = settings.defaultPassword || "";
     
     let serverKey = settings.serverKey || "YOK";
@@ -48,13 +53,13 @@ export async function GET(req: Request) {
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $ErrorActionPreference = "SilentlyContinue"
 
-$hostIp = "${host}"
-$port = "${port}"
+$idServer = "${idServer}"
+$relayServer = "${relayServer}"
+$apiServer = "${apiServer}"
 $serverKey = "${serverKey}"
 $password = "${defaultPassword}"
-$dashboardUrl = "http://${host}:${port}"
 
-Write-Host ">> Islem Baslatildi (Host: $hostIp)" -ForegroundColor Cyan
+Write-Host ">> Islem Baslatildi (ID Server: $idServer)" -ForegroundColor Cyan
 
 # 1. Temizlik ve Hazirlik
 $rmmDir = "C:\\ProgramData\\RustDeskRMM"
@@ -64,22 +69,22 @@ if (!(Test-Path $rmmDir)) { New-Item -ItemType Directory -Path $rmmDir -Force | 
 Write-Host ">> Ayarlar hazirlaniyor..." -ForegroundColor Cyan
 
 $toml = @"
-rendezvous-server = '$hostIp'
-rendezvous_server = '$hostIp'
-id-server = '$hostIp'
-id_server = '$hostIp'
-relay-server = '$hostIp'
-relay_server = '$hostIp'
-api-server = 'http://$($hostIp):3000'
-api_server = 'http://$($hostIp):3000'
+rendezvous-server = '$idServer'
+rendezvous_server = '$idServer'
+id-server = '$idServer'
+id_server = '$idServer'
+relay-server = '$relayServer'
+relay_server = '$relayServer'
+api-server = '$apiServer'
+api_server = '$apiServer'
 key = '$serverKey'
 key_pk = '$serverKey'
 
 [options]
-custom-rendezvous-server = '$hostIp'
-custom_rendezvous_server = '$hostIp'
-relay-server = '$hostIp'
-api-server = 'http://$($hostIp):3000'
+custom-rendezvous-server = '$idServer'
+custom_rendezvous_server = '$idServer'
+relay-server = '$relayServer'
+api-server = '$apiServer'
 key = '$serverKey'
 "@
 
@@ -113,7 +118,7 @@ foreach ($path in $configPaths) {
 # 3. RustDesk Indir ve Kur (Filename Trick + Silent)
 Write-Host ">> RustDesk indiriliyor..." -ForegroundColor Cyan
 $url = "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe"
-$setupName = "rustdesk-host=$($hostIp)-key=$($serverKey).exe"
+$setupName = "rustdesk-host=$($idServer)-key=$($serverKey).exe"
 $setupPath = Join-Path $env:TEMP $setupName
 
 if (Test-Path $setupPath) { Remove-Item $setupPath -Force }
