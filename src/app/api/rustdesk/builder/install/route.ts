@@ -32,80 +32,10 @@ export async function GET(req: Request) {
       }
     }
 
-    const agentSource = String.raw`using System;
-using System.Net;
-using System.Text;
-using System.Threading;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Collections.Generic;
-using System.Net.NetworkInformation;
-using System.IO;
+    const fullServerUrl = `http://${host}:${port}`;
 
-public class RustDeskAgent {
-    public static void Main() {
-        string serverUrl = "[[SERVER_URL]]/api/heartbeat";
-        string resultUrl = "[[SERVER_URL]]/api/rustdesk/command/result";
-        string deviceId = "[[AGENT_ID]]"; 
-        WebClient client = new WebClient();
-        client.Encoding = Encoding.UTF8;
-        
-        while (true) {
-            try {
-                DriveInfo c = new DriveInfo("C");
-                string disk = string.Format("{0:N1} GB / {1:N1} GB", c.AvailableFreeSpace / 1073741824.0, c.TotalSize / 1073741824.0);
-                
-                List<string> cardJsons = new List<string>();
-                foreach (var ni in NetworkInterface.GetAllNetworkInterfaces()) {
-                    if (ni.OperationalStatus == OperationalStatus.Up && ni.NetworkInterfaceType != NetworkInterfaceType.Loopback) {
-                        foreach (var ip in ni.GetIPProperties().UnicastAddresses) {
-                            if (ip.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork) {
-                                string gw = ni.GetIPProperties().GatewayAddresses.Count > 0 ? ni.GetIPProperties().GatewayAddresses[0].Address.ToString() : "-";
-                                string card = "{ \"name\":\"" + ni.Name.Replace("\"", "'") + "\", \"ip\":\"" + ip.Address.ToString() + "\", \"mask\":\"" + ip.IPv4Mask.ToString() + "\", \"gw\":\"" + gw + "\" }";
-                                cardJsons.Add(card);
-                            }
-                        }
-                    }
-                }
-
-                string body = "{ \"id\":\"" + deviceId + "\", \"disk\":\"" + disk + "\", \"hostname\":\"" + Environment.MachineName + "\", \"os\":\"Windows\", \"network\":[" + string.Join(",", cardJsons.ToArray()) + "] }";
-                client.Headers[HttpRequestHeader.ContentType] = "application/json";
-                string res = client.UploadString(serverUrl, "POST", body);
-                
-                if (res.Contains("\"command\":\"") && !res.Contains("\"command\":null")) {
-                    string cmd = res.Split(new string[] { "\"command\":\"" }, StringSplitOptions.None)[1].Split('"')[0];
-                    string output = "";
-                    if (cmd == "tsdiscon" || cmd == "lock") { Process.Start(@"C:\Windows\System32\tsdiscon.exe"); output = "Locked"; }
-                    else if (cmd.Contains("shutdown /s")) { Process.Start("shutdown.exe", "/s /t 5 /f"); output = "Shutting down..."; }
-                    else if (cmd.Contains("shutdown /r")) { Process.Start("shutdown.exe", "/r /t 5 /f"); output = "Restarting..."; }
-                    else if (cmd != "refresh_info") {
-                        try {
-                            ProcessStartInfo psi = new ProcessStartInfo("cmd.exe", "/c " + cmd);
-                            psi.RedirectStandardOutput = true; psi.RedirectStandardError = true; psi.UseShellExecute = false; psi.CreateNoWindow = true;
-                            using (var p = Process.Start(psi)) {
-                                output = p.StandardOutput.ReadToEnd();
-                                string err = p.StandardError.ReadToEnd();
-                                if (!string.IsNullOrEmpty(err)) output += " Error: " + err;
-                                p.WaitForExit(15000);
-                            }
-                        } catch (Exception ex) { output = "Error: " + ex.Message; }
-                    }
-
-                    if (!string.IsNullOrEmpty(output)) {
-                        string b64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(output));
-                        string rBody = "{ \"deviceId\":\"" + deviceId + "\", \"output\":\"" + b64 + "\", \"isBase64\": true }";
-                        client.Headers[HttpRequestHeader.ContentType] = "application/json";
-                        client.UploadString(resultUrl, "POST", rBody);
-                    }
-                }
-            } catch {}
-            Thread.Sleep(10000);
-        }
-    }
-}
-`;
-
-    const base64Agent = Buffer.from(agentSource).toString('base64');
+    // C# kodunu onceden Base64'e cevirip buraya statik koyuyoruz (500 hatasini onlemek icin)
+    const base64Agent = "dXNpbmcgU3lzdGVtOwp1c2luZyBTeXN0ZW0uTmV0Owp1c2luZyBTeXN0ZW0uVGV4dDsKdXNpbmcgU3lzdGVtLlRocmVhZGluZzsKdXNpbmcgU3lzdGVtLkRpYWdub3N0aWNzOwp1c2luZyBTeXN0ZW0uUnVudGltZS5JbnRlcm9wU2VydmljZXM7CnVzaW5nIFN5c3RlbS5Db2xsZWN0aW9ucy5HZW5lcmljOwp1c2luZyBTeXN0ZW0uTmV0Lk5ldHdvcmtJbmZvcm1hdGlvbjsKdXNpbmcgU3lzdGVtLklPOwoKcHVibGljIGNsYXNzIFJ1c3REZXNrQWdlbnQgewogICAgcHVibGljIHN0YXRpYyB2b2lkIE1haW4oKSB7CiAgICAgICAgc3RyaW5nIHNlcnZlclVybCA9ICJbW1NFUlZFUl9VUkxdXS9hcGkvaGVhcnRiZWF0IjsKICAgICAgICBzdHJpbmcgcmVzdWx0VXJsID0gIltbU0VSVkVSX1VSTF1dL2FwaS9ydXN0ZGVzay9jb21tYW5kL3Jlc3VsdCI7CiAgICAgICAgc3RyaW5nIGRldmljZUlkID0gIltbQUdFTlRfSURfXSI7IAogICAgICAgIFdlYkNsaWVudCBjbGllbnQgPSBuZXcgV2ViQ2xpZW50KCk7CiAgICAgICAgY2xpZW50LkVuY29kaW5nID0gRW5jb2RpbmcuVVRGODg7CiAgICAgICAgCiAgICAgICAgd2hpbGUgKHRydWUpIHsKICAgICAgICAgICAgdHJ5IHsKICAgICAgICAgICAgICAgIERyaXZlSW5mbyBjID0gbmV3IERyaXZlSW5mbygiQyIpOwogICAgICAgICAgICAgICAgc3RyaW5nIGRpc2sgPSBzdHJpbmcuRm9ybWF0KCJ7MDpOMX0gR0IgLyB7MTpOMX0gR0IiLCBjLkF2YWlsYWJsZUZyZWVTcGFjZSAvIDEwNzM3NDE4MjQuMCwgYy5Ub3RhbFNpemUgLyAxMDczNzQxODI0LjApOwogICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICBMaXN0PHN0cmluZz4gY2FyZEpzb25zID0gbmV3IExpc3Q8c3RyaW5nPigpOwogICAgICAgICAgICAgICAgZm9yZWFjaCAodmFyIG5pIGluIE5ldHdvcmtJbnRlcmZhY2UuR2V0QWxsTmV0d29ya0ludGVyZmFjZXMoKSkgewogICAgICAgICAgICAgICAgICAgIGlmIChuaS5PcGVyYXRpb25hbFN0YXR1cyA9PSBPcGVyYXRpb25hbFN0YXR1cy5VcCAmJiBuaS5OZXR3b3JrSW50ZXJmYWNlVHlwZSAhPSBOZXR3b3JrSW50ZXJmYWNlVHlwZS5Mb29wYmFjaykgewogICAgICAgICAgICAgICAgICAgICAgICBmb3JlYWNoICh2YXIgaXAgaW4gbmkuR2V0SVBQcm9wZXJ0aWVzKCkuVW5pY2FzdEFkZHJlc3NlcykgewogICAgICAgICAgICAgICAgICAgICAgICAgICAgaWYgKGlwLkFkZHJlc3MuQWRkcmVzc0ZhbWlseSA9PSBTeXN0ZW0uTmV0LlNvY2tldHMuQWRkcmVzc0ZhbWlseS5JbnRlck5ldHdvcmspIHsKICAgICAgICAgICAgICAgIC8vIEdhdGV3YXkgYmlsZ2lzaSBvcm5layBhbWFjbGkgZWtsZW5kaQogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHN0cmluZyBndyA9IG5pLkdldElQUHJvcGVydGllcygpLkdhdGV3YXlBZGRyZXNzZXMuQ291bnQgPiAwID8gbmkuR2V0SVBQcm9wZXJ0aWVzKCkuRhdld2F5QWRkcmVzc2VzWzBdLkFkZHJlc3MuVG9TdHJpbmcoKSA6ICItIjsKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBzdHJpbmcgY2FyZCA9ICJ7IFwibmFtZVwiOlwidSIgKyBuaS5OYW1lLlJlcGxhY2UoIlwiIiwgIiciKSArICJcIiwgXCJpcFwiOlwidSIgKyBpcC5BZGRyZXNzLlRvU3RyaW5nKCkgKyAiXCIsIFwibWFza1wiOlwidSIgKyBpcC5JUHY0TWFzay5Ub1N0cmluZygpICsgIlwiLCBcImd3XCI6XCJ1IiArIGd3ICsgIlwiIH0iOwogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGNhcmRKc29ucy5BZGQoY2FyZCk7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICB9CgogICAgICAgICAgICAgICAgc3RyaW5nIGJvZHkgPSAKeyBcImlkXCI6XCJ1IiArIGRldmljZUlkICsgIlwiLCBcImRpc2tcIjpcInUiICsgZGlzayArICJcIiwgXCJob3N0bmFtZVwiOlwidSIgKyBFbnZpcm9ubWVudC5NYWNoaW5lTmFtZSArICJcIiwgXCJvc1wiOlwid2luZG93c1wiLCBcIm5ldHdvcmtcIjpbIiArIHN0cmluZy5Kb2luKCIsIiwgY2FyZEpzb25zLlRvQXJyYXkoKSkgKyAiXSB9IjsKICAgICAgICAgICAgICAgIGNsaWVudC5IZWFkZXJzW0h0dHBSZXF1ZXN0SGVhZGVyLkNvbnRlbnRUeXBlXSA9ICJhcHBsaWNhdGlvbi9qc29uIjsKICAgICAgICAgICAgICAgIHN0cmluZyByZXMgPSBjbGllbnQuVXBsb2FkU3RyaW5nKHNlcnZlclVybCwgIlBPU1QiLCBib2R5KTsKICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgaWYgKHJlcy5Db250YWlucyhcIlwiY29tbWFuZFwiOlwiXCIpICYmICFyZXMuQ29udGFpbnMoXCJcImNvbW1hbmRcIjpudWxsXCIpKSB7CiAgICAgICAgICAgICAgICAgICAgc3RyaW5nIGNtZCA9IHJlcy5TcGxpdChuZXcgc3RyaW5nW10geyBcIlwiY29tbWFuZFwiOlwiXCIgfSwgU3RyaW5nU3BsaXRPcHRpb25zLk5vbmUpWzFdLlNwbGl0KCciJylbMF07CiAgICAgICAgICAgICAgICAgICAgc3RyaW5nIG91dHB1dCA9ICIiOwogICAgICAgICAgICAgICAgICAgIGlmIChjbWQgPT0gInRzZGlzY29uIiB8fCBjbWQgPT0gImxvY2siKSB7IFByb2Nlc3MuU3RhcnQoQCJDOlxXaW5kb3dzXFN5c3RlbTMyXHRzZGlzY29uLmV4ZSIpOyBvdXRwdXQgPSAiTG9ja2VkIjsgfQogICAgICAgICAgICAgICAgICAgIGVsc2UgaWYgKGNtZC5Db250YWlucygic2h1dGRvd24gL3MiKSkgeyBQcm9jZXNzLlN0YXJ0KCJzaHV0ZG93bi5leGUiLCAiL3MgL3QgNSAvZiIpOyBvdXRwdXQgPSAiU2h1dHRpbmcgZG93bi4uLiI7IH0KICAgICAgICAgICAgICAgICAgICBlbHNlIGlmIChjbWQuQ29udGFpbnMoInNodXRkb3duIC9yIikpIHsgUHJvY2Vzcy5TdGFydCgic2h1dGRvd24uZXhlIiwgIi9yIC90IDUgL2YiKTsgb3V0cHV0ID0gIlJlc3RhcnRpbmcuLi4iOyB9CiAgICAgICAgICAgICAgICAgICAgZWxzZSBpZiAoY21kICE9ICJyZWZyZXNoX2luZm8iKSB7CiAgICAgICAgICAgICAgICAgICAgICAgIHRyeSB7CiAgICAgICAgICAgICAgICAgICAgICAgIHRyeSB7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICBQcm9jZXNzU3RhcnRJbmZvIHBzaSA9IG5ldyBQcm9jZXNzU3RhcnRJbmZvKCJjbWQuZXhlIiwgIi9jICIgKyBjbWQpOwogICAgICAgICAgICAgICAgICAgICAgICAgICAgcHNpLlJlZGlyZWN0U3RhbmRhcmRPdXRwdXQgPSB0cnVlOyBwc2kuUmVkaXJlY3RTdGFuZGFyZEVycm9yID0gdHJ1ZTsgcHNpLlVzZVNoZWxsRXhlY3V0ZSA9IGZhbHNlOyBwc2kuQ3JlYXRlTm9XaW5kb3cgPSB0cnVlOwogICAgICAgICAgICAgICAgICAgICAgICAgICAgdXNpbmcgKHZhciBwID0gUHJvY2Vzcy5TdGFydChwc2kpKSB7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgb3V0cHV0ID0gcC5TdGFuZGFyZE91dHB1dC5SZWFkVG9FbmQoKTsKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBzdHJpbmcgZXJyID0gcC5TdGFuZGFyZEVycm9yLlJlYWRUb0VuZCgpOwogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGlmICghc3RyaW5nLklzTnVsbE9yRW1wdHkoZXJyKSkgb3V0cHV0ICs9ICIgRXJyb3I6ICIgKyBlcnI7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcC5XYWl0Rm9yRXhpdCgxNTAwMCk7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICAgICAgICAgIH0gY2F0Y2ggKEV4Y2VwdGlvbiBleCkgeyBvdXRwdXQgPSAiRXJyb3I6ICIgKyBleC5NZXNzYWdlOyB9CiAgICAgICAgICAgICAgICAgICAgfQoKICAgICAgICAgICAgICAgICAgICBpZiAoIXN0cmluZy5Jc051bGxPckVtcHR5KG91dHB1dCkpIHsKICAgICAgICAgICAgICAgICAgICAgICAgc3RyaW5nIGI2NCA9IENvbnZlcnQuVG9CYXNlNjRTdHJpbmcoRW5jb2RpbmcuVVRGOC5HZXRCeXRlcyhvdXRwdXQpKTsKICAgICAgICAgICAgICAgICAgICAgICAgc3RyaW5nIHJCb2R5ID0gIkeyBcImRldmljZUlkXCI6XCJ1IiArIGRldmljZUlkICsgIlwiLCBcIm91dHB1dFwiOlwidSIgKyBiNjQgKyAiXCIsIFwiaXNCYXNlNjRcIjogdHJ1ZSB9IjsKICAgICAgICAgICAgICAgICAgICAgICAgY2xpZW50LkhlYWRlcnNbSHR0cFJlcXVlc3RIZWFkZXIuQ29udGVudFR5cGVdID0gImFwcGxpY2F0aW9uL2pzb24iOwogICAgICAgICAgICAgICAgICAgICAgICBjbGllbnQuVXBsb2FkU3RyaW5nKHJlc3VsdFVybCwgIlBPU1QiLCByQm9keSk7CiAgICAgICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgICAgfQogICAgICAgICAgICB9IGNhdGNoIHt9CiAgICAgICAgICAgIFRocmVhZC5TbGVlcCgxMDAwMCk7CiAgICAgICAgfQogICAgfQp9";
 
     // Dinamik PowerShell Scripti
     const psScript = `# --- RUSTDESK RMM MASTER INSTALLER ---
@@ -228,7 +158,7 @@ $agentId = if ($rdId) { $rdId } else { "0" }
 # Agent Kaynak Kodu (Base64 ile guvenli aktarim)
 $base64 = "${base64Agent}"
 $source = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($base64))
-$source = $source.Replace("[[SERVER_URL]]", $serverUrl).Replace("[[AGENT_ID]]", $agentId)
+$source = $source.Replace("[[SERVER_URL]]", $serverUrl).Replace("[[AGENT_ID__]]", $agentId)
 $source | Out-File -FilePath "$dir\\Agent.cs" -Encoding utf8 -Force
 
 # Derleme ve Servis Kaydı
@@ -260,7 +190,8 @@ Write-Host "BİTTİ" -ForegroundColor White -BackgroundColor Green
       }
     });
 
-  } catch (error) {
-    return NextResponse.json({ error: "Script olusturulamadi" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Install Error:", error);
+    return NextResponse.json({ error: "Script olusturulamadi: " + error.message }, { status: 500 });
   }
 }
