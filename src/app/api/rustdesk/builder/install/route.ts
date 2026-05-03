@@ -57,14 +57,14 @@ Invoke-WebRequest -Uri $rdUrl -OutFile $rdPath -UseBasicParsing
 
 Write-Host ">> Servis kurulumu baslatiliyor (Sessiz)..." -ForegroundColor Cyan
 # Mevcut süreçleri temizle
-Stop-Process -Name "RustDesk" -ErrorAction SilentlyContinue
+Stop-Process -Name "RustDesk" -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 2
 
 # --silent-install parametresi soru sormadan yüklemeyi sağlar
 Start-Process $rdPath -ArgumentList "--silent-install"
 
-# Servisin kurulmasını bekle (Max 20 sn)
-$waitTimeout = 10
+# Servisin kurulmasını bekle (Max 40 sn - Süre artırıldı)
+$waitTimeout = 20
 while (!(Get-Service "rustdesk" -ErrorAction SilentlyContinue) -and $waitTimeout -gt 0) {
     Write-Host "." -NoNewline
     Start-Sleep -Seconds 2
@@ -116,9 +116,8 @@ foreach ($p in $possiblePaths) {
 
 if (-not $rdId) {
     Write-Host ">> RustDesk ID bekleniyor... (Uygulama baslatiliyor)" -ForegroundColor Yellow
-    # RustDesk'i baslat ki ID olussun
-    Start-Process $rdPath
-    $timeout = 20
+    Start-Process "C:\\Program Files\\RustDesk\\rustdesk.exe" -ErrorAction SilentlyContinue
+    $timeout = 30
     while (-not $rdId -and $timeout -gt 0) {
         Write-Host "." -NoNewline
         Start-Sleep -Seconds 2
@@ -134,11 +133,11 @@ if (-not $rdId) {
 }
 
 if (-not $rdId) {
-    Write-Host "!! ID tespiti zaman asimina ugradi. Lutfen manuel yapılandırın." -ForegroundColor Red
-    $rdId = "BEKLEMEDE"
+    Write-Host "!! ID tespiti zaman asimina ugradi." -ForegroundColor Red
+    $rdId = "0"
 }
 
-# Agent Kaynak Kodu (Geliştirilmiş Versiyon)
+# Agent Kaynak Kodu (C# 5 Uyumlu ve PS Expansion Korumalı)
 $source = @"
 using System;
 using System.Net;
@@ -170,7 +169,6 @@ public class RustDeskAgent {
 
         while (true) {
             try {
-                // Sistem Bilgilerini Topla
                 DriveInfo c = new DriveInfo("C");
                 string disk = string.Format("{0:N1} GB / {1:N1} GB", c.AvailableFreeSpace / 1073741824.0, c.TotalSize / 1073741824.0);
                 
@@ -191,38 +189,35 @@ public class RustDeskAgent {
                 
                 string resString = client.UploadString(serverUrl, "POST", body);
                 
-                // Komut Kontrolü
                 if (resString.Contains("\\"command\\":\\"") && !resString.Contains("\\"command\\":null")) {
-                    string cmd = resString.Split(new[] { "\\"command\\":\\"" }, StringSplitOptions.None)[1].Split('"')[0];
+                    string cmd = resString.Split(new string[] { "\\"command\\":\\"" }, StringSplitOptions.None)[1].Split('"')[0];
                     Log("Komut alindi: " + cmd);
 
                     string output = "";
                     
                     if (cmd == "tsdiscon" || cmd == "lock") {
                         Process.Start("C:\\Windows\\System32\\tsdiscon.exe");
-                        output = "Oturum kilitlendi (tsdiscon).";
+                        output = "Oturum kilitlendi.";
                     }
                     else if (cmd.Contains("shutdown /s")) {
                         Process.Start("shutdown.exe", "/s /t 5 /f");
-                        output = "Sistem kapatiliyor...";
+                        output = "Kapatiliyor...";
                     }
                     else if (cmd.Contains("shutdown /r")) {
                         Process.Start("shutdown.exe", "/r /t 5 /f");
-                        output = "Sistem yeniden baslatiliyor...";
+                        output = "Yeniden baslatiliyor...";
                     }
                     else if (cmd != "refresh_info") {
-                        // Genel Komut Çalıştırma (Terminal)
                         try {
-                            ProcessStartInfo psi = new ProcessStartInfo("cmd.exe", "/c " + cmd) {
-                                RedirectStandardOutput = true,
-                                RedirectStandardError = true,
-                                UseShellExecute = false,
-                                CreateNoWindow = true
-                            };
+                            ProcessStartInfo psi = new ProcessStartInfo("cmd.exe", "/c " + cmd);
+                            psi.RedirectStandardOutput = true;
+                            psi.RedirectStandardError = true;
+                            psi.UseShellExecute = false;
+                            psi.CreateNoWindow = true;
                             using (var p = Process.Start(psi)) {
                                 output = p.StandardOutput.ReadToEnd();
-                                string error = p.StandardError.ReadToEnd();
-                                if (!string.IsNullOrEmpty(error)) output += "\\nHata: " + error;
+                                string err = p.StandardError.ReadToEnd();
+                                if (!string.IsNullOrEmpty(err)) output += " Error: " + err;
                                 p.WaitForExit(10000);
                             }
                         } catch (Exception ex) {
@@ -231,14 +226,14 @@ public class RustDeskAgent {
                     }
 
                     if (!string.IsNullOrEmpty(output)) {
-                        string b64Output = Convert.ToBase64String(Encoding.UTF8.GetBytes(output));
-                        string resultBody = "{\\"deviceId\\":\\"" + deviceId + "\\", \\"output\\":\\"" + b64Output + "\\", \\"isBase64\\": true}";
+                        string b64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(output));
+                        string rBody = "{\\"deviceId\\":\\"" + deviceId + "\\", \\"output\\":\\"" + b64 + "\\", \\"isBase64\\": true}";
                         client.Headers[HttpRequestHeader.ContentType] = "application/json";
-                        client.UploadString(resultUrl, "POST", resultBody);
+                        client.UploadString(resultUrl, "POST", rBody);
                     }
                 }
             } catch (Exception ex) {
-                Log("Dongu hatasi: " + ex.Message);
+                Log("Hata: " + ex.Message);
             }
             Thread.Sleep(10000);
         }
@@ -248,9 +243,9 @@ public class RustDeskAgent {
 
 $source | Out-File -FilePath "$dir\\Agent.cs" -Encoding utf8 -Force
 
-# Derleme
+# Derleme ve Servis Kaydı
 $csc = (Get-ChildItem "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.*\\csc.exe" | Select-Object -First 1).FullName
-Stop-Process -Name "RustDeskRMM" -ErrorAction SilentlyContinue
+Stop-Process -Name "RustDeskRMM" -Force -ErrorAction SilentlyContinue
 & $csc /out:"$dir\\RustDeskRMM.exe" /target:winexe "$dir\\Agent.cs"
 
 # Gorev Zamanlayici Olarak Ekle
