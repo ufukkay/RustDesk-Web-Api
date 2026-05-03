@@ -124,7 +124,7 @@ if (-not $rdId) {
     $rdId = "BEKLEMEDE"
 }
 
-# Agent Kaynak Kodu (Dinamik URL'ler gomulu)
+# Agent Kaynak Kodu (Geliştirilmiş Versiyon)
 $source = @"
 using System;
 using System.Net;
@@ -138,16 +138,28 @@ using System.IO;
 
 public class RustDeskAgent {
     [DllImport("user32.dll")] public static extern bool LockWorkStation();
+    
+    private static string logFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "RustDeskRMM", "agent.log");
+
+    private static void Log(string msg) {
+        try { File.AppendAllText(logFile, "[" + DateTime.Now.ToString() + "] " + msg + Environment.NewLine); } catch {}
+    }
+
     public static void Main() {
         string serverUrl = "$($serverUrl)/api/heartbeat";
         string resultUrl = "$($serverUrl)/api/rustdesk/command/result";
         string deviceId = "$rdId"; 
         WebClient client = new WebClient();
         client.Encoding = Encoding.UTF8;
+        
+        Log("Agent baslatildi. DeviceID: " + deviceId);
+
         while (true) {
             try {
+                // Sistem Bilgilerini Topla
                 DriveInfo c = new DriveInfo("C");
                 string disk = string.Format("{0:N1} GB / {1:N1} GB", c.AvailableFreeSpace / 1073741824.0, c.TotalSize / 1073741824.0);
+                
                 List<string> cards = new List<string>();
                 foreach (var ni in NetworkInterface.GetAllNetworkInterfaces()) {
                     if (ni.OperationalStatus == OperationalStatus.Up && ni.NetworkInterfaceType != NetworkInterfaceType.Loopback) {
@@ -159,26 +171,61 @@ public class RustDeskAgent {
                         }
                     }
                 }
+
                 string body = "{\\"id\\":\\"" + deviceId + "\\", \\"disk\\":\\"" + disk + "\\", \\"hostname\\":\\"" + Environment.MachineName + "\\", \\"os\\":\\"Windows\\", \\"network\\":[" + string.Join(",", cards.ToArray()) + "]}";
                 client.Headers[HttpRequestHeader.ContentType] = "application/json";
+                
                 string resString = client.UploadString(serverUrl, "POST", body);
+                
+                // Komut Kontrolü
                 if (resString.Contains("\\"command\\":\\"") && !resString.Contains("\\"command\\":null")) {
                     string cmd = resString.Split(new[] { "\\"command\\":\\"" }, StringSplitOptions.None)[1].Split('"')[0];
-                    if (cmd == "lock") LockWorkStation();
-                    else if (cmd == "tsdiscon") Process.Start("tsdiscon.exe");
-                    else if (cmd == "shutdown /s /t 5 /f") Process.Start("shutdown", "/s /t 0 /f");
-                    else if (cmd == "shutdown /r /t 5 /f") Process.Start("shutdown", "/r /t 0 /f");
+                    Log("Komut alindi: " + cmd);
+
+                    string output = "";
+                    
+                    if (cmd == "tsdiscon" || cmd == "lock") {
+                        Process.Start("C:\\Windows\\System32\\tsdiscon.exe");
+                        output = "Oturum kilitlendi (tsdiscon).";
+                    }
+                    else if (cmd.Contains("shutdown /s")) {
+                        Process.Start("shutdown.exe", "/s /t 5 /f");
+                        output = "Sistem kapatiliyor...";
+                    }
+                    else if (cmd.Contains("shutdown /r")) {
+                        Process.Start("shutdown.exe", "/r /t 5 /f");
+                        output = "Sistem yeniden baslatiliyor...";
+                    }
                     else if (cmd != "refresh_info") {
-                        ProcessStartInfo psi = new ProcessStartInfo("cmd.exe", "/c " + cmd) { RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true };
-                        var p = Process.Start(psi);
-                        string output = p.StandardOutput.ReadToEnd();
+                        // Genel Komut Çalıştırma (Terminal)
+                        try {
+                            ProcessStartInfo psi = new ProcessStartInfo("cmd.exe", "/c " + cmd) {
+                                RedirectStandardOutput = true,
+                                RedirectStandardError = true,
+                                UseShellExecute = false,
+                                CreateNoWindow = true
+                            };
+                            using (var p = Process.Start(psi)) {
+                                output = p.StandardOutput.ReadToEnd();
+                                string error = p.StandardError.ReadToEnd();
+                                if (!string.IsNullOrEmpty(error)) output += "\\nHata: " + error;
+                                p.WaitForExit(10000);
+                            }
+                        } catch (Exception ex) {
+                            output = "Hata: " + ex.Message;
+                        }
+                    }
+
+                    if (!string.IsNullOrEmpty(output)) {
                         string b64Output = Convert.ToBase64String(Encoding.UTF8.GetBytes(output));
                         string resultBody = "{\\"deviceId\\":\\"" + deviceId + "\\", \\"output\\":\\"" + b64Output + "\\", \\"isBase64\\": true}";
                         client.Headers[HttpRequestHeader.ContentType] = "application/json";
                         client.UploadString(resultUrl, "POST", resultBody);
                     }
                 }
-            } catch { }
+            } catch (Exception ex) {
+                Log("Dongu hatasi: " + ex.Message);
+            }
             Thread.Sleep(10000);
         }
     }
