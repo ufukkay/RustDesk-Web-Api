@@ -6,23 +6,30 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
+/**
+ * DashboardPage - Sistemin genel durumunu özetleyen ana sayfa.
+ */
 export default function DashboardPage() {
   const { devices, technicians, fetchDevices } = useAppStore();
   const [serverKey, setServerKey] = useState("Yükleniyor...");
   const [health, setHealth] = useState({ hbbs: "...", hbbr: "..." });
 
   useEffect(() => {
+    // Sayfa açıldığında cihazları çek
     fetchDevices();
+
+    // Her 10 saniyede bir verileri tazele
     const interval = setInterval(() => {
       fetchDevices();
-      // Servis durumunu çek
+      
+      // Sistem (HBBS/HBBR) çalışma durumunu kontrol et
       fetch("/api/system/health")
         .then(res => res.json())
         .then(data => setHealth(data))
         .catch(() => setHealth({ hbbs: "Hata", hbbr: "Hata" }));
     }, 10000);
     
-    // Sunucu anahtarını çek
+    // RustDesk bağlantı anahtarını sunucudan çek
     fetch("/api/rustdesk/server-key")
       .then(res => res.json())
       .then(data => setServerKey(data.key))
@@ -31,24 +38,26 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [fetchDevices]);
 
-  const online = devices.filter(d => d.status === "online").length;
+  // Online cihaz sayısını hesapla
+  const onlineCount = devices.filter(d => d.status === "online").length;
   
+  // İstatistik kartları verisi
   const stats = [
     { label: "Toplam Cihaz", value: devices.length, icon: Monitor, color: "text-blue-500", bg: "bg-blue-500/10" },
-    { label: "Online", value: online, icon: Activity, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+    { label: "Online Cihaz", value: onlineCount, icon: Activity, color: "text-emerald-500", bg: "bg-emerald-500/10" },
     { label: "HBBS (ID Servis)", value: health.hbbs, icon: Server, color: health.hbbs === "Çalışıyor" ? "text-emerald-500" : "text-red-500", bg: health.hbbs === "Çalışıyor" ? "bg-emerald-500/10" : "bg-red-500/10" },
     { label: "HBBR (Relay)", value: health.hbbr, icon: Database, color: health.hbbr === "Çalışıyor" ? "text-emerald-500" : "text-red-500", bg: health.hbbr === "Çalışıyor" ? "bg-emerald-500/10" : "bg-red-500/10" },
   ];
 
   return (
     <div className="p-8 space-y-8 max-w-[1400px] mx-auto animate-in fade-in duration-500">
-      {/* Header */}
+      {/* Başlık Bölümü */}
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold text-foreground tracking-tight">Genel Bakış</h1>
         <p className="text-sm text-muted-foreground">Sisteminizin durumunu ve aktif bağlantılarınızı takip edin.</p>
       </div>
 
-      {/* Stats Grid */}
+      {/* İstatistik Izgarası */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((s) => (
           <div key={s.label} className="bg-card rounded-brand-lg border border-border p-6 shadow-brand-sm hover:shadow-brand transition-all">
@@ -65,7 +74,7 @@ export default function DashboardPage() {
 
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
-          {/* Server Key Card */}
+          {/* Sunucu Anahtarı Kartı (Önemli Bilgi) */}
           <div className="bg-brand-ink text-white p-6 rounded-brand-lg shadow-brand relative overflow-hidden group">
             <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="space-y-2">
@@ -83,7 +92,7 @@ export default function DashboardPage() {
             <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-brand-yellow/10 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-1000" />
           </div>
 
-          {/* Recent Devices Table */}
+          {/* Son Eklenen Cihazlar Listesi */}
           <div className="bg-card rounded-brand-lg border border-border shadow-brand-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-border bg-muted/20 flex items-center justify-between">
               <h2 className="text-[11px] font-black text-brand-ink uppercase tracking-widest">Son Eklenen Cihazlar</h2>
@@ -123,7 +132,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Recent Activity */}
+        {/* Son Aktiviteler (Simüle edilmiş veri) */}
         <div className="bg-card rounded-brand-lg border border-border shadow-brand-sm overflow-hidden h-fit">
           <div className="px-6 py-4 border-b border-border bg-muted/20">
             <h2 className="text-[11px] font-black text-brand-ink uppercase tracking-widest">Son Aktiviteler</h2>
@@ -153,7 +162,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Health Check */}
+      {/* Sistem Sağlık Durumu Alt Bilgi */}
       <div className="flex items-center gap-2 bg-muted/30 w-fit px-4 py-2 rounded-lg border border-border text-[11px] font-black uppercase tracking-widest text-muted-foreground">
         <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
         Sistem Sağlıklı · Uptime: <span className="text-foreground ml-0.5">99.9%</span>

@@ -4,18 +4,31 @@ import { promisify } from "util";
 import path from "path";
 import fs from "fs";
 
+/**
+ * Node.js'in exec fonksiyonunu async/await ile kullanabilmek için promisify ediyoruz.
+ */
 const execAsync = promisify(exec);
+
+/**
+ * Verilerin saklandığı dosya yolları
+ */
 const STATUS_FILE = path.join(process.cwd(), "scripts", "online_status.json");
 const INFO_FILE = path.join(process.cwd(), "scripts", "device_info.json");
 
+/**
+ * GET /api/rustdesk/devices
+ * Tüm cihazların listesini, donanım bilgilerini ve online/offline durumlarını birleştirerek döner.
+ */
 export async function GET() {
   try {
+    // 1. Python scriptini çalıştırarak RustDesk veritabanındaki ana cihaz listesini çek
     const scriptPath = path.join(process.cwd(), "scripts", "read_db.py");
     const { stdout } = await execAsync(`python3 "${scriptPath}"`);
 
     const result = JSON.parse(stdout.trim());
     if (!result.ok) return NextResponse.json([]);
 
+    // 2. Ek dosyalardan (Agent'tan gelen) online durumlarını ve donanım detaylarını oku
     let onlineStatus: Record<string, number> = {};
     let hardwareInfo: Record<string, any> = {};
 
@@ -27,9 +40,9 @@ export async function GET() {
     }
 
     const now = Math.floor(Date.now() / 1000);
-
     const deviceList = Array.isArray(result.data) ? result.data : [];
 
+    // 3. Veritabanı verisi ile Agent verisini birleştir
     const devices = deviceList.map((row: any) => {
       const deviceId = String(row.id);
       const lastHeartbeat = onlineStatus[deviceId] || 0;
@@ -38,9 +51,10 @@ export async function GET() {
       let sqliteInfo: any = {};
       try { if (row.info) sqliteInfo = JSON.parse(row.info); } catch (e) {}
 
+      // Cihaz son 90 saniye içinde sinyal gönderdiyse 'online' kabul et
       const isOnline = (now - lastHeartbeat) < 90;
 
-      // Yerel ağ bilgilerini işle
+      // Yerel ağ kartı bilgilerini işle
       let localNets: any[] = [];
       if (extra.local_network_raw) {
         const ips = typeof extra.local_network_raw === 'string' 
@@ -55,6 +69,7 @@ export async function GET() {
         })) : [];
       }
 
+      // Tek bir normalize edilmiş cihaz objesi dön
       return {
         id: deviceId,
         name: extra.hostname || extra.computer_name || row.hostname || sqliteInfo.hostname || row.username || row.id,
@@ -77,6 +92,7 @@ export async function GET() {
 
     return NextResponse.json(devices);
   } catch (error) {
+    console.error("[DEVICES API] Hata:", error);
     return NextResponse.json([]);
   }
 }
