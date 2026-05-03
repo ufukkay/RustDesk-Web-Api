@@ -33,6 +33,17 @@ export async function POST(req: Request) {
     if (fs.existsSync(STATUS_FILE)) { try { statusData = JSON.parse(fs.readFileSync(STATUS_FILE, "utf-8")); } catch (e) {} }
     if (fs.existsSync(INFO_FILE)) { try { infoData = JSON.parse(fs.readFileSync(INFO_FILE, "utf-8")); } catch (e) {} }
 
+    // 1. Akıllı Tekilleştirme (Deduplication)
+    // Aynı hostname'e sahip farklı bir ID varsa eskisini temizle
+    if (body.hostname) {
+      Object.keys(infoData).forEach(existingId => {
+        if (existingId !== deviceIdStr && infoData[existingId].hostname === body.hostname) {
+          delete infoData[existingId];
+          delete statusData[existingId];
+        }
+      });
+    }
+
     // Son görülme zamanını kaydet
     statusData[deviceIdStr] = now;
     
