@@ -27,9 +27,17 @@ export default function DevicesPage() {
   const [isOpen, setIsOpen] = useState(false);
   const [newDevice, setNewDevice] = useState({ id: "", name: "", os: "Windows 11", user: "", group: "Genel" });
 
+  const [settings, setSettings] = useState<any>(null);
+
   useEffect(() => {
     fetchDevices();
+    fetch("/api/rustdesk/settings").then(res => res.json()).then(data => setSettings(data));
   }, [fetchDevices]);
+
+  const handleConnect = (id: string) => {
+    const pass = settings?.defaultPassword || "Ban41kam5";
+    window.location.href = `rustdesk://${id}?password=${pass}`;
+  };
 
   const filteredDevices = useMemo(() => {
     return devices.filter(d => {
@@ -192,7 +200,7 @@ export default function DevicesPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {filteredDevices.map(d => (
-                  <DeviceRow key={d.id} d={d} onDelete={handleDelete} />
+                  <DeviceRow key={d.id} d={d} onDelete={handleDelete} onConnect={handleConnect} />
                 ))}
               </tbody>
             </table>
@@ -212,7 +220,7 @@ export default function DevicesPage() {
                 <table className="w-full text-left">
                   <tbody className="divide-y divide-border">
                     {groupDevices.map(d => (
-                      <DeviceRow key={d.id} d={d} onDelete={handleDelete} />
+                      <DeviceRow key={d.id} d={d} onDelete={handleDelete} onConnect={handleConnect} />
                     ))}
                   </tbody>
                 </table>
@@ -226,7 +234,7 @@ export default function DevicesPage() {
   );
 }
 
-function DeviceRow({ d, onDelete }: { d: Device, onDelete: (id: string, name: string) => void }) {
+function DeviceRow({ d, onDelete, onConnect }: { d: Device, onDelete: (id: string, name: string) => void, onConnect: (id: string) => void }) {
   return (
     <tr className="hover:bg-muted/20 transition-colors group">
       <td className="px-6 py-4 whitespace-nowrap">
@@ -264,7 +272,7 @@ function DeviceRow({ d, onDelete }: { d: Device, onDelete: (id: string, name: st
                 ? "bg-primary text-primary-foreground hover:opacity-90 shadow-sm" 
                 : "bg-secondary text-muted-foreground cursor-not-allowed"
             }`}
-            onClick={() => window.location.href = `rustdesk://${d.id}`}
+            onClick={() => onConnect(d.id)}
           >
             <Play className="w-3 h-3 mr-1.5 fill-current" /> Bağlan
           </Button>
