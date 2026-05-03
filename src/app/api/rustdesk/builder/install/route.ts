@@ -285,7 +285,6 @@ Write-Host "BAŞARILI: RustDesk ve RMM Ajani Kuruldu! ✅" -ForegroundColor Gree
 Write-Host "Cihaz simdi Dashboard uzerinde gorunmelidir." -ForegroundColor Gray
 Write-Host "BİTTİ" -ForegroundColor White -BackgroundColor Green
 `;
-`;
 
     return new Response(psScript, {
       headers: {
