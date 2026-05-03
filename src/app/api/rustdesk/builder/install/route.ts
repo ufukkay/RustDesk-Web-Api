@@ -120,8 +120,22 @@ $setupPath = Join-Path $env:TEMP $setupName
 
 if (Test-Path $setupPath) { Remove-Item $setupPath -Force }
 Invoke-WebRequest -Uri $url -OutFile $setupPath -UseBasicParsing
-Write-Host ">> Sessiz kurulum yapiliyor..." -ForegroundColor Cyan
-Start-Process $setupPath -ArgumentList "--silent-install" -Wait
+
+Write-Host ">> Mevcut islemler temizleniyor..." -ForegroundColor Cyan
+Stop-Process -Name "rustdesk" -Force -ErrorAction SilentlyContinue
+Start-Sleep -Seconds 2
+
+Write-Host ">> Sessiz kurulum yapiliyor (Lutfen bekleyin)..." -ForegroundColor Cyan
+# --silent-install bazen bekleyebilir, bu yuzden yeni pencerede baslatip takip ediyoruz
+$proc = Start-Process $setupPath -ArgumentList "--silent-install" -PassThru -ErrorAction SilentlyContinue
+$timeout = 0
+while ($proc -and !$proc.HasExited -and $timeout -lt 60) {
+    Start-Sleep -Seconds 1
+    $timeout++
+}
+if ($proc -and !$proc.HasExited) {
+    Write-Host ">> Kurulum uzun surdu, devam ediliyor..." -ForegroundColor Yellow
+}
 
 # 5. CLI, Sifre ve Servis Ayari
 $finalPass = if ($password) { $password } else { "Ban41kam5" }
