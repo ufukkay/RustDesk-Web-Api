@@ -36,13 +36,30 @@ if (Test-Path $rdExe) {
 Stop-Service "rustdesk" 2>$null
 sc.exe delete "rustdesk" 2>$null
 
-# 3. Yapılandırma Dosyalarını Temizle
-Write-Host ">> Yapılandırma dosyalari temizleniyor..." -ForegroundColor Cyan
+# 3. Yapılandırma ve Veri Dosyalarını Tamamen Temizle
+Write-Host ">> Yapılandırma ve AppData dosyalari temizleniyor..." -ForegroundColor Cyan
+
 $configPaths = @(
     "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk",
+    "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Local\\RustDesk",
     "$env:ProgramData\\RustDesk",
-    "$env:AppData\\RustDesk"
+    "$env:AppData\\RustDesk",
+    "$env:LocalAppData\\RustDesk"
 )
+
+# Tum kullanicilarin AppData klasorlerini tara (Gelistirilmis temizlik)
+$userProfiles = Get-ChildItem "C:\\Users"
+foreach ($user in $userProfiles) {
+    $userPaths = @(
+        "C:\\Users\\$($user.Name)\\AppData\\Roaming\\RustDesk",
+        "C:\\Users\\$($user.Name)\\AppData\\Local\\RustDesk"
+      )
+    foreach ($up in $userPaths) {
+        if (Test-Path $up) {
+            Remove-Item -Path $up -Recurse -Force 2>$null
+        }
+    }
+}
 
 foreach ($path in $configPaths) {
     if (Test-Path $path) {
@@ -51,7 +68,7 @@ foreach ($path in $configPaths) {
 }
 
 Write-Host "------------------------------------------------" -ForegroundColor Yellow
-Write-Host "ISLEM TAMAMLANDI: RustDesk ve RMM Ajani Sistemden Temizlendi! ✅" -ForegroundColor Green
+Write-Host "ISLEM TAMAMLANDI: RustDesk ve RMM Ajani Tamamen Silindi! ✅" -ForegroundColor Green
 Write-Host "BİTTİ" -ForegroundColor White -BackgroundColor Green
 `;
 
