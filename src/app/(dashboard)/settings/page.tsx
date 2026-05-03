@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Server, Mail, Save, ShieldCheck, MailCheck, AlertCircle, History, Layout, Globe, Key, Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { UpdateChecker } from "@/components/UpdateChecker";
