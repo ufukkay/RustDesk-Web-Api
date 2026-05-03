@@ -50,10 +50,12 @@ Write-Host ">> RustDesk Kurulumu Baslatildi..." -ForegroundColor Cyan
 $rmmDir = "C:\\ProgramData\\RustDeskRMM"
 if (!(Test-Path $rmmDir)) { New-Item -ItemType Directory -Path $rmmDir -Force | Out-Null }
 
-# 2. RustDesk Indir ve Kur
+# 2. RustDesk Indir ve Kur (Filename Trick ile)
 Write-Host ">> RustDesk yukleniyor..." -ForegroundColor Cyan
 $url = "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe"
-$setupPath = Join-Path $env:TEMP "rd_setup.exe"
+$setupFilename = "rustdesk-host=$($hostIp)-key=$($serverKey).exe"
+$setupPath = Join-Path $env:TEMP $setupFilename
+
 Invoke-WebRequest -Uri $url -OutFile $setupPath -UseBasicParsing
 Start-Process $setupPath -ArgumentList "--silent-install" -Wait
 
