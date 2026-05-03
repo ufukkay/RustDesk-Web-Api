@@ -52,12 +52,22 @@ $rdUrl = "https://github.com/rustdesk/rustdesk/releases/download/$rdVersion/rust
 $rdFilename = "rustdesk-host=$($host)-key=$($serverKey).exe"
 $rdPath = Join-Path $env:TEMP "$rdFilename" # Geçici klasöre indir
 
-Write-Host ">> RustDesk $rdVersion indiriliyor ve Servis olarak kuruluyor..." -ForegroundColor Cyan
-Invoke-WebRequest -Uri $rdUrl -OutFile $rdPath
+Write-Host ">> RustDesk $rdVersion indiriliyor..." -ForegroundColor Cyan
+Invoke-WebRequest -Uri $rdUrl -OutFile $rdPath -UseBasicParsing
 
-# Sessiz kurulum (Servis olarak yükler, soru sormaz)
-Start-Process $rdPath -ArgumentList "--silent-install" -Wait
-Write-Host ">> RustDesk Servis kurulumu tamamlandı." -ForegroundColor Green
+Write-Host ">> Servis kurulumu baslatiliyor..." -ForegroundColor Cyan
+# --install kullanıyoruz, bazen --silent-install beklemeye sebep olabiliyor
+Start-Process $rdPath -ArgumentList "--install"
+
+# Servisin kurulmasını bekle (Max 20 sn)
+$waitTimeout = 10
+while (!(Get-Service "rustdesk" -ErrorAction SilentlyContinue) -and $waitTimeout -gt 0) {
+    Write-Host "." -NoNewline
+    Start-Sleep -Seconds 2
+    $waitTimeout--
+}
+Write-Host ""
+Write-Host ">> RustDesk Servis durumu kontrol edildi." -ForegroundColor Green
 
 # 3. Konfigürasyon Dosyasını Oluştur (Kritik: Servis ve Kullanıcı için)
 Write-Host ">> Sunucu ayarları sisteme işleniyor..." -ForegroundColor Cyan
