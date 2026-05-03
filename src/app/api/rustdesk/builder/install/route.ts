@@ -96,16 +96,20 @@ api-server = 'http://$host:3000'
 key = '$serverKey'
 "@
 
-$serviceConfigDir = "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk\\config"
-if (!(Test-Path $serviceConfigDir)) { New-Item -ItemType Directory -Path $serviceConfigDir -Force }
-$tomlContent | Out-File -FilePath "$serviceConfigDir\\RustDesk.toml" -Encoding utf8 -Force
+$configPaths = @(
+    "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk\\config",
+    "$env:AppData\\RustDesk\\config",
+    "$env:ProgramData\\RustDesk\\config"
+)
 
-$userConfigDir = "$env:AppData\\RustDesk\\config"
-if (!(Test-Path $userConfigDir)) { New-Item -ItemType Directory -Path $userConfigDir -Force }
-$tomlContent | Out-File -FilePath "$userConfigDir\\RustDesk.toml" -Encoding utf8 -Force
+foreach ($path in $configPaths) {
+    if (!(Test-Path $path)) { New-Item -ItemType Directory -Path $path -Force }
+    $tomlContent | Out-File -FilePath "$path\\RustDesk.toml" -Encoding utf8 -Force
+    $tomlContent | Out-File -FilePath "$path\\RustDesk2.toml" -Encoding utf8 -Force
+}
 
 Get-Service "rustdesk" -ErrorAction SilentlyContinue | Restart-Service -Force
-Write-Host ">> Ayarlar uygulandı." -ForegroundColor Green
+Write-Host ">> Ayarlar uygulandı (RustDesk.toml ve RustDesk2.toml)." -ForegroundColor Green
 
 # 4. RMM Ajanini Kur
 Write-Host ">> RMM Ajani yapılandırılıyor..." -ForegroundColor Cyan
