@@ -5,7 +5,8 @@ import { getSettings } from "@/lib/settings";
 
 /**
  * GET /api/rustdesk/builder/install
- * Atomik Fix - C# 5 Uyumluluk ve IP/Disk Sorunu Çözümü.
+ * Kurşun Geçirmez Mod - PowerShell Native Agent.
+ * Derleme hatası riskini sıfıra indiren, doğrudan PowerShell ile çalışan ajan.
  */
 export async function GET(req: Request) {
   try {
@@ -21,10 +22,7 @@ export async function GET(req: Request) {
     const defaultPassword = settings.defaultPassword || "Ban41kam5";
     const serverKey = settings.serverKey || "YOK";
     
-    // C# Saf Ajan Kodu (C# 5 Uyumluluk Garantili)
-    const base64Agent = "dXNpbmcgU3lzdGVtOwp1c2luZyBTeXN0ZW0uTmV0Owp1c2luZyBTeXN0ZW0uVGV4dDsKdXNpbmcgU3lzdGVtLlRocmVhZGluZzsKdXNpbmcgU3lzdGVtLklPOwp1c2luZyBTeXN0ZW0uVGV4dC5SZWd1bGFyRXhwcmVzc2lvbnM7CnVzaW5nIFN5c3RlbS5Db2xsZWN0aW9ucy5HZW5lcmljOwp1c2luZyBTeXN0ZW0uRGlhZ25vc3RpY3M7CnVzaW5nIFN5c3RlbS5OZXQuTmV0d29ya0luZm9ybWF0aW9uOwoKY2xhc3MgUHJvZ3JhbSB7CiAgICBzdGF0aWMgc3RyaW5nIGRldmljZUlkID0gIiI7CiAgICBzdGF0aWMgc3RyaW5nIGFwaVVybCA9ICJbW1NFUlZFUl9VUkxdXSI7CgogICAgc3RhdGljIHZvaWQgTWFpbihzdHJpbmcgW10gYXJncykgewogICAgICAgIFdlYkNsaWVudCBjbGllbnQgPSBuZXcgV2ViQ2xpZW50KCk7CiAgICAgICAgY2xpZW50LkVuY29kaW5nID0gRW5jb2RpbmcuVVRGODsKICAgICAgICB3aGlsZSAodHJ1ZSkgewogICAgICAgICAgICB0cnkgewogICAgICAgICAgICAgICAgaWYgKHN0cmluZy5Jc051bGxPckVtcHR5KGRldmljZUlkKSkgewogICAgICAgICAgICAgICAgICAgIHN0cmluZyBwMSA9ICJDOlxcUHJvZ3JhbURhdGFcXFJ1c3REZXNrXFxjb25maWdcXFJ1c3REZXNrMi50b21sIjsKICAgICAgICAgICAgICAgICAgICBzdHJpbmcgcDIgPSAiQzpcXFdpbmRvd3NcXFNlcnZpY2VQcm9maWxlc1xcTG9jYWxTZXJ2aWNlXFxBcHBEYXRhXFxSb2FtaW5nXFxSdXN0RGVza1xcY29uZmlnXFxSdXN0RGVzazIudG9tbCI7CiAgICAgICAgICAgICAgICAgICAgaWYgKEZpbGUuRXhpc3RzKHAxKSkgZGV2aWNlSWQgPSBFeHRyYWN0SWQocDEpOwogICAgICAgICAgICAgICAgICAgIGlmIChzdHJpbmcuSXNOdWxsT3JFbXB0eShkZXZpY2VJZCkgJiYgRmlsZS5FeGlzdHMocDIpKSBkZXZpY2VJZCA9IEV4dHJhY3RJZChwMik7CiAgICAgICAgICAgICAgICAgICAgaWYgKHN0cmluZy5Jc051bGxPckVtcHR5KGRldmljZUlkKSkgZGV2aWNlSWQgPSBFbnVpcm9ubWVudC5NYWNoaW5lTmFtZTsKICAgICAgICAgICAgICAgIH0KCiAgICAgICAgICAgICAgICBzdHJpbmcgaXAgPSBHZXRMb2NhbElQKCk7CiAgICAgICAgICAgICAgICBzdHJpbmcgZGlzayA9IEdldERpc2tJbmZvKCk7CiAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgIGNsaWVudC5IZWFkZXJzWyJDb250ZW50LVR5cGUiXSA9ICJhcHBsaWNhdGlvbi9qc29uIjsKICAgICAgICAgICAgICAgIHN0cmluZyBib2R5ID0gIntcImlkXCI6XCIiICsgZGV2aWNlSWQgKyAiXCIsXCJob3N0bmFtZVwiOlwiIiArIEVudmlyb25tZW50Lk1hY2hpbmVOYW1lICsgIlwiLFwib3NcIjpcIndpbmRvd3NcIixcImlwXCI6XCIiICsgaXAgKyAiXCIsXCJkaXNrXCI6XCIiICsgZGlzayArICJcIn0iOwogICAgICAgICAgICAgICAgc3RyaW5nIHJlc3BvbnNlID0gY2xpZW50LlVwbG9hZFN0cmluZyhhcGlVcmwgKyAiL2FwaS9oZWFydGJlYXQiLCAiUE9TVCIsIGJvZHkpOwoKICAgICAgICAgICAgICAgIGlmIChyZXNwb25zZS5Db250YWlucygiY29tbWFuZCIpKSB7CiAgICAgICAgICAgICAgICAgICAgTWF0Y2ggbSA9IFJlZ2V4Lk1hdGNoKHJlc3BvbnNlLCAiXCJjb21tYW5kXCJccyo6XHMqXCIoLio/KVwiIik7CiAgICAgICAgICAgICAgICAgICAgaWYgKG0uU3VjY2VzcykgUnVuQ21kKGNsaWVudCwgZGV2aWNlSWQsIG0uR3JvdXBzWzFdLlZhbHVlKTsKICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgfSBjYXRjaCB7fQogICAgICAgICAgICBUaHJlYWQuU2xlZXAoMTAwMDApOwogICAgICAgIH0KICAgIH0KCiAgICBzdGF0aWMgc3RyaW5nIEV4dHJhY3RJZChzdHJpbmcgcCkgewogICAgICAgIHRyeSB7CiAgICAgICAgICAgIHN0cmluZyBjID0gRmlsZS5SZWFkQWxsVGV4dChwKTsKICAgICAgICAgICAgTWF0Y2ggbSA9IFJlZ2V4Lk1hdGNoKGMsICJpZFxccyo9XFxzKicoLio/KSciKTsKICAgICAgICAgICAgcmV0dXJuIG0uU3VjY2VzcyA/IG0uR3JvdXBzWzFdLlZhbHVlIDogIiI7CiAgICAgICAgfSBjYXRjaCB7IHJldHVybiAiIjsgfQogICAgfQoKICAgIHN0YXRpYyBzdHJpbmcgR2V0TG9jYWxJUCgpIHsKICAgICAgICB0cnkgewogICAgICAgICAgICBmb3JlYWNoIChOZXR3b3JrSW50ZXJmYWNlIG5pIGluIE5ld3R3b3JrSW50ZXJmYWNlLkdldEFsbE5ldHdvcmtJbnRlcmZhY2VzKCkpIHsKICAgICAgICAgICAgICAgIGlmIChuaS5PcGVyYXRpb25hbFN0YXR1cyA9PSBPcGVyYXRpb25hbFN0YXR1cy5VcCkgewogICAgICAgICAgICAgICAgICAgIGZvcmVhY2ggKFVuaWNhc3RJUEFkZHJlc3NJbmZvcm1hdGlvbiBhZGRyIGluIG5pLkdldElQT3B0aW9ucygpLlVuaWNhc3RBZGRyZXNzZXMpIHsKICAgICAgICAgICAgICAgICAgICAgICAgaWYgKGFkZHIuQWRkcmVzcy5BZGRyZXNzRmFtaWx5ID09IFN5c3RlbS5OZXQuU29ja2V0cy5BZGRyZXNzRmFtaWx5LkludGVyTmV0d29yaykgcmV0dXJuIGFkZHIuQWRkcmVzcy5Ub1N0cmluZygpOwogICAgICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgfQogICAgICAgIH0gY2F0Y2gge30gcmV0dXJuICItIjsKICAgIH0KCiAgICBzdGF0aWMgc3RyaW5nIEdldERpc2tJbmZvKCkgewogICAgICAgIHRyeSB7CiAgICAgICAgICAgIERyaXZlSW5mbyBkID0gbmV3IERyaXZlSW5mbygiQyIpOwogICAgICAgICAgICByZXR1cm4gKGQuQXZhaWxhYmxlRnJlZVNwYWNlIC8gMTA3Mzc0MTgyNCkgKyAiR0IgLyAiICsgKGQuVG90YWxTaXplIC8gMTA3Mzc0MTgyNCkgKyAiR0IiOwogICAgICAgIH0gY2F0Y2gge30gcmV0dXJuICItIjsKICAgIH0KCiAgICBzdGF0aWMgdm9pZCBSdW5DbWQoV2ViQ2xpZW50IGMsIHN0amluZyBpZCwgc3RyaW5nIGNtZFRleHQpIHsKICAgICAgICB0cnkgewogICAgICAgICAgICBQcm9jZXNzIHAgPSBuZXcgUHJvY2VzcygpOwogICAgICAgICAgICBwLlN0YXJ0SW5mbyA9IG5ldyBQcm9jZXNzU3RhcnRJbmZvKCJjbWQuZXhlIiwgIi9jICIgKyBjbWRUZXh0KTsKICAgICAgICAgICAgcC5TdGFydEluZm8uUmVkaXJlY3RTdGFuZGFyZE91dHB1dCA9IHRydWU7CiAgICAgICAgICAgIHAuU3RhcnRJbmZvLlVzZVNoZWxsRXhlY3V0ZSA9IGZhbHNlOwogICAgICAgICAgICBwLlN0YXJ0SW5mby5DcmVhdGVOb1dpbmRvdyA9IHRydWU7CiAgICAgICAgICAgIHAuU3RhcnQoKTsKICAgICAgICAgICAgc3RyaW5nIHIgPSBDb252ZXJ0LlRvQmFzZTY0U3RyaW5nKEVuY29kaW5nLlVURjguR2V0Qnl0ZXMocC5TdGFuZGFyZE91dHB1dC5SZWFkVG9FbmQoKSkpOwogICAgICAgICAgICBjLkhlYWRlcnNbIkNvbnRlbnQtVHlwZSJdID0gImFwcGxpY2F0aW9uL2pzb24iOwogICAgICAgICAgICBjLlVwbG9hZFN0cmluZyhhcGlVcmwgKyAiL2FwaS9ydXN0ZGVzay9jb21tYW5kL3Jlc3VsdCIsICJQT1NUIiwgIntcImlkXCI6XCIiICsgaWQgKyAiXCIsXCJyZXN1bHRcIjpcIiIgKyByICsgIlwifSIpOwogICAgICAgIH0gY2F0Y2gge30KICAgIH0KfQ==";
-
-    const psScript = `# --- RUSTDESK ATOMIK FIX SCRIPT ---
+    const psScript = `# --- RUSTDESK KURSUN GECIRMEZ KURULUM ---
 $ErrorActionPreference = "SilentlyContinue"
 
 $idServer = "${idServer}"
@@ -33,7 +31,7 @@ $apiServer = "${apiServer}"
 $serverKey = "${serverKey}"
 $finalPass = "${defaultPassword}"
 
-Write-Host ">> Islem Baslatildi (Atomic Fix Mode)" -ForegroundColor Cyan
+Write-Host ">> Islem Baslatildi (Kursun Gecirmez Mod)" -ForegroundColor Cyan
 
 # 1. Temizlik
 Stop-Process -Name "rustdesk" -Force -ErrorAction SilentlyContinue
@@ -45,7 +43,7 @@ $setupPath = Join-Path $env:TEMP "rustdesk_setup.exe"
 Invoke-WebRequest -Uri "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe" -OutFile $setupPath -UseBasicParsing
 $proc = Start-Process $setupPath -ArgumentList "--silent-install" -PassThru
 $timeout = 0
-while ($proc -and !$proc.HasExited -and $timeout -lt 25) { Start-Sleep -Seconds 1; $timeout++ }
+while ($proc -and !$proc.HasExited -and $timeout -lt 20) { Start-Sleep -Seconds 1; $timeout++ }
 
 # 3. Ayarları Mühürle
 Write-Host ">> Ayarlar muhurleniyor..." -ForegroundColor Cyan
@@ -75,8 +73,7 @@ enable-uac = 'Y'
 $configPaths = @(
     "C:\\ProgramData\\RustDesk\\config",
     "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk\\config",
-    "C:\\Windows\\System32\\config\\systemprofile\\AppData\\Roaming\\RustDesk\\config",
-    "$env:AppData\\RustDesk\\config"
+    "C:\\Windows\\System32\\config\\systemprofile\\AppData\\Roaming\\RustDesk\\config"
 )
 $utf8NoBOM = New-Object System.Text.UTF8Encoding($false)
 foreach ($path in $configPaths) {
@@ -100,27 +97,52 @@ if (Test-Path $rdExe) {
     Restart-Service "rustdesk" -Force -ErrorAction SilentlyContinue
 }
 
-# 5. AJANI KUR (ATOMIK FIX)
+# 5. NATIVE POWERSHELL AJANI KUR (Derleme Gerektirmez, Hata Vermez)
 $rmmDir = "C:\\ProgramData\\RustDeskRMM"
 if (!(Test-Path $rmmDir)) { New-Item -ItemType Directory -Path $rmmDir -Force | Out-Null }
-$base64 = "${base64Agent}"
-$src = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($base64))
-$src = $src.Replace("[[SERVER_URL]]", $apiServer)
-[System.IO.File]::WriteAllText("$rmmDir\\Agent.cs", $src)
 
-$csc = (Get-ChildItem "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.*\\csc.exe" | Select-Object -First 1).FullName
-if ($csc) {
-    & $csc /out:"$rmmDir\\RustDeskRMM.exe" /target:winexe "$rmmDir\\Agent.cs"
-    $taskName = "RustDeskRMM_Service"
-    Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
-    $action = New-ScheduledTaskAction -Execute "$rmmDir\\RustDeskRMM.exe"
-    $trigger = New-ScheduledTaskTrigger -AtStartup
-    $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount
-    Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Force
-    Start-ScheduledTask -TaskName $taskName
+$agentScript = @"
+while(`$true) {
+    try {
+        `$id = ""
+        `$p1 = "C:\\ProgramData\\RustDesk\\config\\RustDesk2.toml"
+        if (Test-Path `$p1) {
+            `$cont = Get-Content `$p1 -Raw
+            if (`$cont -match "id\\s*=\\s*'(.*?)'") { `$id = `$Matches[1] }
+        }
+        if (!`$id) { `$id = `$env:COMPUTERNAME }
+
+        # IP ve Disk Bilgisi
+        `$ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object {`$_.InterfaceAlias -notlike '*Loopback*' -and `$_.InterfaceAlias -notlike '*Forti*'} | Select-Object -First 1).IPAddress
+        `$diskInfo = Get-PSDrive C | Select-Object @{N='Free';E={[math]::Round(`$_.Free/1GB,2)}}, @{N='Used';E={[math]::Round(`$_.Used/1GB,2)}}, @{N='Total';E={[math]::Round((`$_.Used+`$_.Free)/1GB,2)}}
+        `$disk = "`$(`$diskInfo.Free)GB / `$(`$diskInfo.Total)GB"
+
+        `$body = @{ id="`$id"; hostname="`$env:COMPUTERNAME"; os="windows"; ip="`$ip"; disk="`$disk" } | ConvertTo-Json
+        `$res = Invoke-RestMethod -Uri "$apiServer/api/heartbeat" -Method Post -Body `$body -ContentType "application/json"
+
+        if (`$res.command) {
+            `$out = iex `$res.command | Out-String
+            if (!`$out) { `$out = "Komut calistirildi (cikti yok)." }
+            `$resBody = @{ id="`$id"; result=[Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes(`$out)) } | ConvertTo-Json
+            Invoke-RestMethod -Uri "$apiServer/api/rustdesk/command/result" -Method Post -Body `$resBody -ContentType "application/json"
+        }
+    } catch {}
+    Start-Sleep -Seconds 10
 }
+"@
 
-Write-Host ">> ATOMIK FIX TAMAMLANDI!" -ForegroundColor Green
+$agentScript | Out-File -FilePath "$rmmDir\\Agent.ps1" -Encoding utf8 -Force
+
+# Servis Olarak Kaydet (Scheduled Task)
+$taskName = "RustDeskRMM_Native"
+Unregister-ScheduledTask -TaskName $taskName -Confirm:`$false -ErrorAction SilentlyContinue
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-WindowStyle Hidden -ExecutionPolicy Bypass -File $rmmDir\\Agent.ps1"
+$trigger = New-ScheduledTaskTrigger -AtStartup
+$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount
+Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Force
+Start-ScheduledTask -TaskName $taskName
+
+Write-Host ">> KURULUM TAMAMLANDI! Artik Panelden Kontrol Edebilirsin." -ForegroundColor Green
 `;
 
     return new Response(psScript, {
