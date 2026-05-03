@@ -69,6 +69,7 @@ key = '$serverKey'
 $configPaths = @(
     "C:\\ProgramData\\RustDesk\\config",
     "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk\\config",
+    "C:\\Windows\\System32\\config\\systemprofile\\AppData\\Roaming\\RustDesk\\config",
     "$env:AppData\\RustDesk\\config"
 )
 $utf8NoBOM = New-Object System.Text.UTF8Encoding($false)
