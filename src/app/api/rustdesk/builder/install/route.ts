@@ -15,7 +15,6 @@ export async function GET(req: Request) {
     // Varsayılan değerler
     const host = searchParams.get("host") || settings.host;
     const port = searchParams.get("port") || settings.port;
-    const defaultPassword = settings.defaultPassword || "";
     
     // Sunucu anahtarını bulmaya çalış
     const keyPaths = [
@@ -41,7 +40,6 @@ export async function GET(req: Request) {
 $ErrorActionPreference = "SilentlyContinue"
 $serverUrl = "${fullServerUrl}"
 $serverKey = "${serverKey}"
-$defPass = "${defaultPassword}"
 
 Write-Host "--- RustDesk RMM Kurulumu Baslatiliyor ---" -ForegroundColor Yellow
 
@@ -72,19 +70,6 @@ while (!(Get-Service "rustdesk" -ErrorAction SilentlyContinue) -and $waitTimeout
     $waitTimeout--
 }
 Write-Host ""
-
-# Şifre Belirle
-if ($defPass) {
-    Write-Host ">> Baglanti sifresi tanimlaniyor ($defPass)..." -ForegroundColor Cyan
-    $rdExe = "C:\\Program Files\\RustDesk\\rustdesk.exe"
-    if (Test-Path $rdExe) {
-        # Farkli parametreleri dene - Arkaplanda calistir (Donmayi onlemek icin -Wait kaldirildi)
-        Start-Process $rdExe -ArgumentList "--set-password", "$defPass" -WindowStyle Hidden
-        Start-Sleep -Seconds 1
-        Start-Process $rdExe -ArgumentList "--password", "$defPass" -WindowStyle Hidden
-        Write-Host ">> Sifre komutları arkaplanda gonderildi." -ForegroundColor Green
-    }
-}
 
 # 3. Konfigürasyon Dosyasını Oluştur
 Write-Host ">> Sunucu ayarları sisteme işleniyor..." -ForegroundColor Cyan

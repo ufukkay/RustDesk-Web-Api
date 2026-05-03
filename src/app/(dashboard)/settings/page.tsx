@@ -113,28 +113,6 @@ export default function SettingsPage() {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label className="text-xs font-semibold text-muted-foreground uppercase">Varsayılan Bağlantı Şifresi</Label>
-                      <div className="relative group">
-                        <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input 
-                          type={showPass ? "text" : "password"}
-                          value={localServer.defaultPassword} 
-                          onChange={e => setLocalServer({...localServer, defaultPassword: e.target.value})}
-                          className="bg-secondary/50 border-border h-10 pl-10" 
-                          placeholder="Örn: Ban41kam5"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPass(!showPass)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                          {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
-                      <p className="text-[10px] text-muted-foreground">Bu şifre kurulum sırasında tüm cihazlara otomatik tanımlanır.</p>
-                    </div>
-
-                    <div className="space-y-2">
                       <Label className="text-xs font-semibold text-muted-foreground uppercase">API Token / Key (Opsiyonel)</Label>
                       <div className="relative group">
                         <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
