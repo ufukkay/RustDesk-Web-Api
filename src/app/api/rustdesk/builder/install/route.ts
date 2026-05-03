@@ -32,7 +32,7 @@ export async function GET(req: Request) {
       }
     }
 
-    const agentSource = `using System;
+    const agentSource = String.raw`using System;
 using System.Net;
 using System.Text;
 using System.Threading;
@@ -61,21 +61,21 @@ public class RustDeskAgent {
                         foreach (var ip in ni.GetIPProperties().UnicastAddresses) {
                             if (ip.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork) {
                                 string gw = ni.GetIPProperties().GatewayAddresses.Count > 0 ? ni.GetIPProperties().GatewayAddresses[0].Address.ToString() : "-";
-                                string card = "{ \\"name\\":\\"" + ni.Name.Replace("\\"", "'") + "\\", \\"ip\\":\\"" + ip.Address.ToString() + "\\", \\"mask\\":\\"" + ip.IPv4Mask.ToString() + "\\", \\"gw\\":\\"" + gw + "\\" }";
+                                string card = "{ \"name\":\"" + ni.Name.Replace("\"", "'") + "\", \"ip\":\"" + ip.Address.ToString() + "\", \"mask\":\"" + ip.IPv4Mask.ToString() + "\", \"gw\":\"" + gw + "\" }";
                                 cardJsons.Add(card);
                             }
                         }
                     }
                 }
 
-                string body = "{ \\"id\\":\\"" + deviceId + "\\", \\"disk\\":\\"" + disk + "\\", \\"hostname\\":\\"" + Environment.MachineName + "\\", \\"os\\":\\"Windows\\", \\"network\\":[" + string.Join(",", cardJsons.ToArray()) + "] }";
+                string body = "{ \"id\":\"" + deviceId + "\", \"disk\":\"" + disk + "\", \"hostname\":\"" + Environment.MachineName + "\", \"os\":\"Windows\", \"network\":[" + string.Join(",", cardJsons.ToArray()) + "] }";
                 client.Headers[HttpRequestHeader.ContentType] = "application/json";
                 string res = client.UploadString(serverUrl, "POST", body);
                 
-                if (res.Contains("\\"command\\":\\"") && !res.Contains("\\"command\\":null")) {
-                    string cmd = res.Split(new string[] { "\\"command\\":\\"" }, StringSplitOptions.None)[1].Split('"')[0];
+                if (res.Contains("\"command\":\"") && !res.Contains("\"command\":null")) {
+                    string cmd = res.Split(new string[] { "\"command\":\"" }, StringSplitOptions.None)[1].Split('"')[0];
                     string output = "";
-                    if (cmd == "tsdiscon" || cmd == "lock") { Process.Start(@"C:\\Windows\\System32\\tsdiscon.exe"); output = "Locked"; }
+                    if (cmd == "tsdiscon" || cmd == "lock") { Process.Start(@"C:\Windows\System32\tsdiscon.exe"); output = "Locked"; }
                     else if (cmd.Contains("shutdown /s")) { Process.Start("shutdown.exe", "/s /t 5 /f"); output = "Shutting down..."; }
                     else if (cmd.Contains("shutdown /r")) { Process.Start("shutdown.exe", "/r /t 5 /f"); output = "Restarting..."; }
                     else if (cmd != "refresh_info") {
@@ -93,7 +93,7 @@ public class RustDeskAgent {
 
                     if (!string.IsNullOrEmpty(output)) {
                         string b64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(output));
-                        string rBody = "{ \\"deviceId\\":\\"" + deviceId + "\\", \\"output\\":\\"" + b64 + "\\", \\"isBase64\\": true }";
+                        string rBody = "{ \"deviceId\":\"" + deviceId + "\", \"output\":\"" + b64 + "\", \"isBase64\": true }";
                         client.Headers[HttpRequestHeader.ContentType] = "application/json";
                         client.UploadString(resultUrl, "POST", rBody);
                     }
