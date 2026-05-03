@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Monitor, Users, Settings, Bell, Search, LogOut, User as UserIcon, ChevronDown, Moon, Sun } from "lucide-react";
+import { LayoutDashboard, Monitor, Users, Settings, Bell, Search, LogOut, User as UserIcon, ChevronDown, Moon, Sun, Package } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { useTheme } from "next-themes";
 const navItems = [
   { href: "/dashboard",   label: "Genel Bakış",  icon: LayoutDashboard },
   { href: "/devices",     label: "Cihazlar",     icon: Monitor },
+  { href: "/builder",     label: "Paket Oluşturucu", icon: Package },
   { href: "/technicians", label: "Teknisyenler", icon: Users },
   { href: "/settings",    label: "Ayarlar",      icon: Settings },
 ];
