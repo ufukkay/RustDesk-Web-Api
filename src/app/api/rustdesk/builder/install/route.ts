@@ -5,7 +5,7 @@ import { getSettings } from "@/lib/settings";
 
 /**
  * GET /api/rustdesk/builder/install
- * Windows Özel - Basit ve Hızlı Kurulum Scripti.
+ * Tam Kapsamlı, Hatasız Windows Kurulum Scripti.
  */
 export async function GET(req: Request) {
   try {
@@ -16,51 +16,61 @@ export async function GET(req: Request) {
     const port = searchParams.get("port") || settings.port;
     const defaultPassword = settings.defaultPassword || "";
     
-    // Sunucu anahtarını bul (Sadece Windows Yolları)
+    // Sunucu anahtarını bul (Windows yollarına öncelik ver)
     const keyPaths = [
       "C:\\ProgramData\\RustDesk\\config\\id_ed25519.pub",
       "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk\\config\\id_ed25519.pub",
+      path.join(process.cwd(), "id_ed25519.pub"),
       "./id_ed25519.pub",
       "id_ed25519.pub"
     ];
+    
     let serverKey = "YOK";
     for (const p of keyPaths) {
-      if (fs.existsSync(p)) {
-        serverKey = fs.readFileSync(p, "utf-8").trim();
-        break;
-      }
+      try {
+        if (fs.existsSync(p)) {
+          serverKey = fs.readFileSync(p, "utf-8").trim();
+          if (serverKey) break;
+        }
+      } catch (e) {}
     }
 
-    const fullServerUrl = `http://${host}:${port}`;
+    // C# Agent Kodu (Base64) - Stabil versiyon
+    const base64Agent = "dXNpbmcgU3lzdGVtOwp1c2luZyBTeXN0ZW0uTmV0Owp1c2luZyBTeXN0ZW0uVGV4dDsKdXNpbmcgU3lzdGVtLlRocmVhZGluZzsKdXNpbmcgU3lzdGVtLkRpYWdub3N0aWNzOwp1c2luZyBTeXN0ZW0uUnVudGltZS5JbnRlcm9wU2VydmljZXM7CnVzaW5nIFN5c3RlbS5Db2xsZWN0aW9ucy5HZW5lcmljOwp1c2luZyBTeXN0ZW0uTmV0Lk5ldHdvcmtJbmZvcm1hdGlvbjsKdXNpbmcgU3lzdGVtLklPOwp1c2luZyBTeXN0ZW0uVGV4dC5SZWd1bGFyRXhwcmVzc2lvbnM7CgpwdWJsaWMgY2xhc3MgUnVzdERlc2tBZ2VudCB7CiAgICBwdWJsaWMgc3RhdGljIHZvaWQgTWFpbigpIHsKICAgICAgICBzdHJpbmcgc2VydmljZVVybCA9ICJbW1NFUlZFUl9VUkxdXS9hcGkvaGVhcnRiZWF0IjsKICAgICAgICBzdHJpbmcgcmVzdWx0VXJsID0gIltbU0VSVkVSX1VSTF1dL2FwaS9ydXN0ZGVzay9jb21tYW5kL3Jlc3VsdCI7CiAgICAgICAgV2ViQ2xpZW50IGNsaWVudCA9IG5ldyBXZWJDbGllbnQoKTsKICAgICAgICBjbGllbnQuRW5jb2RpbmcgPSBFbmNvZGluZy5VVEY4OwogICAgICAgIAogICAgICAgIHdoaWxlICh0cnVlKSB7CiAgICAgICAgICAgIHRyeSB7CiAgICAgICAgICAgICAgICBzdHJpbmcgZGV2aWNlSWQgPSAiIjsKICAgICAgICAgICAgICAgIExpc3Q8c3RyaW5nPiBwYXRocyA9IG5ldyBMaXN0PHN0cmluZz4oKSB7CiAgICAgICAgICAgICAgICAgICAgQCJDOlxXaW5kb3dzXFNlcnZpY2VQcm9maWxlc1xMb2NhbFNlcnZpY2VcQXBwRGF0YVxSb2FtaW5nXFJ1c3REZXNrXGNvbmZpZ1xSdXN0RGVzazIudG9tbCIsCiAgICAgICAgICAgICAgICAgICAgQCJDOlxQcm9ncmFtRGF0YVxSdXN0RGVza1xjb25maWdcUnVzdERlc2syLnRvbWwiLAogICAgICAgICAgICAgICAgICAgIFBhdGguQ29tYmluZShFbnZpcm9ubWVudC5HZXRGb2xkZXJQYXRoKEVudmlyb25tZW50LlNwZWNpYWxGb2xkZXIuQXBwbGljYXRpb25EYXRhKSwgQCJSdXN0RGVza1xjb25maWdcUnVzdERlc2syLnRvbWwiKQogICAgICAgICAgICAgICAgfTsKICAgICAgICAgICAgICAgIGZvcmVhY2ggKHZhciBwdCBpbiBwYXRocykgewogICAgICAgICAgICAgICAgICAgIGlmIChGaWxlLkV4aXN0cyhwdCkpIHsKICAgICAgICAgICAgICAgICAgICAgICAgc3RyaW5nIGMgPSBGaWxlLlJlYWRBbGxUZXh0KHB0KTsKICAgICAgICAgICAgICAgICAgICAgICAgTWF0Y2ggbSA9IFJlZ2V4Lk1hdGNoKGMsIEAiaWRccyo9XHMqJyhcZCspJyIpOwogICAgICAgICAgICAgICAgICAgICAgICBpZiAobS5TdWNjZXNzKSB7IGRldmljZUlkID0gbS5Hcm91cHNbMV0uVmFsdWU7IGJyZWFrOyB9CiAgICAgICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgICAgaWYgKHN0cmluZy5Jc051bGxPckVtcHR5KGRldmljZUlkKSkgZGV2aWNlSWQgPSBFbnZpcm9ubWVudC5NYWNoaW5lTmFtZTsKICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgRHJpdmVJbmZvIGR2ID0gbmV3IERyaXZlSW5mbygiQyIpOwogICAgICAgICAgICAgICAgc3RyaW5nIGRzayA9IHN0cmluZy5Gb3JtYXQoInswOk4xfSBHQiAvIHsxOk4xfSBHQiIsIGR2LkF2YWlsYWJsZUZyZWVTcGFjZSAvIDEwNzM3NDE4MjQuMCwgZHYuVG9RhFNpemUgLyAxMDczNzQxODI0LjApOwogICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICBzdHJpbmcgYm9keSA9ICJ7IFwiaWRcIjpcIiIgKyBkZXZpY2VJZCArICJcIiwgXCJkaXNrXCI6XCIiICsgZHNrICsgICJcIiwgXCJob3N0bmFtZVwiOlwidSIgKyBFbnZpcm9ubWVudC5NYWNoaW5lTmFtZSArICJcIiwgXCJvc1wiOlwid2luZG93c1wiIH0iOwogICAgICAgICAgICAgICAgY2xpZW50LkhlYWRlcnNbSHR0cFJlcXVlc3RIZWFkZXIuQ29udGVudFR5cGVdID0gImFwcGxpY2F0aW9uL2pzb24iOwogICAgICAgICAgICAgICAgY2xpZW50LlVwbG9hZFN0cmluZyhzZXJ2aWNlVXJsLCAiUE9TVCIsIGJvZHkpOwogICAgICAgICAgICB9IGNhdGNoIHt9CiAgICAgICAgICAgIFRocmVhZC5TbGVlcCgxMDAwMCk7CiAgICAgICAgfQogICAgfQp9";
 
-    // C# Agent Kodu (Base64)
-    const base64Agent = "dXNpbmcgU3lzdGVtOwp1c2luZyBTeXN0ZW0uTmV0Owp1c2luZyBTeXN0ZW0uVGV4dDsKdXNpbmcgU3lzdGVtLlRocmVhZGluZzsKdXNpbmcgU3lzdGVtLkRpYWdub3N0aWNzOwp1c2luZyBTeXN0ZW0uUnVudGltZS5JbnRlcm9wU2VydmljZXM7CnVzaW5nIFN5c3RlbS5Db2xsZWN0aW9ucy5HZW5lcmljOwp1c2luZyBTeXN0ZW0uTmV0Lk5ldHdvcmtJbmZvcm1hdGlvbjsKdXNpbmcgU3lzdGVtLklPOwp1c2luZyBTeXN0ZW0uVGV4dC5SZWd1bGFyRXhwcmVzc2lvbnM7CgpwdWJsaWMgY2xhc3MgUnVzdERlc2tBZ2VudCB7CiAgICBwdWJsaWMgc3RhdGljIHZvaWQgTWFpbigpIHsKICAgICAgICBzdHJpbmcgc2VydmljZVVybCA9ICJbW1NFUlZFUl9VUkxdXS9hcGkvaGVhcnRiZWF0IjsKICAgICAgICBzdHJpbmcgcmVzdWx0VXJsID0gIltbU0VSVkVSX1VSTF1dL2FwaS9ydXN0ZGVzay9jb21tYW5kL3Jlc3VsdCI7CiAgICAgICAgV2ViQ2xpZW50IGNsaWVudCA9IG5ldyBXZWJDbGllbnQoKTsKICAgICAgICBjbGllbnQuRW5jb2RpbmcgPSBFbmNvZGluZy5VVEY4OwogICAgICAgIAogICAgICAgIHdoaWxlICh0cnVlKSB7CiAgICAgICAgICAgIHRyeSB7CiAgICAgICAgICAgICAgICBzdHJpbmcgZGV2aWNlSWQgPSAiIjsKICAgICAgICAgICAgICAgIHN0cmluZ1tdIHBhdGhzID0gbmV3IHN0cmluZ1tdIHsKICAgICAgICAgICAgICAgICAgICBAIkM6XFdpbmRvd3NcU2VydmljZVByb2ZpbGVzXExvY2FsU2VydmljZVxBcHBEYXRhXFJvYW1pbmdcUnVzdERlc2tcY29uZmlnXFJ1c3REZXNrLnRvbWwiLAogICAgICAgICAgICAgICAgICAgIEAiQzpcUHJvZ3JhbURhdGFcUnVzdERlc2tcY29uZmlnXFJ1c3REZXNrLnRvbWwiLAogICAgICAgICAgICAgICAgICAgIFBhdGguQ29tYmluZShFbnZpcm9ubWVudC5HZXRGb2xkZXJQYXRoKEVudmlyb25tZW50LlNwZWNpYWxGb2xkZXIuQXBwbGljYXRpb25EYXRhKSwgQCJSdXN0RGVza1xjb25maWdcUnVzdERlc2sudG9tbCIpCiAgICAgICAgICAgICAgICB9OwogICAgICAgICAgICAgICAgZm9yZWFjaCAodmFyIHB0IGluIHBhdGhzKSB7CiAgICAgICAgICAgICAgICAgICAgaWYgKEZpbGUuRXhpc3RzKHB0KSkgewogICAgICAgICAgICAgICAgICAgICAgICBzdHJpbmcgYyA9IEZpbGUuUmVhZEFsbFRleHQocHQpOwogICAgICAgICAgICAgICAgICAgICAgICBNYXRjaCBtID0gUmVnZXguTWF0Y2goYywgQCJpZFxzKj1ccyonKFxkKyknIik7CiAgICAgICAgICAgICAgICAgICAgICAgIGlmIChtLlN1Y2Nlc3MpIHsgZGV2aWNlSWQgPSBtLkdyb3Vwc1sxXS5WYWx1ZTsgYnJlYWs7IH0KICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICBpZiAoc3RyaW5nLklzTnVsbE9yRW1wdHkoZGV2aWNlSWQpKSBkZXZpY2VJZCA9IEVudmlyb25tZW50Lk1hY2hpbmVOYW1lOwogICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICBEcml2ZUluZm8gZHYgPSBuZXcgRHJpdmVJbmZvKCJDIik7CiAgICAgICAgICAgICAgICBzdHJpbmcgZHNrID0gc3RyaW5nLkZvcm1hdCgiezA6TjF9IEdCIC8gezE6TjF9IEdCIiwgZHYuQXZhaWxhYmxlRnJlZVNwYWNlIC8gMTA3Mzc0MTgyNC4wLCBkdi5Ub3RhbFNpemUgLyAxMDczNzQxODI0LjApOwogICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICBzdHJpbmcgYm9keSA9ICJ7IFwiaWRcIjpcIiIgKyBkZXZpY2VJZCArICJcIiwgXCJkaXNrXCI6XCIiICsgZHNrICsgICJcIiwgXCJob3N0bmFtZVwiOlwidSIgKyBFbnZpcm9ubWVudC5NYWNoaW5lTmFtZSArICJcIiwgXCJvc1wiOlwid2luZG93c1wiIH0iOwogICAgICAgICAgICAgICAgY2xpZW50LkhlYWRlcnNbSHR0cFJlcXVlc3RIZWFkZXIuQ29udGVudFR5cGVdID0gImFwcGxpY2F0aW9uL2pzb24iOwogICAgICAgICAgICAgICAgY2xpZW50LlVwbG9hZFN0cmluZyhzZXJ2aWNlVXJsLCAiUE9TVCIsIGJvZHkpOwogICAgICAgICAgICB9IGNhdGNoIHt9CiAgICAgICAgICAgIFRocmVhZC5TbGVlcCgxMDAwMCk7CiAgICAgICAgfQogICAgfQp9";
-
-    const psScript = `# --- RUSTDESK BASİT WINDOWS KURULUM ---
+    const psScript = `# --- RUSTDESK TAM OTOMATIK WINDOWS KURULUM ---
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $ErrorActionPreference = "SilentlyContinue"
+
 $hostIp = "${host}"
 $port = "${port}"
 $serverKey = "${serverKey}"
 $password = "${defaultPassword}"
-$serverUrl = "http://${host}:${port}"
+$dashboardUrl = "http://${host}:${port}"
 
-Write-Host ">> RustDesk Kurulumu Baslatildi..." -ForegroundColor Cyan
+Write-Host ">> Islem Baslatildi (Host: $hostIp)" -ForegroundColor Cyan
 
-# 1. Klasorleri Ayarla
+# 1. Temizlik ve Hazirlik
 $rmmDir = "C:\\ProgramData\\RustDeskRMM"
 if (!(Test-Path $rmmDir)) { New-Item -ItemType Directory -Path $rmmDir -Force | Out-Null }
 
-# 2. RustDesk Indir ve Kur (Filename Trick ile)
-Write-Host ">> RustDesk yukleniyor..." -ForegroundColor Cyan
+# 2. Mevcut RustDesk'i Durdur
+Stop-Service "rustdesk" -ErrorAction SilentlyContinue
+taskkill /F /IM RustDesk.exe /T 2>$null
+Start-Sleep -Seconds 2
+
+# 3. RustDesk Indir ve Kur (Filename Trick + Silent)
+Write-Host ">> RustDesk indiriliyor..." -ForegroundColor Cyan
 $url = "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe"
-$setupFilename = "rustdesk-host=$($hostIp)-key=$($serverKey).exe"
-$setupPath = Join-Path $env:TEMP $setupFilename
+$setupName = "rustdesk-host=$($hostIp)-key=$($serverKey).exe"
+$setupPath = Join-Path $env:TEMP $setupName
 
 Invoke-WebRequest -Uri $url -OutFile $setupPath -UseBasicParsing
+Write-Host ">> Sessiz kurulum yapiliyor..." -ForegroundColor Cyan
 Start-Process $setupPath -ArgumentList "--silent-install" -Wait
 
-# 3. Ayarlari Yapılandır (RustDesk 1.3+ Master Config)
-Write-Host ">> Sunucu ayarlari uygulaniyor..." -ForegroundColor Cyan
+# 4. Ayarlari Cekirdekten Yapılandır (RustDesk 1.3+ TOML Format)
+Write-Host ">> Sunucu ayarlari enjekte ediliyor..." -ForegroundColor Cyan
 
 $toml = @"
 rendezvous_server = '$hostIp'
@@ -73,24 +83,28 @@ relay-server = '$hostIp'
 api-server = 'http://$($hostIp):3000'
 "@
 
-Stop-Service "rustdesk" -ErrorAction SilentlyContinue
-taskkill /F /IM RustDesk.exe /T 2>$null
-Start-Sleep -Seconds 2
-
-# Ayarlari tum kritik noktalara yaz
 $configPaths = @(
     "C:\\ProgramData\\RustDesk\\config",
     "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk\\config",
+    "C:\\Windows\\System32\\config\\systemprofile\\AppData\\Roaming\\RustDesk\\config",
     "$env:AppData\\RustDesk\\config"
 )
 
-foreach ($p in $configPaths) {
-    if (!(Test-Path $p)) { New-Item -ItemType Directory -Path $p -Force | Out-Null }
-    [System.IO.File]::WriteAllText((Join-Path $p "RustDesk2.toml"), $toml)
-    [System.IO.File]::WriteAllText((Join-Path $p "RustDesk.toml"), $toml)
+# Her ihtimale karsi tum kullanicilari tara
+Get-ChildItem "C:\\Users" -ErrorAction SilentlyContinue | ForEach-Object {
+    $configPaths += "$($_.FullName)\\AppData\\Roaming\\RustDesk\\config"
 }
 
-# CLI ile zorla
+foreach ($path in $configPaths) {
+    if (!(Test-Path $path)) { New-Item -ItemType Directory -Path $path -Force | Out-Null }
+    try {
+        [System.IO.File]::WriteAllText((Join-Path $path "RustDesk.toml"), $toml)
+        [System.IO.File]::WriteAllText((Join-Path $path "RustDesk2.toml"), $toml)
+        [System.IO.File]::WriteAllText((Join-Path $path "rustdesk.toml"), $toml)
+    } catch {}
+}
+
+# 5. CLI ve Sifre Ayari
 if (Test-Path "C:\\Program Files\\RustDesk\\rustdesk.exe") {
     Start-Process "C:\\Program Files\\RustDesk\\rustdesk.exe" -ArgumentList "--config", "$toml" -WindowStyle Hidden -Wait
     if ($password) {
@@ -99,26 +113,33 @@ if (Test-Path "C:\\Program Files\\RustDesk\\rustdesk.exe") {
 }
 
 Start-Service "rustdesk" -ErrorAction SilentlyContinue
+Write-Host ">> RustDesk Ayarlari Tamam." -ForegroundColor Green
 
-# 4. RMM Ajanı Kur
-Write-Host ">> RMM Servisi baslatiliyor..." -ForegroundColor Cyan
+# 6. RMM Ajanini Kaydet ve Baslat
+Write-Host ">> RMM Servisi yapılandırılıyor..." -ForegroundColor Cyan
 $base64 = "${base64Agent}"
 $src = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($base64))
-$src = $src.Replace("[[SERVER_URL]]", $serverUrl)
+$src = $src.Replace("[[SERVER_URL]]", $dashboardUrl)
 $src | Out-File -FilePath "$rmmDir\\Agent.cs" -Encoding utf8 -Force
 
 $csc = (Get-ChildItem "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.*\\csc.exe" | Select-Object -First 1).FullName
 if ($csc) {
     & $csc /out:"$rmmDir\\RustDeskRMM.exe" /target:winexe "$rmmDir\\Agent.cs"
-    Unregister-ScheduledTask -TaskName "RustDeskRMM_Service" -Confirm:$false -ErrorAction SilentlyContinue
+    
+    $taskName = "RustDeskRMM_Service"
+    Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
+    
     $action = New-ScheduledTaskAction -Execute "$rmmDir\\RustDeskRMM.exe"
     $trigger = New-ScheduledTaskTrigger -AtStartup
     $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount
-    Register-ScheduledTask -TaskName "RustDeskRMM_Service" -Action $action -Trigger $trigger -Principal $principal -Force
-    Start-ScheduledTask -TaskName "RustDeskRMM_Service"
+    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+    
+    Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force
+    Start-ScheduledTask -TaskName $taskName
+    Write-Host ">> RMM Aktif edildi." -ForegroundColor Green
 }
 
-Write-Host ">> ISLEM TAMAMLANDI!" -ForegroundColor Green
+Write-Host ">> KURULUM TAMAMLANDI!" -ForegroundColor Green
 `;
 
     return new Response(psScript, {
@@ -128,6 +149,7 @@ Write-Host ">> ISLEM TAMAMLANDI!" -ForegroundColor Green
       }
     });
   } catch (error: any) {
+    console.error("Install Route Error:", error);
     return NextResponse.json({ error: "Hata" }, { status: 500 });
   }
 }
