@@ -3,7 +3,7 @@ import { getSettings } from "@/lib/settings";
 
 /**
  * GET /api/rustdesk/builder/install
- * Kurşun Geçirmez Mod - Native PowerShell Agent (v2 - Robust).
+ * Mühürlü Blok Modu - PowerShell Değişken Kaybı Fixlendi.
  */
 export async function GET(req: Request) {
   try {
@@ -19,8 +19,8 @@ export async function GET(req: Request) {
     const defaultPassword = settings.defaultPassword || "Ban41kam5";
     const serverKey = settings.serverKey || "YOK";
     
-    // PowerShell Script
-    const psScript = `# --- RUSTDESK KURSUN GECIRMEZ KURULUM V2 ---
+    // PowerShell Script (TS uyumlu escape edildi)
+    const psScript = `# --- RUSTDESK MUHURLU BLOK KURULUM ---
 \$ErrorActionPreference = "SilentlyContinue"
 
 \$idServer = "${idServer}"
@@ -29,7 +29,7 @@ export async function GET(req: Request) {
 \$serverKey = "${serverKey}"
 \$finalPass = "${defaultPassword}"
 
-Write-Host ">> Islem Baslatildi (Robust Mode)" -ForegroundColor Cyan
+Write-Host ">> Islem Baslatildi (Final Robust Mode)" -ForegroundColor Cyan
 
 # 1. Temizlik
 Stop-Process -Name "rustdesk" -Force -ErrorAction SilentlyContinue
@@ -95,12 +95,13 @@ if (Test-Path \$rdExe) {
     Restart-Service "rustdesk" -Force -ErrorAction SilentlyContinue
 }
 
-# 5. ROBUST POWERSHELL AJANI
+# 5. NATIVE POWERSHELL AJANI (Single-Quote Heredoc ile Degisken Koruma)
 \$rmmDir = "C:\\ProgramData\\RustDeskRMM"
 if (!(Test-Path \$rmmDir)) { New-Item -ItemType Directory -Path \$rmmDir -Force | Out-Null }
 
-\$agentScript = @"
-\$api = '$apiServer'
+# Burada @' ... '@ kullanarak PS degiskenlerini (\$) koruyoruz.
+\$agentScript = @'
+\$api = '[[SERVER_URL]]'
 while(\$true) {
     try {
         \$id = ""
@@ -129,11 +130,11 @@ while(\$true) {
             Invoke-RestMethod -Uri "\$api/api/rustdesk/command/result" -Method Post -Body \$resBody -ContentType "application/json"
         }
     } catch {
-        "\$((Get-Date).ToString()) - Hata: \$(\$_.Exception.Message)" | Out-File -FilePath "\$rmmDir\\log.txt" -Append
+        "\$((Get-Date).ToString()) - Hata: \$(\$_.Exception.Message)" | Out-File -FilePath "C:\\ProgramData\\RustDeskRMM\\log.txt" -Append
     }
     Start-Sleep -Seconds 10
 }
-"@
+'@.Replace('[[SERVER_URL]]', \$apiServer)
 
 [System.IO.File]::WriteAllText("\$rmmDir\\Agent.ps1", \$agentScript, \$utf8NoBOM)
 
@@ -146,7 +147,7 @@ Unregister-ScheduledTask -TaskName \$taskName -Confirm:\$false -ErrorAction Sile
 Register-ScheduledTask -TaskName \$taskName -Action \$action -Trigger \$trigger -Principal \$principal -Force
 Start-ScheduledTask -TaskName \$taskName
 
-Write-Host ">> AJAN BASLATILDI! Panelden kontrol et kral." -ForegroundColor Green
+Write-Host ">> AJAN MUHURLENDI VE BASLATILDI!" -ForegroundColor Green
 `;
 
     return new Response(psScript, {
