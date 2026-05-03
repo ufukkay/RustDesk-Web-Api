@@ -3,7 +3,7 @@ import { getSettings } from "@/lib/settings";
 
 /**
  * GET /api/rustdesk/builder/install
- * Kurşun Geçirmez Mod - Native PowerShell Agent (TS Syntax Fix).
+ * Kurşun Geçirmez Mod - Native PowerShell Agent (v2 - Robust).
  */
 export async function GET(req: Request) {
   try {
@@ -19,8 +19,8 @@ export async function GET(req: Request) {
     const defaultPassword = settings.defaultPassword || "Ban41kam5";
     const serverKey = settings.serverKey || "YOK";
     
-    // PowerShell Script (TS uyumlu escape edildi)
-    const psScript = `# --- RUSTDESK KURSUN GECIRMEZ KURULUM ---
+    // PowerShell Script
+    const psScript = `# --- RUSTDESK KURSUN GECIRMEZ KURULUM V2 ---
 \$ErrorActionPreference = "SilentlyContinue"
 
 \$idServer = "${idServer}"
@@ -29,7 +29,7 @@ export async function GET(req: Request) {
 \$serverKey = "${serverKey}"
 \$finalPass = "${defaultPassword}"
 
-Write-Host ">> Islem Baslatildi (Kursun Gecirmez Mod)" -ForegroundColor Cyan
+Write-Host ">> Islem Baslatildi (Robust Mode)" -ForegroundColor Cyan
 
 # 1. Temizlik
 Stop-Process -Name "rustdesk" -Force -ErrorAction SilentlyContinue
@@ -95,43 +95,49 @@ if (Test-Path \$rdExe) {
     Restart-Service "rustdesk" -Force -ErrorAction SilentlyContinue
 }
 
-# 5. NATIVE POWERSHELL AJANI KUR
+# 5. ROBUST POWERSHELL AJANI
 \$rmmDir = "C:\\ProgramData\\RustDeskRMM"
 if (!(Test-Path \$rmmDir)) { New-Item -ItemType Directory -Path \$rmmDir -Force | Out-Null }
 
 \$agentScript = @"
+\$api = '$apiServer'
 while(\$true) {
     try {
         \$id = ""
         \$p1 = "C:\\ProgramData\\RustDesk\\config\\RustDesk2.toml"
         if (Test-Path \$p1) {
             \$cont = Get-Content \$p1 -Raw
-            if (\$cont -match "id\\s*=\\s*'(.*?)'") { \$id = \$Matches[1] }
+            if (\$cont -match "id\\s*=\\s*[']?(\d+)[']?") { \$id = \$Matches[1] }
         }
         if (!\$id) { \$id = \$env:COMPUTERNAME }
 
-        # IP ve Disk Bilgisi
+        # IP (VPN Atlama)
         \$ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object {\$_.InterfaceAlias -notlike '*Loopback*' -and \$_.InterfaceAlias -notlike '*Forti*'} | Select-Object -First 1).IPAddress
+        if (!\$ip) { \$ip = "127.0.0.1" }
+
+        # Disk
         \$diskInfo = Get-PSDrive C | Select-Object @{N='Free';E={[math]::Round(\$_.Free/1GB,2)}}, @{N='Total';E={[math]::Round((\$_.Used+\$_.Free)/1GB,2)}}
         \$disk = "\$(\$diskInfo.Free)GB / \$(\$diskInfo.Total)GB"
 
         \$body = @{ id="\$id"; hostname="\$env:COMPUTERNAME"; os="windows"; ip="\$ip"; disk="\$disk" } | ConvertTo-Json
-        \$res = Invoke-RestMethod -Uri "$apiServer/api/heartbeat" -Method Post -Body \$body -ContentType "application/json"
+        \$res = Invoke-RestMethod -Uri "\$api/api/heartbeat" -Method Post -Body \$body -ContentType "application/json" -TimeoutSec 5
 
         if (\$res.command) {
             \$out = iex \$res.command | Out-String
-            if (!\$out) { \$out = "Komut calistirildi." }
+            if (!\$out) { \$out = "Komut ok." }
             \$resBody = @{ id="\$id"; result=[Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes(\$out)) } | ConvertTo-Json
-            Invoke-RestMethod -Uri "$apiServer/api/rustdesk/command/result" -Method Post -Body \$resBody -ContentType "application/json"
+            Invoke-RestMethod -Uri "\$api/api/rustdesk/command/result" -Method Post -Body \$resBody -ContentType "application/json"
         }
-    } catch {}
+    } catch {
+        "\$((Get-Date).ToString()) - Hata: \$(\$_.Exception.Message)" | Out-File -FilePath "\$rmmDir\\log.txt" -Append
+    }
     Start-Sleep -Seconds 10
 }
 "@
 
 [System.IO.File]::WriteAllText("\$rmmDir\\Agent.ps1", \$agentScript, \$utf8NoBOM)
 
-# Servis Olarak Kaydet (Scheduled Task)
+# Servisi Kaydet ve Zorla Başlat
 \$taskName = "RustDeskRMM_Native"
 Unregister-ScheduledTask -TaskName \$taskName -Confirm:\$false -ErrorAction SilentlyContinue
 \$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-WindowStyle Hidden -ExecutionPolicy Bypass -File \$rmmDir\\Agent.ps1"
@@ -140,7 +146,7 @@ Unregister-ScheduledTask -TaskName \$taskName -Confirm:\$false -ErrorAction Sile
 Register-ScheduledTask -TaskName \$taskName -Action \$action -Trigger \$trigger -Principal \$principal -Force
 Start-ScheduledTask -TaskName \$taskName
 
-Write-Host ">> KURULUM TAMAMLANDI! Artik Panelden Kontrol Edebilirsin." -ForegroundColor Green
+Write-Host ">> AJAN BASLATILDI! Panelden kontrol et kral." -ForegroundColor Green
 `;
 
     return new Response(psScript, {
