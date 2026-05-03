@@ -11,19 +11,38 @@ import { useAppStore } from "@/lib/store";
 type Tab = "server" | "smtp" | "logs" | "updates" | "brand";
 
 export default function SettingsPage() {
-  const { serverConfig, setServerConfig } = useAppStore();
   const [activeTab, setActiveTab] = useState<Tab>("server");
   const [isSaving, setIsSaving] = useState(false);
   const [showToken, setShowToken] = useState(false);
+  const [showPass, setShowPass] = useState(false);
   
-  const [localServer, setLocalServer] = useState(serverConfig);
+  const [localServer, setLocalServer] = useState({
+    host: "192.168.0.184",
+    port: "3000",
+    token: "",
+    defaultPassword: "",
+    deviceNamePrefix: "SRP-"
+  });
 
-  const handleSave = () => {
+  useEffect(() => {
+    fetch("/api/rustdesk/settings")
+      .then(res => res.json())
+      .then(data => setLocalServer(prev => ({ ...prev, ...data })))
+      .catch(err => console.error("Settings load error:", err));
+  }, []);
+
+  const handleSave = async () => {
     setIsSaving(true);
-    setServerConfig(localServer);
-    setTimeout(() => {
-      setIsSaving(false);
-    }, 1000);
+    try {
+      const res = await fetch("/api/rustdesk/settings", {
+        method: "POST",
+        body: JSON.stringify(localServer)
+      });
+      if (res.ok) alert("Ayarlar başarıyla kaydedildi.");
+    } catch (err) {
+      alert("Hata oluştu.");
+    }
+    setIsSaving(false);
   };
 
   const tabs: { key: Tab; label: string; icon: any }[] = [
@@ -85,20 +104,45 @@ export default function SettingsPage() {
                       <div className="space-y-2">
                         <Label className="text-xs font-semibold text-muted-foreground uppercase">API Port</Label>
                         <Input 
-                          value={localServer.apiPort} 
-                          onChange={e => setLocalServer({...localServer, apiPort: e.target.value})}
+                          value={localServer.port} 
+                          onChange={e => setLocalServer({...localServer, port: e.target.value})}
                           className="bg-secondary/50 border-border h-10" 
                           placeholder="3000"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-xs font-semibold text-muted-foreground uppercase">Protokol</Label>
-                        <select className="flex h-10 w-full rounded-md border border-border bg-secondary/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-                          <option>HTTP</option>
-                          <option>HTTPS</option>
-                        </select>
+                        <Label className="text-xs font-semibold text-muted-foreground uppercase">Cihaz Ön Eki (Prefix)</Label>
+                        <Input 
+                          value={localServer.deviceNamePrefix} 
+                          onChange={e => setLocalServer({...localServer, deviceNamePrefix: e.target.value})}
+                          className="bg-secondary/50 border-border h-10" 
+                          placeholder="SRP-"
+                        />
                       </div>
                     </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold text-muted-foreground uppercase">Varsayılan Bağlantı Şifresi</Label>
+                      <div className="relative group">
+                        <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input 
+                          type={showPass ? "text" : "password"}
+                          value={localServer.defaultPassword} 
+                          onChange={e => setLocalServer({...localServer, defaultPassword: e.target.value})}
+                          className="bg-secondary/50 border-border h-10 pl-10" 
+                          placeholder="Örn: Ban41kam5"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPass(!showPass)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">Bu şifre kurulum sırasında tüm cihazlara otomatik tanımlanır.</p>
+                    </div>
+
                     <div className="space-y-2">
                       <Label className="text-xs font-semibold text-muted-foreground uppercase">API Token / Key (Opsiyonel)</Label>
                       <div className="relative group">
