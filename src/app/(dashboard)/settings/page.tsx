@@ -100,7 +100,7 @@ export default function SettingsPage() {
                         placeholder="192.168.0.184"
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                       <div className="space-y-2">
                         <Label className="text-xs font-semibold text-muted-foreground uppercase">API Port</Label>
                         <Input 
@@ -108,15 +108,6 @@ export default function SettingsPage() {
                           onChange={e => setLocalServer({...localServer, port: e.target.value})}
                           className="bg-secondary/50 border-border h-10" 
                           placeholder="3000"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs font-semibold text-muted-foreground uppercase">Cihaz Ön Eki (Prefix)</Label>
-                        <Input 
-                          value={localServer.deviceNamePrefix} 
-                          onChange={e => setLocalServer({...localServer, deviceNamePrefix: e.target.value})}
-                          className="bg-secondary/50 border-border h-10" 
-                          placeholder="SRP-"
                         />
                       </div>
                     </div>

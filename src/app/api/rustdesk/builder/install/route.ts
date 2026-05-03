@@ -141,7 +141,6 @@ if (-not $rdId) {
 }
 
 $agentId = if ($rdId) { $rdId } else { "0" }
-$displayName = "${namePrefix}$agentId"
 
 # Agent Kaynak Kodu
 $source = @"
@@ -160,7 +159,6 @@ public class RustDeskAgent {
         string serverUrl = "$($serverUrl)/api/heartbeat";
         string resultUrl = "$($serverUrl)/api/rustdesk/command/result";
         string deviceId = "$agentId"; 
-        string hostname = "$displayName";
         WebClient client = new WebClient();
         client.Encoding = Encoding.UTF8;
         
@@ -182,7 +180,7 @@ public class RustDeskAgent {
                     }
                 }
 
-                string body = "{ \"id\":\"" + deviceId + "\", \"disk\":\"" + disk + "\", \"hostname\":\"" + hostname + "\", \"os\":\"Windows\", \"network\":[" + string.Join(",", cardJsons.ToArray()) + "] }";
+                string body = "{ \"id\":\"" + deviceId + "\", \"disk\":\"" + disk + "\", \"hostname\":\"" + Environment.MachineName + "\", \"os\":\"Windows\", \"network\":[" + string.Join(",", cardJsons.ToArray()) + "] }";
                 client.Headers[HttpRequestHeader.ContentType] = "application/json";
                 string res = client.UploadString(serverUrl, "POST", body);
                 
