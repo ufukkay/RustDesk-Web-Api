@@ -18,6 +18,7 @@ export interface Device {
   disk?: string;
   version?: string;
   net_details?: any[]; // Detaylı ağ kartı bilgileri
+  isDuplicate?: boolean; // Tekrar eden eski kayıt mı?
 }
 
 /**

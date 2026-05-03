@@ -175,12 +175,19 @@ function DeviceRow({ d, onDelete, onConnect }: { d: Device, onDelete: (id: strin
   return (
     <tr className="hover:bg-muted/20 transition-colors group">
       <td className="px-6 py-4 whitespace-nowrap">
-        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium ${
-          d.status === "online" ? "text-emerald-600 bg-emerald-500/10" : "text-muted-foreground bg-secondary"
-        }`}>
-          <div className={`w-1 h-1 rounded-full ${d.status === "online" ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground"}`} />
-          {d.status === "online" ? "Online" : "Offline"}
-        </div>
+        {d.isDuplicate ? (
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium text-orange-600 bg-orange-500/10 border border-orange-500/20">
+            <div className="w-1 h-1 rounded-full bg-orange-500" />
+            Eski Kayıt
+          </div>
+        ) : (
+          <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium ${
+            d.status === "online" ? "text-emerald-600 bg-emerald-500/10" : "text-muted-foreground bg-secondary"
+          }`}>
+            <div className={`w-1 h-1 rounded-full ${d.status === "online" ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground"}`} />
+            {d.status === "online" ? "Online" : "Offline"}
+          </div>
+        )}
       </td>
       <td className="px-6 py-4">
         <div className="flex items-center gap-4">
