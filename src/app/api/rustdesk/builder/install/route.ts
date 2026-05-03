@@ -78,10 +78,11 @@ if ($defPass) {
     Write-Host ">> Baglanti sifresi tanimlaniyor ($defPass)..." -ForegroundColor Cyan
     $rdExe = "C:\\Program Files\\RustDesk\\rustdesk.exe"
     if (Test-Path $rdExe) {
-        # Farkli parametreleri dene (Versiyon farkliliklari icin)
-        Start-Process $rdExe -ArgumentList "--set-password", "$defPass" -Wait -WindowStyle Hidden
-        Start-Process $rdExe -ArgumentList "--password", "$defPass" -Wait -WindowStyle Hidden
-        Write-Host ">> Sifre komutlari gonderildi." -ForegroundColor Green
+        # Farkli parametreleri dene - Arkaplanda calistir (Donmayi onlemek icin -Wait kaldirildi)
+        Start-Process $rdExe -ArgumentList "--set-password", "$defPass" -WindowStyle Hidden
+        Start-Sleep -Seconds 1
+        Start-Process $rdExe -ArgumentList "--password", "$defPass" -WindowStyle Hidden
+        Write-Host ">> Sifre komutları arkaplanda gonderildi." -ForegroundColor Green
     }
 }
 
