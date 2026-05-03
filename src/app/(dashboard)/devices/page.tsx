@@ -5,14 +5,6 @@ import { Search, Monitor, Laptop, Server, Play, MoreHorizontal, Plus, Filter, Sm
 import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 
@@ -24,8 +16,6 @@ export default function DevicesPage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
-  const [isOpen, setIsOpen] = useState(false);
-  const [newDevice, setNewDevice] = useState({ id: "", name: "", os: "Windows 11", user: "", group: "Genel" });
 
   const [settings, setSettings] = useState<any>(null);
 
@@ -57,11 +47,6 @@ export default function DevicesPage() {
     return groups;
   }, [filteredDevices]);
 
-  const handleAddDevice = () => {
-    addDevice({ ...newDevice, status: "offline", lastSeen: "Hiç", ip: "-" });
-    setIsOpen(false);
-    setNewDevice({ id: "", name: "", os: "Windows 11", user: "", group: "Genel" });
-  };
 
   const handleDelete = (id: string, name: string) => {
     if (confirm(`${name} cihazını silmek istediğinize emin misiniz?`)) {
@@ -78,58 +63,10 @@ export default function DevicesPage() {
           <p className="text-sm text-muted-foreground">Envanterinizi gruplayın ve yönetin.</p>
         </div>
         
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <Button 
-            onClick={() => setIsOpen(true)}
-            className="bg-primary text-primary-foreground hover:opacity-90 font-semibold px-6 rounded-md shadow-sm"
-          >
-            <Plus className="w-4 h-4 mr-2" /> Yeni Cihaz
-          </Button>
-          <DialogContent className="sm:max-w-md bg-card border-border rounded-lg shadow-xl">
-            <DialogHeader>
-              <DialogTitle className="text-foreground font-semibold">Yeni Cihaz Kaydı</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">RustDesk ID</Label>
-                <Input placeholder="983 214 556" value={newDevice.id} onChange={e => setNewDevice({...newDevice, id: e.target.value})} className="bg-secondary/50 border-border h-10" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Cihaz Adı</Label>
-                <Input placeholder="MUHASEBE-PC" value={newDevice.name} onChange={e => setNewDevice({...newDevice, name: e.target.value})} className="bg-secondary/50 border-border h-10" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase">Sistem</Label>
-                  <select 
-                    value={newDevice.os} 
-                    onChange={e => setNewDevice({...newDevice, os: e.target.value})}
-                    className="flex h-10 w-full rounded-md border border-border bg-secondary/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                  >
-                    <option>Windows 11</option>
-                    <option>Windows 10</option>
-                    <option>macOS</option>
-                    <option>Linux</option>
-                    <option>Android</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-semibold text-muted-foreground uppercase">Grup</Label>
-                  <Input placeholder="Ofis" value={newDevice.group} onChange={e => setNewDevice({...newDevice, group: e.target.value})} className="bg-secondary/50 border-border h-10" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold text-muted-foreground uppercase">Kullanıcı</Label>
-                <Input placeholder="Ayşe Yılmaz" value={newDevice.user} onChange={e => setNewDevice({...newDevice, user: e.target.value})} className="bg-secondary/50 border-border h-10" />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button onClick={handleAddDevice} className="bg-primary text-primary-foreground font-semibold w-full h-10 rounded-md">
-                Cihazı Kaydet
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <div className="flex items-center gap-2 bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20">
+          <Activity className="w-3.5 h-3.5 text-primary animate-pulse" />
+          <span className="text-[10px] font-black text-primary uppercase tracking-widest">Canlı İzleme Aktif</span>
+        </div>
       </div>
 
       {/* Toolbar */}
