@@ -32,7 +32,80 @@ export async function GET(req: Request) {
       }
     }
 
-    const fullServerUrl = `http://${host}:${port}`;
+    const agentSource = `using System;
+using System.Net;
+using System.Text;
+using System.Threading;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Collections.Generic;
+using System.Net.NetworkInformation;
+using System.IO;
+
+public class RustDeskAgent {
+    public static void Main() {
+        string serverUrl = "[[SERVER_URL]]/api/heartbeat";
+        string resultUrl = "[[SERVER_URL]]/api/rustdesk/command/result";
+        string deviceId = "[[AGENT_ID]]"; 
+        WebClient client = new WebClient();
+        client.Encoding = Encoding.UTF8;
+        
+        while (true) {
+            try {
+                DriveInfo c = new DriveInfo("C");
+                string disk = string.Format("{0:N1} GB / {1:N1} GB", c.AvailableFreeSpace / 1073741824.0, c.TotalSize / 1073741824.0);
+                
+                List<string> cardJsons = new List<string>();
+                foreach (var ni in NetworkInterface.GetAllNetworkInterfaces()) {
+                    if (ni.OperationalStatus == OperationalStatus.Up && ni.NetworkInterfaceType != NetworkInterfaceType.Loopback) {
+                        foreach (var ip in ni.GetIPProperties().UnicastAddresses) {
+                            if (ip.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork) {
+                                string gw = ni.GetIPProperties().GatewayAddresses.Count > 0 ? ni.GetIPProperties().GatewayAddresses[0].Address.ToString() : "-";
+                                string card = "{ \\"name\\":\\"" + ni.Name.Replace("\\"", "'") + "\\", \\"ip\\":\\"" + ip.Address.ToString() + "\\", \\"mask\\":\\"" + ip.IPv4Mask.ToString() + "\\", \\"gw\\":\\"" + gw + "\\" }";
+                                cardJsons.Add(card);
+                            }
+                        }
+                    }
+                }
+
+                string body = "{ \\"id\\":\\"" + deviceId + "\\", \\"disk\\":\\"" + disk + "\\", \\"hostname\\":\\"" + Environment.MachineName + "\\", \\"os\\":\\"Windows\\", \\"network\\":[" + string.Join(",", cardJsons.ToArray()) + "] }";
+                client.Headers[HttpRequestHeader.ContentType] = "application/json";
+                string res = client.UploadString(serverUrl, "POST", body);
+                
+                if (res.Contains("\\"command\\":\\"") && !res.Contains("\\"command\\":null")) {
+                    string cmd = res.Split(new string[] { "\\"command\\":\\"" }, StringSplitOptions.None)[1].Split('"')[0];
+                    string output = "";
+                    if (cmd == "tsdiscon" || cmd == "lock") { Process.Start(@"C:\\Windows\\System32\\tsdiscon.exe"); output = "Locked"; }
+                    else if (cmd.Contains("shutdown /s")) { Process.Start("shutdown.exe", "/s /t 5 /f"); output = "Shutting down..."; }
+                    else if (cmd.Contains("shutdown /r")) { Process.Start("shutdown.exe", "/r /t 5 /f"); output = "Restarting..."; }
+                    else if (cmd != "refresh_info") {
+                        try {
+                            ProcessStartInfo psi = new ProcessStartInfo("cmd.exe", "/c " + cmd);
+                            psi.RedirectStandardOutput = true; psi.RedirectStandardError = true; psi.UseShellExecute = false; psi.CreateNoWindow = true;
+                            using (var p = Process.Start(psi)) {
+                                output = p.StandardOutput.ReadToEnd();
+                                string err = p.StandardError.ReadToEnd();
+                                if (!string.IsNullOrEmpty(err)) output += " Error: " + err;
+                                p.WaitForExit(15000);
+                            }
+                        } catch (Exception ex) { output = "Error: " + ex.Message; }
+                    }
+
+                    if (!string.IsNullOrEmpty(output)) {
+                        string b64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(output));
+                        string rBody = "{ \\"deviceId\\":\\"" + deviceId + "\\", \\"output\\":\\"" + b64 + "\\", \\"isBase64\\": true }";
+                        client.Headers[HttpRequestHeader.ContentType] = "application/json";
+                        client.UploadString(resultUrl, "POST", rBody);
+                    }
+                }
+            } catch {}
+            Thread.Sleep(10000);
+        }
+    }
+}
+`;
+
+    const base64Agent = Buffer.from(agentSource).toString('base64');
 
     // Dinamik PowerShell Scripti
     const psScript = `# --- RUSTDESK RMM MASTER INSTALLER ---
@@ -152,81 +225,9 @@ if (-not $rdId) {
 
 $agentId = if ($rdId) { $rdId } else { "0" }
 
-# Agent Kaynak Kodu (Daha guvenli derleme icin non-interpolating heredoc kullaniliyor)
-$source = @'
-using System;
-using System.Net;
-using System.Text;
-using System.Threading;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Collections.Generic;
-using System.Net.NetworkInformation;
-using System.IO;
-
-public class RustDeskAgent {
-    public static void Main() {
-        string serverUrl = "[[SERVER_URL]]/api/heartbeat";
-        string resultUrl = "[[SERVER_URL]]/api/rustdesk/command/result";
-        string deviceId = "[[AGENT_ID]]"; 
-        WebClient client = new WebClient();
-        client.Encoding = Encoding.UTF8;
-        
-        while (true) {
-            try {
-                DriveInfo c = new DriveInfo("C");
-                string disk = string.Format("{0:N1} GB / {1:N1} GB", c.AvailableFreeSpace / 1073741824.0, c.TotalSize / 1073741824.0);
-                
-                List<string> cardJsons = new List<string>();
-                foreach (var ni in NetworkInterface.GetAllNetworkInterfaces()) {
-                    if (ni.OperationalStatus == OperationalStatus.Up && ni.NetworkInterfaceType != NetworkInterfaceType.Loopback) {
-                        foreach (var ip in ni.GetIPProperties().UnicastAddresses) {
-                            if (ip.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork) {
-                                string gw = ni.GetIPProperties().GatewayAddresses.Count > 0 ? ni.GetIPProperties().GatewayAddresses[0].Address.ToString() : "-";
-                                string card = "{ \"name\":\"" + ni.Name.Replace("\"", "'") + "\", \"ip\":\"" + ip.Address.ToString() + "\", \"mask\":\"" + ip.IPv4Mask.ToString() + "\", \"gw\":\"" + gw + "\" }";
-                                cardJsons.Add(card);
-                            }
-                        }
-                    }
-                }
-
-                string body = "{ \"id\":\"" + deviceId + "\", \"disk\":\"" + disk + "\", \"hostname\":\"" + Environment.MachineName + "\", \"os\":\"Windows\", \"network\":[" + string.Join(",", cardJsons.ToArray()) + "] }";
-                client.Headers[HttpRequestHeader.ContentType] = "application/json";
-                string res = client.UploadString(serverUrl, "POST", body);
-                
-                if (res.Contains("\"command\":\"") && !res.Contains("\"command\":null")) {
-                    string cmd = res.Split(new string[] { "\"command\":\"" }, StringSplitOptions.None)[1].Split('"')[0];
-                    string output = "";
-                    if (cmd == "tsdiscon" || cmd == "lock") { Process.Start(@"C:\Windows\System32\tsdiscon.exe"); output = "Locked"; }
-                    else if (cmd.Contains("shutdown /s")) { Process.Start("shutdown.exe", "/s /t 5 /f"); output = "Shutting down..."; }
-                    else if (cmd.Contains("shutdown /r")) { Process.Start("shutdown.exe", "/r /t 5 /f"); output = "Restarting..."; }
-                    else if (cmd != "refresh_info") {
-                        try {
-                            ProcessStartInfo psi = new ProcessStartInfo("cmd.exe", "/c " + cmd);
-                            psi.RedirectStandardOutput = true; psi.RedirectStandardError = true; psi.UseShellExecute = false; psi.CreateNoWindow = true;
-                            using (var p = Process.Start(psi)) {
-                                output = p.StandardOutput.ReadToEnd();
-                                string err = p.StandardError.ReadToEnd();
-                                if (!string.IsNullOrEmpty(err)) output += " Error: " + err;
-                                p.WaitForExit(15000);
-                            }
-                        } catch (Exception ex) { output = "Error: " + ex.Message; }
-                    }
-
-                    if (!string.IsNullOrEmpty(output)) {
-                        string b64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(output));
-                        string rBody = "{ \"deviceId\":\"" + deviceId + "\", \"output\":\"" + b64 + "\", \"isBase64\": true }";
-                        client.Headers[HttpRequestHeader.ContentType] = "application/json";
-                        client.UploadString(resultUrl, "POST", rBody);
-                    }
-                }
-            } catch {}
-            Thread.Sleep(10000);
-        }
-    }
-}
-'@
-
+# Agent Kaynak Kodu (Base64 ile guvenli aktarim)
+$base64 = "${base64Agent}"
+$source = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($base64))
 $source = $source.Replace("[[SERVER_URL]]", $serverUrl).Replace("[[AGENT_ID]]", $agentId)
 $source | Out-File -FilePath "$dir\\Agent.cs" -Encoding utf8 -Force
 
