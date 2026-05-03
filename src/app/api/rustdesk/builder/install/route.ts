@@ -55,9 +55,13 @@ $rdPath = Join-Path $env:TEMP "$rdFilename" # Geçici klasöre indir
 Write-Host ">> RustDesk $rdVersion indiriliyor..." -ForegroundColor Cyan
 Invoke-WebRequest -Uri $rdUrl -OutFile $rdPath -UseBasicParsing
 
-Write-Host ">> Servis kurulumu baslatiliyor..." -ForegroundColor Cyan
-# --install kullanıyoruz, bazen --silent-install beklemeye sebep olabiliyor
-Start-Process $rdPath -ArgumentList "--install"
+Write-Host ">> Servis kurulumu baslatiliyor (Sessiz)..." -ForegroundColor Cyan
+# Mevcut süreçleri temizle
+Stop-Process -Name "RustDesk" -ErrorAction SilentlyContinue
+Start-Sleep -Seconds 2
+
+# --silent-install parametresi soru sormadan yüklemeyi sağlar
+Start-Process $rdPath -ArgumentList "--silent-install"
 
 # Servisin kurulmasını bekle (Max 20 sn)
 $waitTimeout = 10
