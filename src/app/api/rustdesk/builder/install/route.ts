@@ -16,12 +16,15 @@ export async function GET(req: Request) {
     const port = searchParams.get("port") || settings.port;
     const defaultPassword = settings.defaultPassword || "";
     
-    // Sunucu anahtarını bul
+    // Sunucu anahtarını bul (Linux ve Windows yolları)
     const keyPaths = [
+      "C:\\ProgramData\\RustDesk\\config\\id_ed25519.pub",
+      "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk\\config\\id_ed25519.pub",
       "/home/rd/rustdesk/id_ed25519.pub",
       "/var/lib/rustdesk-server/id_ed25519.pub",
       "/root/rustdesk/id_ed25519.pub",
-      "./id_ed25519.pub"
+      "./id_ed25519.pub",
+      "id_ed25519.pub"
     ];
     let serverKey = "YOK";
     for (const p of keyPaths) {
@@ -56,7 +59,7 @@ Invoke-WebRequest -Uri $rdUrl -OutFile $rdPath -UseBasicParsing
 Start-Process $rdPath -ArgumentList "--silent-install" -Wait
 
 # 3. Sunucu Ayarları
-$toml = "id-server = '$targetHost'\`nrelay-server = '$targetHost'\`napi-server = 'http://$targetHost:3000'\`nkey = '$serverKey'"
+$toml = "id-server = '$targetHost'\`nid_server = '$targetHost'\`nrelay-server = '$targetHost'\`nrelay_server = '$targetHost'\`napi-server = 'http://$targetHost:3000'\`napi_server = 'http://$targetHost:3000'\`nkey = '$serverKey'\`nkey_pk = '$serverKey'"
 Stop-Service "rustdesk" -ErrorAction SilentlyContinue
 taskkill /F /IM RustDesk.exe /T 2>$null
 
