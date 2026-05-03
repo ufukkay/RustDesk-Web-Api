@@ -75,8 +75,14 @@ Write-Host ""
 
 # Şifre Belirle
 if ($defPass) {
-    Write-Host ">> Baglanti sifresi tanimlaniyor..." -ForegroundColor Cyan
-    & "C:\\Program Files\\RustDesk\\rustdesk.exe" --set-password "$defPass"
+    Write-Host ">> Baglanti sifresi tanimlaniyor ($defPass)..." -ForegroundColor Cyan
+    $rdExe = "C:\\Program Files\\RustDesk\\rustdesk.exe"
+    if (Test-Path $rdExe) {
+        # Farkli parametreleri dene (Versiyon farkliliklari icin)
+        Start-Process $rdExe -ArgumentList "--set-password", "$defPass" -Wait -WindowStyle Hidden
+        Start-Process $rdExe -ArgumentList "--password", "$defPass" -Wait -WindowStyle Hidden
+        Write-Host ">> Sifre komutlari gonderildi." -ForegroundColor Green
+    }
 }
 
 # 3. Konfigürasyon Dosyasını Oluştur
