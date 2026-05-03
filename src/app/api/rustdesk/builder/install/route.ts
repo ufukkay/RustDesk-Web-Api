@@ -46,7 +46,7 @@ Write-Host "--- RustDesk RMM Kurulumu Baslatiliyor ---" -ForegroundColor Yellow
 $dir = "C:\\ProgramData\\RustDeskRMM"
 if (!(Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force }
 
-# 2. RustDesk 1.4.6 İndir ve Isimlendir
+# 2. RustDesk 1.4.6 İndir ve Yapılandır
 $rdVersion = "1.4.6"
 $rdUrl = "https://github.com/rustdesk/rustdesk/releases/download/$rdVersion/rustdesk-$rdVersion-x86_64.exe"
 $rdFilename = "rustdesk-host=$($host)-key=$($serverKey).exe"
@@ -55,7 +55,23 @@ $rdPath = Join-Path $env:USERPROFILE "Desktop\\$rdFilename"
 Write-Host ">> RustDesk $rdVersion indiriliyor..." -ForegroundColor Cyan
 Invoke-WebRequest -Uri $rdUrl -OutFile $rdPath
 
-# 3. RMM Ajanini Kur (setup.ps1 mantigi)
+# 3. Konfigürasyon Dosyasını Oluştur (Kritik: Tüm alanların dolması için)
+Write-Host ">> Sunucu ayarları yapılandırılıyor..." -ForegroundColor Cyan
+$rdConfigDir = "$env:AppData\\RustDesk\\config"
+if (!(Test-Path $rdConfigDir)) { New-Item -ItemType Directory -Path $rdConfigDir -Force }
+
+$tomlContent = @"
+id-server = '$host'
+relay-server = '$host'
+api-server = 'http://$host:3000'
+key = '$serverKey'
+"@
+
+# Hem kullanıcı AppData hem de ProgramData (Servis için) altına yazmaya çalış
+$tomlContent | Out-File -FilePath "$rdConfigDir\\RustDesk.toml" -Encoding utf8 -Force
+$tomlContent | Out-File -FilePath "$rdConfigDir\\RustDesk2.toml" -Encoding utf8 -Force
+
+# 4. RMM Ajanini Kur (setup.ps1 mantigi)
 Write-Host ">> RMM Ajani yapılandırılıyor..." -ForegroundColor Cyan
 
 # Mevcut RustDesk ID'sini bulmaya calis (Eger onceden kuruluysa)
@@ -73,7 +89,26 @@ foreach ($p in $possiblePaths) {
 }
 
 if (-not $rdId) {
-    Write-Host "!! RustDesk ID bulunamadı. Lütfen kurulum sonrası ajanı tekrar yapılandırın veya ID girin." -ForegroundColor Red
+    Write-Host ">> RustDesk ID bekleniyor... (Uygulama baslatiliyor)" -ForegroundColor Yellow
+    # RustDesk'i baslat ki ID olussun
+    Start-Process $rdPath
+    $timeout = 20
+    while (-not $rdId -and $timeout -gt 0) {
+        Write-Host "." -NoNewline
+        Start-Sleep -Seconds 2
+        foreach ($p in $possiblePaths) {
+            if (Test-Path $p) {
+                $content = Get-Content $p
+                if ($content -match "id\\s*=\\s*'(\\d+)'") { $rdId = $matches[1]; break }
+            }
+        }
+        $timeout--
+    }
+    Write-Host ""
+}
+
+if (-not $rdId) {
+    Write-Host "!! ID tespiti zaman asimina ugradi. Lutfen manuel yapılandırın." -ForegroundColor Red
     $rdId = "BEKLEMEDE"
 }
 
