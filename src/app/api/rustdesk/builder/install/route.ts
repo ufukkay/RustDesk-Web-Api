@@ -55,8 +55,8 @@ $rdPath = Join-Path $env:TEMP "$rdFilename" # Geçici klasöre indir
 Write-Host ">> RustDesk $rdVersion indiriliyor ve Servis olarak kuruluyor..." -ForegroundColor Cyan
 Invoke-WebRequest -Uri $rdUrl -OutFile $rdPath
 
-# Sessiz kurulum (Servis olarak yükler)
-Start-Process $rdPath -ArgumentList "--install" -Wait
+# Sessiz kurulum (Servis olarak yükler, soru sormaz)
+Start-Process $rdPath -ArgumentList "--silent-install" -Wait
 Write-Host ">> RustDesk Servis kurulumu tamamlandı." -ForegroundColor Green
 
 # 3. Konfigürasyon Dosyasını Oluştur (Kritik: Servis ve Kullanıcı için)
@@ -253,6 +253,7 @@ Start-ScheduledTask -TaskName $taskName
 Write-Host "------------------------------------------------" -ForegroundColor Yellow
 Write-Host "BAŞARILI: RustDesk Masaustune indirildi ve RMM Ajani kuruldu! ✅" -ForegroundColor Green
 Write-Host "Cihaz simdi Dashboard uzerinde gorunmelidir." -ForegroundColor Gray
+Write-Host "BİTTİ" -ForegroundColor White -BackgroundColor Green
 `;
 
     return new Response(psScript, {
