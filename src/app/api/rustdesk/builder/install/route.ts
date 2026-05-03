@@ -39,8 +39,10 @@ export async function GET(req: Request) {
     const psScript = `# --- RUSTDESK BASİT WINDOWS KURULUM ---
 $ErrorActionPreference = "SilentlyContinue"
 $hostIp = "${host}"
+$port = "${port}"
 $serverKey = "${serverKey}"
 $password = "${defaultPassword}"
+$serverUrl = "http://${host}:${port}"
 
 Write-Host ">> RustDesk Kurulumu Baslatildi..." -ForegroundColor Cyan
 
@@ -100,7 +102,7 @@ Start-Service "rustdesk" -ErrorAction SilentlyContinue
 Write-Host ">> RMM Servisi baslatiliyor..." -ForegroundColor Cyan
 $base64 = "${base64Agent}"
 $src = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($base64))
-$src = $src.Replace("[[SERVER_URL]]", "http://$hostIp:$port")
+$src = $src.Replace("[[SERVER_URL]]", $serverUrl)
 $src | Out-File -FilePath "$rmmDir\\Agent.cs" -Encoding utf8 -Force
 
 $csc = (Get-ChildItem "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.*\\csc.exe" | Select-Object -First 1).FullName
