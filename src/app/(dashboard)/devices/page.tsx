@@ -1,7 +1,7 @@
 "use client";
 
 import { useAppStore, Device } from "@/lib/store";
-import { Search, Monitor, Laptop, Server, Play, MoreHorizontal, Plus, Filter, Smartphone, Trash2, LayoutGrid, List as ListIcon, ChevronRight, Edit2, Info, Cpu, HardDrive, Database, Activity } from "lucide-react";
+import { Search, Monitor, Laptop, Server, Play, MoreHorizontal, Plus, Filter, Smartphone, Trash2, LayoutGrid, List as ListIcon, ChevronRight, Edit2, Info, Cpu, HardDrive, Database, Activity, Network } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -232,6 +232,25 @@ function DeviceRow({ d, onDelete, onConnect }: { d: Device, onDelete: (id: strin
             title="Düzenle"
           >
             <Edit2 className="w-4 h-4" />
+          </Button>
+
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="h-8 w-8 rounded-md border-border text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/5 transition-colors"
+            title="Komut Gönder (CMD)"
+            disabled={d.status !== "online"}
+            onClick={() => {
+              const cmd = prompt(`${d.name} cihazı için komut girin:`);
+              if (cmd) {
+                fetch("/api/rustdesk/command/send", {
+                  method: "POST",
+                  body: JSON.stringify({ id: d.id, command: cmd })
+                }).then(() => alert("Komut gönderildi."));
+              }
+            }}
+          >
+            <Network className="w-4 h-4" />
           </Button>
 
           <Button 

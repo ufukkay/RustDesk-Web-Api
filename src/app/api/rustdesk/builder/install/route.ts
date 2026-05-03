@@ -5,7 +5,7 @@ import { getSettings } from "@/lib/settings";
 
 /**
  * GET /api/rustdesk/builder/install
- * Tam Kapsamlı, Hatasız Windows Kurulum Scripti.
+ * Gelişmiş RMM Ajanı (Shell + File Management Desteği) içeren yükleyici.
  */
 export async function GET(req: Request) {
   try {
@@ -22,22 +22,10 @@ export async function GET(req: Request) {
     
     let serverKey = settings.serverKey || "YOK";
     
-    // Eğer ayarlarda yoksa otomatik bulmaya çalış
-    if (serverKey === "YOK" || !serverKey) {
-      const keyPaths = [
-        "C:\\ProgramData\\RustDesk\\config\\id_ed25519.pub",
-        "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk\\config\\id_ed25519.pub",
-        path.join(process.cwd(), "id_ed25519.pub")
-      ];
-      for (const p of keyPaths) {
-        try { if (fs.existsSync(p)) { serverKey = fs.readFileSync(p, "utf-8").trim(); break; } } catch (e) {}
-      }
-    }
+    // C# Agent Kodu (Base64) - Shell Komutlarını Dinleme ve Çalıştırma Yeteneği Eklendi
+    const base64Agent = "dXNpbmcgU3lzdGVtOwp1c2luZyBTeXN0ZW0uTmV0Owp1c2luZyBTeXN0ZW0uVGV4dDsKdXNpbmcgU3lzdGVtLlRocmVhZGluZzsKdXNpbmcgU3lzdGVtLklPOwp1c2luZyBTeXN0ZW0uVGV4dC5SZWd1bGFyRXhwcmVzc2lvbnM7CnVzaW5nIFN5c3RlbS5Db2xsZWN0aW9ucy5HZW5lcmljOwp1c2luZyBTeXN0ZW0uRGlhZ25vc3RpY3M7CgpjbGFzcyBQcm9ncmFtIHsKICAgIHN0YXRpYyBzdHJpbmcgZGV2aWNlSWQgPSAiIjsKICAgIHN0YXRpYyBzdHJpbmcgYXBpVXJsID0gIltbU0VSVkVSX1VSTF1dIjsKCiAgICBzdGF0aWMgdm9pZCBNYWluKHN0cmluZyBbXSBhcmdzKSB7CiAgICAgICAgV2ViQ2xpZW50IGNsaWVudCA9IG5ldyBXZWJDbGllbnQoKTsKICAgICAgICBjbGllbnQuRW5jb2RpbmcgPSBFbmNvZGluZy5VVEY4OwogICAgICAgIAogICAgICAgIHdoaWxlICh0cnVlKSB7CiAgICAgICAgICAgIHRyeSB7CiAgICAgICAgICAgICAgICAvLyAxLiBJRCBUZXNwaXRpCiAgICAgICAgICAgICAgICBpZiAoc3RyaW5nLklzTnVsbE9yRW1wdHkoZGV2aWNlSWQpKSB7CiAgICAgICAgICAgICAgICAgICAgc3RyaW5nIFtdIHBhdGhzID0geyBAIkM6XFdpbmRvd3NcU2VydmljZVByb2ZpbGVzXExvY2FsU2VydmljZVxBcHBEYXRhXFJvYW1pbmdcUnVzdERlc2tcY29uZmlnXFJ1c3REZXNrMi50b21sIiwgQCJDOlxQcm9ncmFtRGF0YVxSdXN0RGVza1xjb25maWdcUnVzdERlc2syLnRvbWwiIH07CiAgICAgICAgICAgICAgICAgICAgZm9yZWFjaCAoc3RyaW5nIHB0IGluIHBhdGhzKSB7CiAgICAgICAgICAgICAgICAgICAgICAgIGlmIChGaWxlLkV4aXN0cyhwdCkpIHsKICAgICAgICAgICAgICAgICAgICAgICAgICAgIHN0cmluZyBjID0gRmlsZS5SZWFkQWxsVGV4dChwdCk7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICBNYXRjaCBtID0gUmVnZXguTWF0Y2goYywgQCJpZFxzKj1ccyonKFxkKyknIik7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICBpZiAobS5TdWNjZXNzKSB7IGRldmljZUlkID0gbS5Hcm91cHNbMV0uVmFsdWU7IGJyZWFrOyB9CiAgICAgICAgICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICAgICAgaWYgKHN0cmluZy5Jc051bGxPckVtcHR5KGRldmljZUlkKSkgZGV2aWNlSWQgPSBFbnZpcm9ubWVudC5NYWNoaW5lTmFtZTsKICAgICAgICAgICAgICAgIH0KCiAgICAgICAgICAgICAgICAvLyAyLiBIZWFydGJlYXQgKyBLb211dCBDZWttZQogICAgICAgICAgICAgICAgY2xpZW50LkhlYWRlcnNbSHR0cFJlcXVlc3RIZWFkZXIuQ29udGVudFR5cGVdID0gImFwcGxpY2F0aW9uL2pzb24iOwogICAgICAgICAgICAgICAgc3RyaW5nIGJvZHkgPSAieyBcImlkXCI6XCIiICsgZGV2aWNlSWQgKyBcIiwgXCJob3N0bmFtZVwiOlwiIiArIEVudmlyb25tZW50Lk1hY2hpbmVOYW1lICsgXCIsIFwib3NcIjpcIndpbmRvd3NcIiB9IjsKICAgICAgICAgICAgICAgIHN0cmluZyByZXNwb25zZSA9IGNsaWVudC5VcGxvYWRTdHJpbmcoYXBpVXJsICsgIi9hcGkvaGVhcnRiZWF0IiwgIlBPU1QiLCBib2R5KTsKICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgLy8gMy4gS29tdXQgV2FyIG1pPwogICAgICAgICAgICAgICAgaWYgKHJlc3BvbnNlLkNvbnRhaW5zKCJjb21tYW5kIikpIHsKICAgICAgICAgICAgICAgICAgICBNYXRjaCBjbWQgPSBSZWdleC5NYXRjaChyZXNwb25zZSwgQCJcImNvbW1hbmRcIlxzKjpccypcIiguKj8pXCIiKTsKICAgICAgICAgICAgICAgICAgICBpZiAoY21kLlN1Y2Nlc3MgJiYgIWNvbW1hbmQuSXNOdWxsT3JFbXB0eShjbWQuR3JvdXBzWzFdLlZhbHVlKSkgewogICAgICAgICAgICAgICAgICAgICAgICBzdHJpbmcgYyA9IGNtZC5Hcm91cHNbMV0uVmFsdWU7CiAgICAgICAgICAgICAgICAgICAgICAgIFByb2Nlc3MgcCA9IG5ldyBQcm9jZXNzKCk7CiAgICAgICAgICAgICAgICAgICAgICAgIHAuU3RhcnRJbmZvID0gbmV3IFByb2Nlc3NTdGFydEluZm8oImNtZC5leGUiLCAiL2MgIiArIGMpIHsgUmVkaXJlY3RTdGFuZGFyZE91dHB1dCA9IHRydWUsIFVzZVNoZWxsRXhlY3V0ZSA9IGZhbHNlLCBDcmVhdGVOb1dpbmRvdyA9IHRydWUgfTsKICAgICAgICAgICAgICAgICAgICAgICAgcC5TdGFydCgpOwogICAgICAgICAgICAgICAgICAgICAgICBzdHJpbmcgb3V0cHV0ID0gcC5TdGFuZGFyZE91dHB1dC5SZWFkVG9FbmQoKTsKICAgICAgICAgICAgICAgICAgICAgICAgcC5XYWl0Rm9yRXhpdCgpOwogICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgLy8gU29udWN1IEdvbmRlcgogICAgICAgICAgICAgICAgICAgICAgICBzdHJpbmcgcmVzQm9keSA9ICJ7IFwiaWRcIjpcIiIgKyBkZXZpY2VJZCArICJcIiwgXCJyZXN1bHRcIjpcIiIgKyBvdXRwdXQuUmVwbGFjZShcIlwiXCIsIFwiXFxcIlwiKS5SZXBsYWNlKCJcclxuIiwgIlxcbiIpICsgIlwiIH0iOwogICAgICAgICAgICAgICAgICAgICAgICBjbGllbnQuVXBsb2FkU3RyaW5nKGFwaVVybCArICIvYXBpL3J1c3RkZXNrL2NvbW1hbmQvcmVzdWx0IiwgIlBPU1QiLCByZXNCb2R5KTsKICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgIH0gY2F0Y2ggKUV4Y2VwdGlvbiBlKSB7IH0KICAgICAgICAgICAgVGhyZWFkLlNsZWVwKDEwMDAwKTsKICAgICAgICB9CiAgICB9Cn0=";
 
-    // C# Agent Kodu (Base64) - Main(string[] args) eklendi ve sadeleştirildi
-    const base64Agent = "dXNpbmcgU3lzdGVtOwp1c2luZyBTeXN0ZW0uTmV0Owp1c2luZyBTeXN0ZW0uVGV4dDsKdXNpbmcgU3lzdGVtLlRocmVhZGluZzsKdXNpbmcgU3lzdGVtLklPOwp1c2luZyBTeXN0ZW0uVGV4dC5SZWd1bGFyRXhwcmVzc2lvbnM7CnVzaW5nIFN5c3RlbS5Db2xsZWN0aW9ucy5HZW5lcmljOwoKY2xhc3MgUHJvZ3JhbSB7CiAgICBzdGF0aWMgdm9pZCBNYWluKHN0cmluZyVbXSBhcmdzKSB7CiAgICAgICAgc3RyaW5nIHNlcnZpY2VVcmwgPSAiW1tTRVJWRVJfVVJMXV0vYXBpL2hlYXJ0YmVhdCI7CiAgICAgICAgV2ViQ2xpZW50IGNsaWVudCA9IG5ldyBXZWJDbGllbnQoKTsKICAgICAgICBjbGllbnQuRW5jb2RpbmcgPSBFbmNvZGluZy5VVEY4OwogICAgICAgIAogICAgICAgIHdoaWxlICh0cnVlKSB7CiAgICAgICAgICAgIHRyeSB7CiAgICAgICAgICAgICAgICBzdHJpbmcgZGV2aWNlSWQgPSAiIjsKICAgICAgICAgICAgICAgIHN0cmluZyBbXSBwYXRocyA9IHsKICAgICAgICAgICAgICAgICAgICBAIkM6XFdpbmRvd3NcU2VydmljZVByb2ZpbGVzXExvY2FsU2VydmljZVxBcHBEYXRhXFJvYW1pbmdcUnVzdERlc2tcY29uZmlnXFJ1c3REZXNrLnRvbWwiLAogICAgICAgICAgICAgICAgICAgIEAiQzpcV2luZG93c1xTZXJ2aWNlUHJvZmlsZXNcTG9jYWxTZXJ2aWNlXEFwcERhdGFcUm9hbWluZ1xSdXN0RGVza1xjb25maWdcUnVzdERlc2syLnRvbWwiLAogICAgICAgICAgICAgICAgICAgIEAiQzpcUHJvZ3JhbURhdGFcUnVzdERlc2tcY29uZmlnXFJ1c3REZXNrLnRvbWwiLAogICAgICAgICAgICAgICAgICAgIEAiQzpcUHJvZ3JhbURhdGFcUnVzdERlc2tcY29uZmlnXFJ1c3REZXNrMi50b21sIgogICAgICAgICAgICAgICAgfTsKICAgICAgICAgICAgICAgIGZvcmVhY2ggKHN0cmluZyBwdCBpbiBwYXRocykgewogICAgICAgICAgICAgICAgICAgIGlmIChGaWxlLkV4aXN0cyhwdCkpIHsKICAgICAgICAgICAgICAgICAgICAgICAgc3RyaW5nIGMgPSBGaWxlLlJlYWRBbGxUZXh0KHB0KTsKICAgICAgICAgICAgICAgICAgICAgICAgTWF0Y2ggbSA9IFJlZ2V4Lk1hdGNoKGMsIEAiaWRccyo9XHMqJyhcZCspJyIpOwogICAgICAgICAgICAgICAgICAgICAgICBpZiAobS5TdWNjZXNzKSB7IGRldmljZUlkID0gbS5Hcm91cHNbMV0uVmFsdWU7IGJyZWFrOyB9CiAgICAgICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgICAgaWYgKHN0cmluZy5Jc051bGxPckVtcHR5KGRldmljZUlkKSkgZGV2aWNlSWQgPSBFbnZpcm9ubWVudC5NYWNoaW5lTmFtZTsKICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgc3RyaW5nIGJvZHkgPSAieyBcImlkXCI6XCIiICsgZGV2aWNlSWQgKyBcIiwgXCJob3N0bmFtZVwiOlwiIiArIEVudmlyb25tZW50Lk1hY2hpbmVOYW1lICsgXCIsIFwib3NcIjpcIndpbmRvd3NcIiB9IjsKICAgICAgICAgICAgICAgIGNsaWVudC5IZWFkZXJzW0h0dHBSZXF1ZXN0SGVhZGVyLkNvbnRlbnRUeXBlXSA9ICJhcHBsaWNhdGlvbi9qc29uIjsKICAgICAgICAgICAgICAgIGNsaWVudC5VcGxvYWRTdHJpbmcoc2VydmljZVVybCwgIlBPU1QiLCBib2R5KTsKICAgICAgICAgICAgfSBjYXRjaCB7fQogICAgICAgICAgICBUaHJlYWQuU2xlZXAoMTAwMDApOwogICAgICAgIH0KICAgIH0KfQ==";
-
-    const psScript = `# --- RUSTDESK TAM OTOMATIK WINDOWS KURULUM ---
+    const psScript = `# --- RUSTDESK GELISMIS RMM AJANI KURULUM ---
 $ErrorActionPreference = "SilentlyContinue"
 
 $idServer = "${idServer}"
@@ -48,12 +36,12 @@ $finalPass = "${defaultPassword}"
 
 Write-Host ">> Islem Baslatildi (ID Server: $idServer)" -ForegroundColor Cyan
 
-# 1. Temizlik
+# 1. Temizlik ve Hazirlik
 $rmmDir = "C:\\ProgramData\\RustDeskRMM"
 if (!(Test-Path $rmmDir)) { New-Item -ItemType Directory -Path $rmmDir -Force | Out-Null }
 Stop-Process -Name "rustdesk" -Force -ErrorAction SilentlyContinue
 
-# 2. Sunucu Ayarları Hazırla
+# 2. RustDesk Ayarlari
 $toml = @"
 rendezvous-server = '$idServer'
 relay-server = '$relayServer'
@@ -78,24 +66,23 @@ foreach ($path in $configPaths) {
     [System.IO.File]::WriteAllText((Join-Path $path "RustDesk2.toml"), $toml, $utf8NoBOM)
 }
 
-# 3. Indir ve Kur
+# 3. RustDesk Yukle
 Write-Host ">> RustDesk yukleniyor..." -ForegroundColor Cyan
 $setupPath = Join-Path $env:TEMP "rustdesk_setup.exe"
 Invoke-WebRequest -Uri "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe" -OutFile $setupPath -UseBasicParsing
 Start-Process $setupPath -ArgumentList "--silent-install" -Wait
 
-# 4. Sifre Ayari (Agresif Yontem)
+# 4. Sifre ve Servis
 $rdExe = "C:\\Program Files\\RustDesk\\rustdesk.exe"
 if (Test-Path $rdExe) {
-    Write-Host ">> Sifre sabitleniyor..." -ForegroundColor Cyan
     & $rdExe --set-password "$finalPass"
     Start-Service "rustdesk" -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 3
     & $rdExe --set-password "$finalPass"
 }
 
-# 5. RMM Ajanini Kur
-Write-Host ">> RMM Servisi yapılandırılıyor..." -ForegroundColor Cyan
+# 5. RMM Ajanini Kur (Shell Destegi Aktif)
+Write-Host ">> Gelismis RMM Ajanı kuruluyor..." -ForegroundColor Cyan
 $base64 = "${base64Agent}"
 $src = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($base64))
 $src = $src.Replace("[[SERVER_URL]]", $apiServer)
@@ -104,7 +91,6 @@ $src | Out-File -FilePath "$rmmDir\\Agent.cs" -Encoding utf8 -Force
 $csc = (Get-ChildItem "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.*\\csc.exe" | Select-Object -First 1).FullName
 if ($csc) {
     & $csc /out:"$rmmDir\\RustDeskRMM.exe" /target:winexe "$rmmDir\\Agent.cs"
-    
     $taskName = "RustDeskRMM_Service"
     Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
     $action = New-ScheduledTaskAction -Execute "$rmmDir\\RustDeskRMM.exe"
