@@ -21,12 +21,28 @@ export default function BuilderPage() {
       .catch(() => setServerKey("Okunamadı"));
   }, []);
 
-  const installCommand = `irm http://${host}:${port}/api/rustdesk/builder/install?host=${host}&port=${port} | iex`;
+  const installCommand = `irm "http://${host}:${port}/api/rustdesk/builder/install?host=${host}&port=${port}" | iex`;
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(installCommand);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(installCommand);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } else {
+      // Fallback for non-secure contexts (HTTP via IP)
+      const textArea = document.createElement("textarea");
+      textArea.value = installCommand;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error('Kopyalama hatası:', err);
+      }
+      document.body.removeChild(textArea);
+    }
   };
 
   const downloads = [
