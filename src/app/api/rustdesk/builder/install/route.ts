@@ -63,13 +63,23 @@ taskkill /F /IM RustDesk.exe /T 2>$null
 $paths = @(
     "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk\\config",
     "C:\\Windows\\System32\\config\\systemprofile\\AppData\\Roaming\\RustDesk\\config",
-    "$env:AppData\\RustDesk\\config",
     "$env:ProgramData\\RustDesk\\config"
 )
+
+# Tüm kullanıcıların AppData klasörlerine de ekle
+Get-ChildItem "C:\\Users" -ErrorAction SilentlyContinue | ForEach-Object {
+    $userConfig = "$($_.FullName)\\AppData\\Roaming\\RustDesk\\config"
+    $paths += $userConfig
+}
+
 foreach ($p in $paths) {
-    if (!(Test-Path $p)) { New-Item -ItemType Directory -Path $p -Force }
-    $toml | Set-Content -Path "$p\\RustDesk.toml" -Force
-    $toml | Set-Content -Path "$p\\rustdesk.toml" -Force
+    try {
+        if (!(Test-Path $p)) { New-Item -ItemType Directory -Path $p -Force }
+        # BOM olmadan yazmak için ASCII (IP ve Key için yeterli)
+        [System.IO.File]::WriteAllText("$p\\RustDesk.toml", $toml)
+        [System.IO.File]::WriteAllText("$p\\rustdesk.toml", $toml)
+        [System.IO.File]::WriteAllText("$p\\RustDesk2.toml", $toml)
+    } catch {}
 }
 
 if (Test-Path "C:\\Program Files\\RustDesk\\rustdesk.exe") {
