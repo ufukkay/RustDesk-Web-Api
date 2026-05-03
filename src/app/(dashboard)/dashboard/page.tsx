@@ -1,7 +1,7 @@
 "use client";
 
 import { useAppStore } from "@/lib/store";
-import { Monitor, Users, Shield, Server, Laptop, Activity, Database, ChevronRight, User as UserIcon, ShieldCheck } from "lucide-react";
+import { Monitor, Activity, Server, Database, ChevronRight, User as UserIcon, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -10,38 +10,26 @@ import { Button } from "@/components/ui/button";
  * DashboardPage - Sistemin genel durumunu özetleyen ana sayfa.
  */
 export default function DashboardPage() {
-  const { devices, technicians, fetchDevices } = useAppStore();
-  const [serverKey, setServerKey] = useState("Yükleniyor...");
+  const { devices, fetchDevices } = useAppStore();
   const [health, setHealth] = useState({ hbbs: "...", hbbr: "..." });
 
   useEffect(() => {
-    // Sayfa açıldığında cihazları çek
     fetchDevices();
 
-    // Her 10 saniyede bir verileri tazele
     const interval = setInterval(() => {
       fetchDevices();
       
-      // Sistem (HBBS/HBBR) çalışma durumunu kontrol et
       fetch("/api/system/health")
         .then(res => res.json())
         .then(data => setHealth(data))
         .catch(() => setHealth({ hbbs: "Hata", hbbr: "Hata" }));
     }, 10000);
     
-    // RustDesk bağlantı anahtarını sunucudan çek
-    fetch("/api/rustdesk/server-key")
-      .then(res => res.json())
-      .then(data => setServerKey(data.key))
-      .catch(() => setServerKey("Okunamadı"));
-
     return () => clearInterval(interval);
   }, [fetchDevices]);
 
-  // Online cihaz sayısını hesapla
   const onlineCount = devices.filter(d => d.status === "online").length;
   
-  // İstatistik kartları verisi
   const stats = [
     { label: "Toplam Cihaz", value: devices.length, icon: Monitor, color: "text-blue-500", bg: "bg-blue-500/10" },
     { label: "Online Cihaz", value: onlineCount, icon: Activity, color: "text-emerald-500", bg: "bg-emerald-500/10" },
@@ -51,13 +39,11 @@ export default function DashboardPage() {
 
   return (
     <div className="p-8 space-y-8 max-w-[1400px] mx-auto animate-in fade-in duration-500">
-      {/* Başlık Bölümü */}
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold text-foreground tracking-tight">Genel Bakış</h1>
         <p className="text-sm text-muted-foreground">Sisteminizin durumunu ve aktif bağlantılarınızı takip edin.</p>
       </div>
 
-      {/* İstatistik Izgarası */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((s) => (
           <div key={s.label} className="bg-card rounded-brand-lg border border-border p-6 shadow-brand-sm hover:shadow-brand transition-all">
@@ -74,25 +60,6 @@ export default function DashboardPage() {
 
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
-          {/* Sunucu Anahtarı Kartı (Önemli Bilgi) */}
-          <div className="bg-brand-ink text-white p-6 rounded-brand-lg shadow-brand relative overflow-hidden group">
-            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="space-y-2">
-                <h3 className="text-lg font-black text-brand-yellow flex items-center gap-2">
-                  <Shield className="w-5 h-5" /> RustDesk Sunucu Anahtarı (Key)
-                </h3>
-                <p className="text-white/60 text-[11px] font-bold uppercase tracking-widest max-w-[300px]">
-                  Bağlantı hatalarını gidermek için bu anahtarı uygulamadaki "Key" alanına yapıştırın.
-                </p>
-              </div>
-              <div className="bg-white/10 p-4 rounded-xl border border-white/10 font-mono text-[13px] select-all break-all backdrop-blur-md hover:bg-white/15 transition-all">
-                {serverKey}
-              </div>
-            </div>
-            <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-brand-yellow/10 rounded-full blur-3xl group-hover:scale-125 transition-transform duration-1000" />
-          </div>
-
-          {/* Son Eklenen Cihazlar Listesi */}
           <div className="bg-card rounded-brand-lg border border-border shadow-brand-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-border bg-muted/20 flex items-center justify-between">
               <h2 className="text-[11px] font-black text-brand-ink uppercase tracking-widest">Son Eklenen Cihazlar</h2>
@@ -147,7 +114,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Son Aktiviteler (Simüle edilmiş veri) */}
         <div className="bg-card rounded-brand-lg border border-border shadow-brand-sm overflow-hidden h-fit">
           <div className="px-6 py-4 border-b border-border bg-muted/20">
             <h2 className="text-[11px] font-black text-brand-ink uppercase tracking-widest">Son Aktiviteler</h2>
@@ -177,7 +143,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Sistem Sağlık Durumu Alt Bilgi */}
       <div className="flex items-center gap-2 bg-muted/30 w-fit px-4 py-2 rounded-lg border border-border text-[11px] font-black uppercase tracking-widest text-muted-foreground">
         <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
         Sistem Sağlıklı · Uptime: <span className="text-foreground ml-0.5">99.9%</span>
