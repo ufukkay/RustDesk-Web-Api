@@ -100,44 +100,51 @@ Write-Host ">> Ayarlar uygulandı ve servis yeniden başlatıldı." -ForegroundC
 # 4. RMM Ajanini Kur
 Write-Host ">> RMM Ajani yapılandırılıyor..." -ForegroundColor Cyan
 
-# Mevcut RustDesk ID'sini bulmaya calis (Eger onceden kuruluysa)
 $rdId = ""
 $possiblePaths = @(
-    "$env:ProgramData\\RustDesk\\config\\RustDesk.toml",
     "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk\\config\\RustDesk.toml",
-    "$env:AppData\\RustDesk\\config\\RustDesk.toml"
+    "$env:ProgramData\\RustDesk\\config\\RustDesk.toml",
+    "$env:AppData\\RustDesk\\config\\RustDesk.toml",
+    "C:\\Windows\\System32\\config\\systemprofile\\AppData\\Roaming\\RustDesk\\config\\RustDesk.toml"
 )
-foreach ($p in $possiblePaths) {
-    if (Test-Path $p) {
-        $content = Get-Content $p
-        if ($content -match "id\\s*=\\s*'(\\d+)'") { $rdId = $matches[1]; break }
+
+function Get-RustDeskID {
+    foreach ($p in $possiblePaths) {
+        if (Test-Path $p) {
+            $content = Get-Content $p -Raw
+            if ($content -match "id\s*=\s*'(\d+)'") { return $matches[1] }
+            if ($content -match "id\s*=\s*""(\d+)""") { return $matches[1] }
+        }
     }
+    # Alternatif: Komutla almayı dene
+    if (Test-Path "C:\\Program Files\\RustDesk\\rustdesk.exe") {
+        $cmdId = & "C:\\Program Files\\RustDesk\\rustdesk.exe" --get-id 2>$null
+        if ($cmdId -match "^\d+$") { return $cmdId }
+    }
+    return ""
 }
 
+$rdId = Get-RustDeskID
+
 if (-not $rdId) {
-    Write-Host ">> RustDesk ID bekleniyor... (Uygulama baslatiliyor)" -ForegroundColor Yellow
-    Start-Process "C:\\Program Files\\RustDesk\\rustdesk.exe" -ErrorAction SilentlyContinue
-    $timeout = 30
+    Write-Host ">> RustDesk ID bekleniyor... (Sistem tetikleniyor)" -ForegroundColor Yellow
+    Start-Process "C:\\Program Files\\RustDesk\\rustdesk.exe" --ArgumentList "--service" -ErrorAction SilentlyContinue
+    $timeout = 40
     while (-not $rdId -and $timeout -gt 0) {
         Write-Host "." -NoNewline
         Start-Sleep -Seconds 2
-        foreach ($p in $possiblePaths) {
-            if (Test-Path $p) {
-                $content = Get-Content $p
-                if ($content -match "id\\s*=\\s*'(\\d+)'") { $rdId = $matches[1]; break }
-            }
-        }
+        $rdId = Get-RustDeskID
         $timeout--
     }
     Write-Host ""
 }
 
 if (-not $rdId) {
-    Write-Host "!! ID tespiti zaman asimina ugradi." -ForegroundColor Red
+    Write-Host "!! ID tespiti yapilamadi, varsayilan ataniyor." -ForegroundColor Red
     $rdId = "0"
 }
 
-# Agent Kaynak Kodu (C# 5 Uyumlu ve PS Expansion Korumalı)
+# Agent Kaynak Kodu (C# 5 Uyumlu, Verbatim Stringlerle Hata Onleyici)
 $source = @"
 using System;
 using System.Net;
@@ -152,7 +159,7 @@ using System.IO;
 public class RustDeskAgent {
     [DllImport("user32.dll")] public static extern bool LockWorkStation();
     
-    private static string logFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "RustDeskRMM", "agent.log");
+    private static string logFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), @"RustDeskRMM\agent.log");
 
     private static void Log(string msg) {
         try { File.AppendAllText(logFile, "[" + DateTime.Now.ToString() + "] " + msg + Environment.NewLine); } catch {}
@@ -178,25 +185,27 @@ public class RustDeskAgent {
                         foreach (var ip in ni.GetIPProperties().UnicastAddresses) {
                             if (ip.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork) {
                                 string gw = ni.GetIPProperties().GatewayAddresses.Count > 0 ? ni.GetIPProperties().GatewayAddresses[0].Address.ToString() : "-";
-                                cards.Add("{\\"name\\":\\"" + ni.Name + "\\", \\"ip\\":\\"" + ip.Address.ToString() + "\\", \\"mask\\":\\"" + ip.IPv4Mask.ToString() + "\\", \\"gw\\":\\"" + gw + "\\"}");
+                                // JSON manuel insa (C# 5 uyumlu)
+                                string card = "{ \"name\":\"" + ni.Name + "\", \"ip\":\"" + ip.Address.ToString() + "\", \"mask\":\"" + ip.IPv4Mask.ToString() + "\", \"gw\":\"" + gw + "\" }";
+                                cards.Add(card);
                             }
                         }
                     }
                 }
 
-                string body = "{\\"id\\":\\"" + deviceId + "\\", \\"disk\\":\\"" + disk + "\\", \\"hostname\\":\\"" + Environment.MachineName + "\\", \\"os\\":\\"Windows\\", \\"network\\":[" + string.Join(",", cards.ToArray()) + "]}";
+                string body = "{ \"id\":\"" + deviceId + "\", \"disk\":\"" + disk + "\", \"hostname\":\"" + Environment.MachineName + "\", \"os\":\"Windows\", \"network\":[" + string.Join(",", cards.ToArray()) + "] }";
                 client.Headers[HttpRequestHeader.ContentType] = "application/json";
                 
                 string resString = client.UploadString(serverUrl, "POST", body);
                 
-                if (resString.Contains("\\"command\\":\\"") && !resString.Contains("\\"command\\":null")) {
-                    string cmd = resString.Split(new string[] { "\\"command\\":\\"" }, StringSplitOptions.None)[1].Split('"')[0];
+                if (resString.Contains("\"command\":\"") && !resString.Contains("\"command\":null")) {
+                    string cmd = resString.Split(new string[] { "\"command\":\"" }, StringSplitOptions.None)[1].Split('"')[0];
                     Log("Komut alindi: " + cmd);
 
                     string output = "";
                     
                     if (cmd == "tsdiscon" || cmd == "lock") {
-                        Process.Start("C:\\Windows\\System32\\tsdiscon.exe");
+                        Process.Start(@"C:\Windows\System32\tsdiscon.exe");
                         output = "Oturum kilitlendi.";
                     }
                     else if (cmd.Contains("shutdown /s")) {
@@ -218,7 +227,7 @@ public class RustDeskAgent {
                                 output = p.StandardOutput.ReadToEnd();
                                 string err = p.StandardError.ReadToEnd();
                                 if (!string.IsNullOrEmpty(err)) output += " Error: " + err;
-                                p.WaitForExit(10000);
+                                p.WaitForExit(15000);
                             }
                         } catch (Exception ex) {
                             output = "Hata: " + ex.Message;
@@ -227,13 +236,13 @@ public class RustDeskAgent {
 
                     if (!string.IsNullOrEmpty(output)) {
                         string b64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(output));
-                        string rBody = "{\\"deviceId\\":\\"" + deviceId + "\\", \\"output\\":\\"" + b64 + "\\", \\"isBase64\\": true}";
+                        string rBody = "{ \"deviceId\":\"" + deviceId + "\", \"output\":\"" + b64 + "\", \"isBase64\": true }";
                         client.Headers[HttpRequestHeader.ContentType] = "application/json";
                         client.UploadString(resultUrl, "POST", rBody);
                     }
                 }
             } catch (Exception ex) {
-                Log("Hata: " + ex.Message);
+                Log("Dongu Hatasi: " + ex.Message);
             }
             Thread.Sleep(10000);
         }
@@ -245,7 +254,8 @@ $source | Out-File -FilePath "$dir\\Agent.cs" -Encoding utf8 -Force
 
 # Derleme ve Servis Kaydı
 $csc = (Get-ChildItem "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.*\\csc.exe" | Select-Object -First 1).FullName
-Stop-Process -Name "RustDeskRMM" -Force -ErrorAction SilentlyContinue
+# taskkill kullanarak kesin cozum (soru sormaz)
+taskkill /F /IM RustDeskRMM.exe /T 2>$null
 & $csc /out:"$dir\\RustDeskRMM.exe" /target:winexe "$dir\\Agent.cs"
 
 # Gorev Zamanlayici Olarak Ekle
@@ -260,7 +270,7 @@ Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Pr
 Start-ScheduledTask -TaskName $taskName
 
 Write-Host "------------------------------------------------" -ForegroundColor Yellow
-Write-Host "BAŞARILI: RustDesk Masaustune indirildi ve RMM Ajani kuruldu! ✅" -ForegroundColor Green
+Write-Host "BAŞARILI: RustDesk ve RMM Ajani Kuruldu! ✅" -ForegroundColor Green
 Write-Host "Cihaz simdi Dashboard uzerinde gorunmelidir." -ForegroundColor Gray
 Write-Host "BİTTİ" -ForegroundColor White -BackgroundColor Green
 `;
