@@ -5,7 +5,7 @@ import { getSettings } from "@/lib/settings";
 
 /**
  * GET /api/rustdesk/builder/install
- * Gelişmiş RMM Ajanı (Görünür Kurulum Versiyonu)
+ * Tam Yetkili RMM Yükleyici - Sıfır Müdahale, Kesintisiz Bağlantı.
  */
 export async function GET(req: Request) {
   try {
@@ -19,13 +19,12 @@ export async function GET(req: Request) {
     const relayServer = settings.relayServer || host;
     const apiServer = settings.apiServer || `http://${host}:${port}`;
     const defaultPassword = settings.defaultPassword || "Ban41kam5";
+    const serverKey = settings.serverKey || "YOK";
     
-    let serverKey = settings.serverKey || "YOK";
-    
-    // C# Agent Kodu (Base64)
-    const base64Agent = "dXNpbmcgU3lzdGVtOwp1c2luZyBTeXN0ZW0uTmV0Owp1c2luZyBTeXN0ZW0uVGV4dDsKdXNpbmcgU3lzdGVtLlRocmVhZGluZzsKdXNpbmcgU3lzdGVtLklPOwp1c2luZyBTeXN0ZW0uVGV4dC5SZWd1bGFyRXhwcmVzc2lvbnM7CnVzaW5nIFN5c3RlbS5Db2xsZWN0aW9ucy5HZW5lcmljOwp1c2luZyBTeXN0ZW0uRGlhZ25vc3RpY3M7CgpjbGFzcyBQcm9ncmFtIHsKICAgIHN0YXRpYyBzdHJpbmcgZGV2aWNlSWQgPSAiIjsKICAgIHN0YXRpYyBzdHJpbmcgYXBpVXJsID0gIltbU0VSVkVSX1VSTF1dIjsKCiAgICBzdGF0aWMgdm9pZCBNYWluKHN0cmluZyBbXSBhcmdzKSB7CiAgICAgICAgV2ViQ2xpZW50IGNsaWVudCA9IG5ldyBXZWJDbGllbnQoKTsKICAgICAgICBjbGllbnQuRW5jb2RpbmcgPSBFbmNvZGluZy5VVEY4OwogICAgICAgIAogICAgICAgIHdoaWxlICh0cnVlKSB7CiAgICAgICAgICAgIHRyeSB7CiAgICAgICAgICAgICAgICBpZiAoc3RyaW5nLklzTnVsbE9yRW1wdHkoZGV2aWNlSWQpKSB7CiAgICAgICAgICAgICAgICAgICAgc3RyaW5nIFtdIHBhdGhzID0geyBAIkM6XFdpbmRvd3NcU2VydmljZVByb2ZpbGVzXExvY2FsU2VydmljZVxBcHBEYXRhXFJvYW1pbmdcUnVzdERlc2tcY29uZmlnXFJ1c3REZXNrMi50b21sIiwgQCJDOlxQcm9ncmFtRGF0YVxSdXN0RGVza1xjb25maWdcUnVzdERlc2syLnRvbWwiIH07CiAgICAgICAgICAgICAgICAgICAgZm9yZWFjaCAoc3RyaW5nIHB0IGluIHBhdGhzKSB7CiAgICAgICAgICAgICAgICAgICAgICAgIGlmIChGaWxlLkV4aXN0cyhwdCkpIHsKICAgICAgICAgICAgICAgICAgICAgICAgICAgIHN0cmluZyBjID0gRmlsZS5SZWFkQWxsVGV4dChwdCk7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICBNYXRjaCBtID0gUmVnZXguTWF0Y2goYywgQCJpZFxzKj1ccyonKFxkKyknIik7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICBpZiAobS5TdWNjZXNzKSB7IGRldmljZUlkID0gbS5Hcm91cHNbMV0uVmFsdWU7IGJyZWFrOyB9CiAgICAgICAgICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICAgICAgaWYgKHN0cmluZy5Jc051bGxPckVtcHR5KGRldmljZUlkKSkgZGV2aWNlSWQgPSBFbnZpcm9ubWVudC5NYWNoaW5lTmFtZTsKICAgICAgICAgICAgICAgIH0KCiAgICAgICAgICAgICAgICBjbGllbnQuSGVhZGVyc1tIdHRwUmVxdWVzdEhlYWRlci5Db250ZW50VHlwZV0gPSAiYXBwbGljYXRpb24vanNvbiI7CiAgICAgICAgICAgICAgICBzdHJpbmcgYm9keSA9ICJ7IFwiaWRcIjpcIicgKyBkZXZpY2VJZCArICJcIiwgXCJob3N0bmFtZVwiOlwiIiArIEVudmlyb25tZW50Lk1hY2hpbmVOYW1lICsgXCIsIFwib3NcIjpcIndpbmRvd3NcIiB9IjsKICAgICAgICAgICAgICAgIHN0cmluZyByZXNwb25zZSA9IGNsaWVudC5VcGxvYWRTdHJpbmcoYXBpVXJsICsgIi9hcGkvaGVhcnRiZWF0IiwgIlBPU1QiLCBib2R5KTsKICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgaWYgKHJlc3BvbnNlLkNvbnRhaW5zKCJjb21tYW5kIikpIHsKICAgICAgICAgICAgICAgICAgICBNYXRjaCBjbWQgPSBSZWdleC5NYXRjaChyZXNwb25zZSwgQCJcImNvbW1hbmRcIlxzKjpccypcIiguKj8pXCIiKTsKICAgICAgICAgICAgICAgICAgICBpZiAoY21kLlN1Y2Nlc3MpIHsKICAgICAgICAgICAgICAgICAgICAgICAgUHJvY2VzcyBwID0gbmV3IFByb2Nlc3MoKTsKICAgICAgICAgICAgICAgICAgICAgICAgcC5TdGFydEluZm8gPSBuZXcgUHJvY2Vz1N0YXJ0SW5mbygiY21kLmV4ZSIsICIvYyAiICsgY21kLkdyb3Vwc1sxXS5WYWx1ZSkgeyBSZWRpcmVjdFN0YW5kYXJkT3V0cHV0ID0gdHJ1ZSwgVXNlU2hlbGxFeGVjdXRlID0gZmFsc2UsIENyZWF0ZU5vV2luZG93ID0gdHJ1ZSB9OwogICAgICAgICAgICAgICAgICAgICAgICBwLlN0YXJ0KCk7CiAgICAgICAgICAgICAgICAgICAgICAgIHN0cmluZyBvID0gcC5TdGFuZGFyZE91dHB1dC5SZWFkVG9FbmQoKTsKICAgICAgICAgICAgICAgICAgICAgICAgY2xpZW50LlVwbG9hZFN0cmluZyhhcGlVcmwgKyAiL2FwaS9ydXN0ZGVzay9jb21tYW5kL3Jlc3VsdCIsICJQT1NUIiwgIntcImlkXCI6XCJhXCIscmVzdWx0OlwidVwifSIpOwogICAgICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgfSBjYXRjaCB7fQogICAgICAgICAgICBUaHJlYWQuU2xlZXAoMTAwMDApOwogICAgICAgIH0KICAgIH0KfQ==";
+    // C# Agent Kodu
+    const base64Agent = "dXNpbmcgU3lzdGVtOwp1c2luZyBTeXN0ZW0uTmV0Owp1c2luZyBTeXN0ZW0uVGV4dDsKdXNpbmcgU3lzdGVtLlRocmVhZGluZzsKdXNpbmcgU3lzdGVtLklPOwp1c2luZyBTeXN0ZW0uVGV4dC5SZWd1bGFyRXhwcmVzc2lvbnM7CnVzaW5nIFN5c3RlbS5Db2xsZWN0aW9ucy5HZW5lcmljOwp1c2luZyBTeXN0ZW0uRGlhZ25vc3RpY3M7CgpjbGFzcyBQcm9ncmFtIHsKICAgIHN0YXRpYyBzdHJpbmcgZGV2aWNlSWQgPSAiIjsKICAgIHN0YXRpYyBzdHJpbmcgYXBpVXJsID0gIltbU0VSVkVSX1VSTF1dIjsKCiAgICBzdGF0aWMgdm9pZCBNYWluKHN0cmluZyBbXSBhcmdzKSB7CiAgICAgICAgV2ViQ2xpZW50IGNsaWVudCA9IG5ldyBXZWJDbGllbnQoKTsKICAgICAgICBjbGllbnQuRW5jb2RpbmcgPSBFbmNvZGluZy5VVEY4OwogICAgICAgIAogICAgICAgIHdoaWxlICh0cnVlKSB7CiAgICAgICAgICAgIHRyeSB7CiAgICAgICAgICAgICAgICBpZiAoc3RyaW5nLklzTnVsbE9yRW1wdHkoZGV2aWNlSWQpKSB7CiAgICAgICAgICAgICAgICAgICAgc3RyaW5nIFtdIHBhdGhzID0geyBAIkM6XFdpbmRvd3NcU2VydmljZVByb2ZpbGVzXExvY2FsU2VydmljZVxBcHBEYXRhXFJvYW1pbmdcUnVzdERlc2tcY29uZmlnXFJ1c3REZXNrMi50b21sIiwgQCJDOlxQcm9ncmFtRGF0YVxSdXN0RGVza1xjb25maWdcUnVzdERlc2syLnRvbWwiIH07CiAgICAgICAgICAgICAgICAgICAgZm9yZWFjaCAoc3RyaW5nIHB0IGluIHBhdGhzKSB7CiAgICAgICAgICAgICAgICAgICAgICAgIGlmIChGaWxlLkV4aXN0cyhwdCkpIHsKICAgICAgICAgICAgICAgICAgICAgICAgICAgIHN0cmluZyBjID0gRmlsZS5SZWFkQWxsVGV4dChwdCk7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICBNYXRjaCBtID0gUmVnZXguTWF0Y2goYywgQCJpZFxzKj1ccyonKFxkKyknIik7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICBpZiAobS5TdWNjZXNzKSB7IGRldmljZUlkID0gbS5Hcm91cHNbMV0uVmFsdWU7IGJyZWFrOyB9CiAgICAgICAgICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICAgICAgaWYgKHN0cmluZy5Jc051bGxPckVtcHR5KGRldmljZUlkKSkgZGV2aWNlSWQgPSBFbnZpcm9ubWVudC5NYWNoaW5lTmFtZTsKICAgICAgICAgICAgICAgIH0KCiAgICAgICAgICAgICAgICBjbGllbnQuSGVhZGVyc1tIdHRwUmVxdWVzdEhlYWRlci5Db250ZW50VHlwZV0gPSAiYXBwbGljYXRpb24vanNvbiI7CiAgICAgICAgICAgICAgICBzdHJpbmcgYm9keSA9ICJ7IFwiaWRcIjpcIicgKyBkZXZpY2VJZCArICJcIiwgXCJob3N0bmFtZVwiOlwiIiArIEVudmlyb25tZW50Lk1hY2hpbmVOYW1lICsgXCIsIFwib3NcIjpcIndpbmRvd3NcIiB9IjsKICAgICAgICAgICAgICAgIGNsaWVudC5VcGxvYWRTdHJpbmcoYXBpVXJsICsgIi9hcGkvaGVhcnRiZWF0IiwgIlBPU1QiLCBib2R5KTsKICAgICAgICAgICAgfSBjYXRjaCB7fQogICAgICAgICAgICBUaHJlYWQuU2xlZXAoMTAwMDApOwogICAgICAgIH0KICAgIH0KfQ==";
 
-    const psScript = `# --- RUSTDESK KURULUM (GORUNUR MOD) ---
+    const psScript = `# --- RUSTDESK TAM YETKILI KURULUM (ZERO-INTERVENTION) ---
 $ErrorActionPreference = "SilentlyContinue"
 
 $idServer = "${idServer}"
@@ -36,20 +35,27 @@ $finalPass = "${defaultPassword}"
 
 Write-Host ">> Islem Baslatildi (ID Server: $idServer)" -ForegroundColor Cyan
 
-# 1. Temizlik
+# 1. Tum RustDesk Sureclerini Temizle
 Stop-Process -Name "rustdesk" -Force -ErrorAction SilentlyContinue
+Stop-Service -Name "rustdesk" -Force -ErrorAction SilentlyContinue
 
-# 2. Sunucu Ayarları
+# 2. TOML Yapılandırması (Unattended Access Ayarları)
 $toml = @"
 rendezvous-server = '$idServer'
 relay-server = '$relayServer'
 api-server = '$apiServer'
 key = '$serverKey'
+verification-method = 'use-permanent-password'
+
 [options]
 custom-rendezvous-server = '$idServer'
 relay-server = '$relayServer'
 api-server = '$apiServer'
 key = '$serverKey'
+verification-method = 'use-permanent-password'
+stop-service-on-user-logout = 'N'
+show-remote-cursor = 'Y'
+view-only = 'N'
 "@
 
 $configPaths = @(
@@ -64,29 +70,31 @@ foreach ($path in $configPaths) {
     [System.IO.File]::WriteAllText((Join-Path $path "RustDesk2.toml"), $toml, $utf8NoBOM)
 }
 
-# 3. RustDesk Yukle (Normal Kurulum)
+# 3. RustDesk Yukle
 Write-Host ">> RustDesk indiriliyor..." -ForegroundColor Cyan
 $setupPath = Join-Path $env:TEMP "rustdesk_setup.exe"
 Invoke-WebRequest -Uri "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe" -OutFile $setupPath -UseBasicParsing
 
-Write-Host ">> KURULUM PENCERESI ACILIYOR (Lutfen ekrandaki adimlari takip edin)..." -ForegroundColor Yellow
+Write-Host ">> KURULUM PENCERESI ACILIYOR (Lutfen yuklemeyi tamamlayin)..." -ForegroundColor Yellow
 Start-Process $setupPath -Wait
 
-# 4. Sifre ve Servis
+# 4. Sifreyi Enjekte Et ve Servisi Restart Et
 $rdExe = "C:\\Program Files\\RustDesk\\rustdesk.exe"
 if (Test-Path $rdExe) {
-    Write-Host ">> Sifre ayarlaniyor..." -ForegroundColor Cyan
+    Write-Host ">> Sifre ve yetki ayarlari yapiliyor..." -ForegroundColor Cyan
+    # Servis kapalıyken şifreyi yazdır
     & $rdExe --set-password "$finalPass"
     Start-Service "rustdesk" -ErrorAction SilentlyContinue
-    Start-Sleep -Seconds 2
+    Start-Sleep -Seconds 3
+    # Servis açıkken şifreyi teyit et
     & $rdExe --set-password "$finalPass"
+    # Ayarların tam oturması için servisi restart et
+    Restart-Service "rustdesk" -Force -ErrorAction SilentlyContinue
 }
 
 # 5. RMM Ajanini Kur
 $rmmDir = "C:\\ProgramData\\RustDeskRMM"
 if (!(Test-Path $rmmDir)) { New-Item -ItemType Directory -Path $rmmDir -Force | Out-Null }
-
-Write-Host ">> RMM Ajanı kuruluyor..." -ForegroundColor Cyan
 $base64 = "${base64Agent}"
 $src = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($base64))
 $src = $src.Replace("[[SERVER_URL]]", $apiServer)
@@ -104,7 +112,7 @@ if ($csc) {
     Start-ScheduledTask -TaskName $taskName
 }
 
-Write-Host ">> ISLEM TAMAMLANDI!" -ForegroundColor Green
+Write-Host ">> KURULUM TAMAMLANDI! Artik sifre sormadan baglanabilirsiniz." -ForegroundColor Green
 `;
 
     return new Response(psScript, {
