@@ -42,6 +42,8 @@ export async function GET(req: Request) {
 # Otomatik olusturuldu: ${new Date().toLocaleString("tr-TR")}
 
 $ErrorActionPreference = "SilentlyContinue"
+$targetHost = "${host}"
+$targetPort = "${port}"
 $serverUrl = "${fullServerUrl}"
 $serverKey = "${serverKey}"
 $defPass = "${defaultPassword}"
@@ -55,7 +57,7 @@ if (!(Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force }
 # 2. RustDesk 1.4.6 İndir ve Servis Olarak Kur
 $rdVersion = "1.4.6"
 $rdUrl = "https://github.com/rustdesk/rustdesk/releases/download/$rdVersion/rustdesk-$rdVersion-x86_64.exe"
-$rdFilename = "rustdesk-host=$($host)-key=$($serverKey).exe"
+$rdFilename = "rustdesk-host=$($targetHost)-key=$($serverKey).exe"
 $rdPath = Join-Path $env:TEMP "$rdFilename"
 
 Write-Host ">> RustDesk $rdVersion indiriliyor..." -ForegroundColor Cyan
@@ -93,9 +95,9 @@ if ($defPass) {
 Write-Host ">> Sunucu ayarları sisteme işleniyor..." -ForegroundColor Cyan
 
 $tomlContent = @"
-id-server = '$host'
-relay-server = '$host'
-api-server = 'http://$host:3000'
+id-server = '$targetHost'
+relay-server = '$targetHost'
+api-server = 'http://$targetHost:3000'
 key = '$serverKey'
 "@
 
@@ -107,12 +109,13 @@ $configPaths = @(
 
 foreach ($path in $configPaths) {
     if (!(Test-Path $path)) { New-Item -ItemType Directory -Path $path -Force }
-    $tomlContent | Out-File -FilePath "$path\\RustDesk.toml" -Encoding utf8 -Force
-    $tomlContent | Out-File -FilePath "$path\\RustDesk2.toml" -Encoding utf8 -Force
+    $tomlContent | Set-Content -Path "$path\\RustDesk.toml" -Force
+    $tomlContent | Set-Content -Path "$path\\rustdesk.toml" -Force
+    $tomlContent | Set-Content -Path "$path\\RustDesk2.toml" -Force
 }
 
 Get-Service "rustdesk" -ErrorAction SilentlyContinue | Restart-Service -Force
-Write-Host ">> Ayarlar uygulandı (RustDesk.toml ve RustDesk2.toml)." -ForegroundColor Green
+Write-Host ">> Ayarlar uygulandı." -ForegroundColor Green
 
 # 4. RMM Ajanini Kur
 Write-Host ">> RMM Ajani yapılandırılıyor..." -ForegroundColor Cyan
