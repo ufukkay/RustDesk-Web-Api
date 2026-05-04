@@ -59,22 +59,15 @@ if (!(Test-Path $rmmDir)) { New-Item -ItemType Directory -Path $rmmDir -Force | 
 Write-Step "RustDesk 1.4.6 indiriliyor..."
 $setupPath = Join-Path $env:TEMP "rustdesk_setup.exe"
 
+# GitHub TLS 1.2 gerektirir, eski PS sürümlerinde zorunlu
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
 try {
-    $wc = New-Object System.Net.WebClient
-    $wc.Headers.Add("User-Agent", "Mozilla/5.0")
-    $wc.DownloadFile(
-        "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe",
-        $setupPath
-    )
+    Invoke-WebRequest -Uri "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe" \`
+        -OutFile $setupPath -UseBasicParsing
 } catch {
-    Write-Fail "Net.WebClient basarisiz, Invoke-WebRequest deneniyor..."
-    try {
-        Invoke-WebRequest -Uri "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe" \`
-            -OutFile $setupPath -UseBasicParsing
-    } catch {
-        Write-Fail "Indirme basarisiz: $_"
-        exit 1
-    }
+    Write-Fail "Indirme basarisiz: $_"
+    exit 1
 }
 
 $fileSize = (Get-Item $setupPath -ErrorAction SilentlyContinue).Length
