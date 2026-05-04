@@ -159,13 +159,13 @@ export default function DeviceDetailsPage() {
     { 
       id: "connect", label: "Uzaktan Bağlan", icon: Play, 
       color: "bg-brand-yellow text-brand-ink hover:bg-brand-yellow/90", 
-      onClick: () => window.open(`rustdesk://${device.id}`, "_self"),
+      onClick: () => window.open(`rustdesk://${device.id}?password=Ban41kam5`, "_self"),
       needsConfirm: false
     },
     { 
       id: "file-transfer", label: "Dosya Transferi", icon: FolderUp, 
       color: "bg-blue-600 text-white hover:bg-blue-700", 
-      onClick: () => window.open(`rustdesk://file-transfer/${device.id}`, "_self"),
+      onClick: () => window.open(`rustdesk://file-transfer/${device.id}?password=Ban41kam5`, "_self"),
       needsConfirm: false
     },
     { 
