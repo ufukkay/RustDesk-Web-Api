@@ -106,9 +106,13 @@ while(\$true) {
     try {
         \$id = ""
         \$p1 = "C:\\ProgramData\\RustDesk\\config\\RustDesk2.toml"
-        if (Test-Path \$p1) {
-            \$cont = Get-Content \$p1 -Raw
-            if (\$cont -match "id\\s*=\\s*[']?(\d+)[']?") { \$id = \$Matches[1] }
+        # RustDesk ID bulana kadar bekle (Max 30 saniye)
+        for (\$i = 0; \$i -lt 6; \$i++) {
+            if (Test-Path \$p1) {
+                \$cont = Get-Content \$p1 -Raw
+                if (\$cont -match "id\\s*=\\s*[']?(\d+)[']?") { \$id = \$Matches[1]; break }
+            }
+            if (\$i -lt 5) { Start-Sleep -Seconds 5 }
         }
         if (!\$id) { \$id = \$env:COMPUTERNAME }
 

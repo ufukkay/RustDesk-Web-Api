@@ -33,16 +33,35 @@ export async function POST(req: Request) {
     if (fs.existsSync(STATUS_FILE)) { try { statusData = JSON.parse(fs.readFileSync(STATUS_FILE, "utf-8")); } catch (e) {} }
     if (fs.existsSync(INFO_FILE)) { try { infoData = JSON.parse(fs.readFileSync(INFO_FILE, "utf-8")); } catch (e) {} }
 
-    // 1. Akıllı İşaretleme (Deduplication)
-    // Aynı hostname'e sahip farklı bir ID varsa eskisini "Eski Kayıt" olarak işaretle
+    // 1. Akıllı İşaretleme ve Otomatik Birleştirme (Deduplication)
     if (body.hostname) {
+      const isNumericId = /^\d+$/.test(deviceIdStr);
+      
       Object.keys(infoData).forEach(existingId => {
+        // Eğer aynı hostname'e sahip başka bir kayıt varsa
         if (existingId !== deviceIdStr && infoData[existingId].hostname === body.hostname) {
-          infoData[existingId].isDuplicate = true;
+          const isExistingNumeric = /^\d+$/.test(existingId);
+          
+          // Senaryo: Yeni gelen ID rakamsal (gerçek RustDesk ID) ama eski kayıt rakamsal değil (hostname ID)
+          // Bu durumda eski kaydı tamamen temizleyelim veya "Eski" olarak işaretleyelim.
+          if (isNumericId && !isExistingNumeric) {
+            infoData[existingId].isDuplicate = true;
+            // Eski kaydın verilerini yeniye aktarabiliriz (opsiyonel)
+            delete statusData[existingId]; // Online listesinden çıkar
+          } 
+          // Eğer tam tersiyse (nadiren olur), yeni gelen geçicidir, ama biz yine de en günceli tutmak isteriz.
+          else if (!isNumericId && isExistingNumeric) {
+            // Bu durumda yeni geleni değil, mevcut rakamsal olanı tercih etmeliyiz.
+            // Ama agent şu an bu ID ile geldiği için onu engellemek yerine "isDuplicate" işaretleyebiliriz.
+            infoData[deviceIdStr].isDuplicate = true;
+          }
         }
       });
-      // Yeni gelen kaydı "Güncel" olarak işaretle
-      if (infoData[deviceIdStr]) infoData[deviceIdStr].isDuplicate = false;
+      
+      if (infoData[deviceIdStr]) {
+        // Eğer bu ID daha önce duplicate işaretlendiyse ama şimdi ana ID olduysa temizle
+        if (isNumericId) infoData[deviceIdStr].isDuplicate = false;
+      }
     }
 
     // Son görülme zamanını kaydet

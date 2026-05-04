@@ -116,7 +116,8 @@ export async function GET() {
           net_details: localNets.length > 0 ? localNets : (extra.net_details || []),
           isDuplicate: extra.isDuplicate || false
         };
-      });
+      })
+      .filter(d => !d.isDuplicate); // Duplicate (tekrar eden) kayıtları UI'da gösterme
 
     cachedDevices = devices;
     lastFetchTime = now_ms;
