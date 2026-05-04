@@ -17,16 +17,12 @@ export default function DevicesPage() {
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
 
-  const [settings, setSettings] = useState<any>(null);
-
   useEffect(() => {
     fetchDevices();
-    fetch("/api/rustdesk/settings").then(res => res.json()).then(data => setSettings(data));
   }, [fetchDevices]);
 
   const handleConnect = (id: string) => {
-    const pass = settings?.defaultPassword || "Ban41kam5";
-    window.location.href = `rustdesk://${id}?password=${pass}`;
+    window.location.href = `rdrmm://${id}`;
   };
 
   const filteredDevices = useMemo(() => {

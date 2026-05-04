@@ -2,7 +2,7 @@
 
 import { useAppStore, Technician } from "@/lib/store";
 import { Search, Plus, Mail, Shield, Edit2, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,9 +19,9 @@ export default function TechniciansPage() {
   const [isOpen, setIsOpen] = useState(false);
   const [newTech, setNewTech] = useState({ name: "", username: "", email: "", role: "Teknisyen" as const, password: "" });
 
-  useState(() => {
+  useEffect(() => {
     fetchTechnicians();
-  });
+  }, [fetchTechnicians]);
 
   const handleAdd = () => {
     addTechnician({
