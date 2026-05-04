@@ -52,56 +52,53 @@ export default function BuilderPage() {
   ];
 
   return (
-    <div className="p-8 space-y-8 max-w-[1400px] mx-auto animate-in fade-in duration-500">
+    <div className="flex flex-col gap-6 rd2-page max-w-6xl">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold text-foreground tracking-tight flex items-center gap-2">
-            <Package className="w-6 h-6 text-primary" /> Paket Oluşturucu (Builder)
-          </h1>
-          <p className="text-sm text-muted-foreground">Kullanıcılarınıza özel RustDesk ve RMM Ajanı paketlerini hazırlayın.</p>
-        </div>
-        <div className="flex items-center gap-2 bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20">
-          <Zap className="w-3.5 h-3.5 text-primary animate-pulse" />
-          <span className="text-[10px] font-black text-primary uppercase tracking-widest">v1.4.6 Destekli</span>
-        </div>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-[20px] font-black tracking-tight rd2-h1">Paket Oluşturucu</h1>
+        <p className="text-[12px] text-[#5C6573] font-bold rd2-sub">Kullanıcılarınıza özel RustDesk ve RMM Ajanı paketlerini hazırlayın.</p>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
+      <div className="grid lg:grid-cols-12 gap-6 rd2-builder-grid">
         {/* Configuration Panel */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-card rounded-brand-lg border border-border shadow-brand-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-border bg-muted/20 flex items-center gap-2">
-              <Globe className="w-4 h-4 text-primary" />
-              <h2 className="text-[11px] font-black text-brand-ink uppercase tracking-widest">Dağıtım Yapılandırması</h2>
+        <div className="lg:col-span-8 flex flex-col gap-6">
+          <div className="bg-white border border-black/5 rounded-xl shadow-sm overflow-hidden rd2-card p-0">
+            <div className="px-5 py-3 border-b border-black/[0.03] bg-[#F1F2F4]/30 rd2-card-head mb-0">
+              <h2 className="text-[11px] font-black text-[#0E1116] uppercase tracking-widest flex items-center gap-2">
+                <Globe className="w-4 h-4 text-[#FFCC00]" /> Dağıtım Yapılandırması
+              </h2>
             </div>
-            <div className="p-6 space-y-6">
+            <div className="p-6 flex flex-col gap-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-[11px] font-bold text-muted-foreground uppercase">Sunucu Host (IP/Domain)</Label>
-                  <Input 
-                    value={host} 
-                    onChange={e => setHost(e.target.value)}
-                    className="bg-secondary/30 border-border h-11 font-bold" 
-                    placeholder="192.168.x.x"
-                  />
+                <div className="flex flex-col gap-2 rd2-field-group">
+                  <label className="text-[11px] font-black text-[#5C6573] uppercase tracking-wider">Sunucu Host (IP/Domain)</label>
+                  <div className="flex items-center gap-2 px-3 py-2.5 bg-[#F1F2F4] border border-black/5 rounded-xl rd2-field">
+                    <input 
+                      value={host} 
+                      onChange={e => setHost(e.target.value)}
+                      className="bg-transparent border-0 outline-0 text-[13.5px] font-bold flex-1"
+                      placeholder="192.168.x.x"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-[11px] font-bold text-muted-foreground uppercase">API Port</Label>
-                  <Input 
-                    value={port} 
-                    onChange={e => setPort(e.target.value)}
-                    className="bg-secondary/30 border-border h-11 font-bold" 
-                    placeholder="3000"
-                  />
+                <div className="flex flex-col gap-2 rd2-field-group">
+                  <label className="text-[11px] font-black text-[#5C6573] uppercase tracking-wider">API Port</label>
+                  <div className="flex items-center gap-2 px-3 py-2.5 bg-[#F1F2F4] border border-black/5 rounded-xl rd2-field">
+                    <input 
+                      value={port} 
+                      onChange={e => setPort(e.target.value)}
+                      className="bg-transparent border-0 outline-0 text-[13.5px] font-bold flex-1"
+                      placeholder="3000"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="p-4 bg-muted/30 rounded-lg border border-border space-y-2">
-                <div className="flex items-center gap-2 text-xs font-bold text-foreground">
-                  <Shield className="w-4 h-4 text-emerald-500" /> Aktif Sunucu Anahtarı (Key)
+              <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100 flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-[12px] font-black text-emerald-800">
+                  <Shield className="w-4 h-4" /> Aktif Sunucu Anahtarı (Key)
                 </div>
-                <p className="text-[11px] text-muted-foreground font-mono break-all bg-white/50 dark:bg-black/20 p-2 rounded border border-border/50">
+                <p className="text-[11px] text-emerald-700 font-mono font-bold break-all bg-white/60 p-2 rounded-lg border border-emerald-200/50">
                   {serverKey}
                 </p>
               </div>
@@ -109,36 +106,36 @@ export default function BuilderPage() {
           </div>
 
           {/* Master Deployment Section */}
-          <div className="bg-brand-ink text-white rounded-brand-lg shadow-brand overflow-hidden relative group">
-            <div className="p-8 space-y-6 relative z-10">
-              <div className="space-y-2">
-                <div className="inline-flex items-center gap-2 px-2 py-0.5 rounded bg-brand-yellow text-brand-ink text-[9px] font-black uppercase tracking-widest">Önerilen</div>
+          <div className="bg-[#0E1116] text-white rounded-xl shadow-xl overflow-hidden relative group">
+            <div className="p-8 flex flex-col gap-6 relative z-10">
+              <div className="flex flex-col gap-2">
+                <div className="inline-flex items-center w-fit px-2 py-0.5 rounded bg-[#FFCC00] text-[#0E1116] text-[9px] font-black uppercase tracking-widest">Önerilen</div>
                 <h3 className="text-xl font-black text-white flex items-center gap-2">
-                  <Terminal className="w-6 h-6 text-brand-yellow" /> PowerShell Tek Tık Kurulum
+                  <Terminal className="w-6 h-6 text-[#FFCC00]" /> PowerShell Tek Tık Kurulum
                 </h3>
-                <p className="text-white/60 text-sm max-w-[500px]">
-                  Bu komut RustDesk 1.4.6'yı otomatik indirir, yapılandırır ve <b>RMM Ajanını</b> sisteme servis olarak kurar.
+                <p className="text-white/60 text-sm max-w-[500px] font-bold">
+                  Bu komut RustDesk 1.4.6'yı otomatik indirir, yapılandırır ve <b className="text-white">RMM Ajanını</b> sisteme servis olarak kurar.
                 </p>
               </div>
 
               <div className="relative group/cmd">
-                <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl p-5 font-mono text-sm text-brand-yellow overflow-x-auto whitespace-nowrap scrollbar-hide ring-1 ring-white/5">
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-5 font-mono text-sm text-[#FFCC00] overflow-x-auto whitespace-nowrap scrollbar-hide ring-1 ring-white/5">
                   <span className="text-white/30 mr-2">$</span>
                   {installCommand}
                 </div>
                 <button
                   onClick={copyToClipboard}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 bg-brand-yellow text-brand-ink rounded-lg hover:scale-105 active:scale-95 transition-all shadow-xl"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 bg-[#FFCC00] text-[#0E1116] rounded-lg hover:scale-105 active:scale-95 transition-all shadow-xl"
                 >
                   {copied ? <Check className="w-4 h-4 stroke-[3]" /> : <Copy className="w-4 h-4 stroke-[3]" />}
                 </button>
               </div>
 
               {/* Kaldırma Komutu */}
-              <div className="space-y-3 pt-4 border-t border-white/5">
+              <div className="flex flex-col gap-3 pt-4 border-t border-white/5">
                 <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Sistemden Kaldırma (Uninstall)</p>
                 <div className="relative group/cmd">
-                  <div className="bg-black/20 border border-white/5 rounded-xl p-4 font-mono text-xs text-red-400 overflow-x-auto whitespace-nowrap scrollbar-hide">
+                  <div className="bg-white/5 border border-white/5 rounded-xl p-4 font-mono text-xs text-red-400 overflow-x-auto whitespace-nowrap scrollbar-hide">
                     <span className="text-white/20 mr-2">$</span>
                     {`irm "http://${host}:${port}/api/rustdesk/builder/uninstall" | iex`}
                   </div>
@@ -156,69 +153,63 @@ export default function BuilderPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 text-[10px] text-white/40 font-bold uppercase tracking-widest">
+              <div className="flex items-center gap-4 text-[10px] text-white/40 font-black uppercase tracking-widest">
                 <span className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-emerald-500" /> Tam Otomatik</span>
                 <span className="flex items-center gap-1.5"><Cpu className="w-3.5 h-3.5 text-blue-400" /> RMM Ajanı Dahil</span>
-                <span className="flex items-center gap-1.5"><Download className="w-3.5 h-3.5 text-brand-yellow" /> v1.4.6 Core</span>
+                <span className="flex items-center gap-1.5"><Download className="w-3.5 h-3.5 text-[#FFCC00]" /> v1.4.6 Core</span>
               </div>
             </div>
-            <div className="absolute top-0 right-0 w-64 h-64 bg-brand-yellow/5 rounded-full blur-[100px] -mr-32 -mt-32" />
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#FFCC00]/5 rounded-full blur-[100px] -mr-32 -mt-32" />
           </div>
         </div>
 
         {/* Individual Packages */}
-        <div className="space-y-6">
-          <div className="bg-card rounded-brand-lg border border-border shadow-brand-sm overflow-hidden h-fit">
-            <div className="px-6 py-4 border-b border-border bg-muted/20">
-              <h2 className="text-[11px] font-black text-brand-ink uppercase tracking-widest">Bireysel Paketler</h2>
+        <div className="lg:col-span-4 flex flex-col gap-6">
+          <div className="bg-white border border-black/5 rounded-xl shadow-sm overflow-hidden rd2-card p-0 h-fit">
+            <div className="px-5 py-3 border-b border-black/[0.03] bg-[#F1F2F4]/30 rd2-card-head mb-0">
+              <h2 className="text-[11px] font-black text-[#0E1116] uppercase tracking-widest">Bireysel Paketler</h2>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-5 flex flex-col gap-4">
               {downloads.map((d) => (
-                <div key={d.name} className="group p-4 border border-border rounded-xl hover:border-primary/50 hover:bg-primary/5 transition-all">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-all">
-                        <Download className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-foreground">{d.name}</p>
-                        <p className="text-[10px] text-muted-foreground font-black uppercase tracking-tight">{d.type} Dosyası</p>
-                      </div>
+                <div key={d.name} className="group p-4 border border-black/5 rounded-xl hover:bg-[#F1F2F4]/50 transition-all rd2-pkg-row">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-lg bg-[#F1F2F4] flex items-center justify-center text-[#5C6573] group-hover:bg-[#FFCC00]/20 group-hover:text-[#0E1116] transition-all rd2-pkg-icon">
+                      <Download className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-black text-[#0E1116]">{d.name}</p>
+                      <p className="text-[10px] text-[#8B92A0] font-black uppercase tracking-tight">{d.type} Dosyası</p>
                     </div>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full text-[10px] font-black uppercase tracking-widest group-hover:bg-primary group-hover:text-primary-foreground transition-all"
+                  <button 
+                    className="w-full py-2 rounded-lg bg-white border border-black/5 text-[11px] font-black uppercase tracking-widest text-[#0E1116] hover:bg-[#FFCC00] hover:border-[#FFCC00] transition-all rd2-btn rd2-btn-sm"
                     onClick={() => {
-                      const customizedName = `rustdesk-host=${host}-key=${serverKey.trim()}.exe`;
-                      // Client-side download logic could go here or link to a proxy
                       window.open(`https://github.com/rustdesk/rustdesk/releases/download/1.4.6/${d.file}`, '_blank');
                     }}
                   >
                     Resmi Paketi İndir
-                  </Button>
+                  </button>
                 </div>
               ))}
               
-              <div className="pt-4 mt-4 border-t border-border">
+              <div className="pt-4 mt-2 border-t border-black/[0.03]">
                 <a 
                   href="https://github.com/rustdesk/rustdesk/releases/tag/1.4.6" 
                   target="_blank" 
-                  className="flex items-center justify-center gap-2 text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors"
+                  className="flex items-center justify-center gap-2 text-[11px] font-black text-[#8B92A0] hover:text-[#0E1116] transition-colors"
                 >
-                  <ExternalLink className="w-3 h-3" /> Tüm Sürümleri Gör (GitHub)
+                  <ExternalLink className="w-3.5 h-3.5" /> Tüm Sürümleri Gör (GitHub)
                 </a>
               </div>
             </div>
           </div>
 
           {/* Tips */}
-          <div className="bg-secondary/30 rounded-brand-lg p-6 space-y-4">
-            <div className="flex items-center gap-2 text-foreground font-bold text-xs uppercase tracking-tight">
-              <Info className="w-4 h-4 text-blue-500" /> Önemli Not
+          <div className="bg-[#FFCC00]/10 border border-[#FFCC00]/20 rounded-xl p-5 flex flex-col gap-3 rd2-info-panel">
+            <div className="flex items-center gap-2 text-[#0E1116] font-black text-[11px] uppercase tracking-wider">
+              <Info className="w-4 h-4 text-[#FFCC00]" /> Önemli Not
             </div>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
+            <p className="text-[12px] text-[#5C6573] font-bold leading-relaxed">
               Windows üzerinde isimlendirme ile otomatik konfigürasyon için indirilen <b>.exe</b> dosyasının adını değiştirmeyin. PowerShell kurulumu bu işlemi sizin yerinize otomatik yapar.
             </p>
           </div>
