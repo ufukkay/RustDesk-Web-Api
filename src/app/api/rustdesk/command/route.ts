@@ -23,15 +23,27 @@ export async function POST(req: Request) {
 
     if (!finalCommand) return NextResponse.json({ success: false, message: "Komut bulunamadı." });
 
+    // Cihazın hostname bilgisini bul
+    const INFO_FILE = path.join(process.cwd(), "scripts", "device_info.json");
+    let hostname = String(deviceId);
+    if (fs.existsSync(INFO_FILE)) {
+      try {
+        const info = JSON.parse(fs.readFileSync(INFO_FILE, "utf-8"));
+        if (info[deviceId] && info[deviceId].hostname) {
+          hostname = info[deviceId].hostname.toUpperCase();
+        }
+      } catch (e) {}
+    }
+
     // Kuyruğu oku
     let queue: Record<string, string[]> = {};
     if (fs.existsSync(QUEUE_FILE)) {
       try { queue = JSON.parse(fs.readFileSync(QUEUE_FILE, "utf-8")); } catch (e) {}
     }
 
-    // Komutu cihaza özel kuyruğa ekle
-    if (!queue[String(deviceId)]) queue[String(deviceId)] = [];
-    queue[String(deviceId)].push(finalCommand);
+    // Komutu hostname bazlı kuyruğa ekle
+    if (!queue[hostname]) queue[hostname] = [];
+    queue[hostname].push(finalCommand);
 
     // Kuyruğu kaydet
     fs.writeFileSync(QUEUE_FILE, JSON.stringify(queue, null, 2));

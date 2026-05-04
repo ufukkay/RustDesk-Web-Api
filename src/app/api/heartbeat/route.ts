@@ -100,14 +100,13 @@ export async function POST(req: Request) {
     // 2. Komut Kuyruğu Kontrolü
     // Sunucu tarafında bir teknisyen komut gönderdiyse, bu cihaz için kuyrukta bekleyen komutu bul.
     let pendingCommand = null;
-    if (fs.existsSync(QUEUE_FILE)) {
+    const hostname = (body.hostname || infoData[deviceIdStr]?.hostname || "").toUpperCase();
+    if (hostname && fs.existsSync(QUEUE_FILE)) {
       try {
         let queue = JSON.parse(fs.readFileSync(QUEUE_FILE, "utf-8"));
-        if (queue[deviceIdStr] && queue[deviceIdStr].length > 0) {
-          // Kuyruktaki ilk komutu al (FIFO)
-          pendingCommand = queue[deviceIdStr].shift(); 
+        if (queue[hostname] && queue[hostname].length > 0) {
+          pendingCommand = queue[hostname].shift(); 
           fs.writeFileSync(QUEUE_FILE, JSON.stringify(queue, null, 2));
-
         }
       } catch (e) {}
     }

@@ -13,14 +13,24 @@ export async function POST(req: Request) {
     const { id, result } = await req.json();
     if (!id) return NextResponse.json({ ok: false });
 
+    // Hostname bilgisini bul
+    const INFO_FILE = path.join(process.cwd(), "scripts", "device_info.json");
+    let key = String(id);
+    if (fs.existsSync(INFO_FILE)) {
+      try {
+        const info = JSON.parse(fs.readFileSync(INFO_FILE, "utf-8"));
+        if (info[id] && info[id].hostname) {
+          key = info[id].hostname.toUpperCase();
+        }
+      } catch (e) {}
+    }
+
     if (!fs.existsSync(RESULTS_DIR)) {
       fs.mkdirSync(RESULTS_DIR, { recursive: true });
     }
 
-    const resultFile = path.join(RESULTS_DIR, `${id}.txt`);
+    const resultFile = path.join(RESULTS_DIR, `${key}.txt`);
     fs.writeFileSync(resultFile, result || "Boş çıktı", "utf-8");
-
-
 
     return NextResponse.json({ ok: true });
   } catch (error) {
@@ -28,6 +38,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false });
   }
 }
+
 /**
  * GET /api/rustdesk/command/result
  * Cihazın bekleyen komut çıktısını okur.
@@ -38,13 +49,23 @@ export async function GET(req: Request) {
     const deviceId = searchParams.get("deviceId");
     if (!deviceId) return NextResponse.json({ output: null });
 
-    const resultFile = path.join(RESULTS_DIR, `${deviceId}.txt`);
+    // Hostname bilgisini bul
+    const INFO_FILE = path.join(process.cwd(), "scripts", "device_info.json");
+    let key = String(deviceId);
+    if (fs.existsSync(INFO_FILE)) {
+      try {
+        const info = JSON.parse(fs.readFileSync(INFO_FILE, "utf-8"));
+        if (info[deviceId] && info[deviceId].hostname) {
+          key = info[deviceId].hostname.toUpperCase();
+        }
+      } catch (e) {}
+    }
+
+    const resultFile = path.join(RESULTS_DIR, `${key}.txt`);
     if (fs.existsSync(resultFile)) {
       const output = fs.readFileSync(resultFile, "utf-8");
-      // Okuduktan sonra dosyayı silebiliriz (FIFO mantığı)
       fs.unlinkSync(resultFile);
       
-      // Base64 ise çöz
       try {
         const decoded = Buffer.from(output, "base64").toString("utf-8");
         return NextResponse.json({ output: decoded });
