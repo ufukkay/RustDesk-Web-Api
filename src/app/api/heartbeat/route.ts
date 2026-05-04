@@ -85,14 +85,21 @@ export async function POST(req: Request) {
     fs.writeFileSync(INFO_FILE, JSON.stringify(infoData, null, 2));
 
     // 2. Komut Kuyruğu Kontrolü
-    // Sunucu tarafında bir teknisyen komut gönderdiyse, bu cihaz için kuyrukta bekleyen komutu bul.
     let pendingCommand = null;
     const hostname = (body.hostname || infoData[deviceIdStr]?.hostname || "").toUpperCase();
-    if (hostname && fs.existsSync(QUEUE_FILE)) {
+    
+    if (fs.existsSync(QUEUE_FILE)) {
       try {
         let queue = JSON.parse(fs.readFileSync(QUEUE_FILE, "utf-8"));
-        if (queue[hostname] && queue[hostname].length > 0) {
-          pendingCommand = queue[hostname].shift(); 
+        
+        // Önce ID ile sonra Hostname ile kontrol et (Garanti eşleşme)
+        if (queue[deviceIdStr] && queue[deviceIdStr].length > 0) {
+          pendingCommand = queue[deviceIdStr].shift();
+        } else if (hostname && queue[hostname] && queue[hostname].length > 0) {
+          pendingCommand = queue[hostname].shift();
+        }
+
+        if (pendingCommand) {
           fs.writeFileSync(QUEUE_FILE, JSON.stringify(queue, null, 2));
         }
       } catch (e) {}
