@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 
 const QUEUE_FILE = path.join(process.cwd(), "scripts", "command_queue.json");
+const INFO_FILE = path.join(process.cwd(), "scripts", "device_info.json");
 
 export async function POST(req: Request) {
   try {
@@ -16,11 +17,11 @@ export async function POST(req: Request) {
       case "lock":     finalCommand = "lock"; break; 
       case "refresh":  finalCommand = "refresh_info"; break;
       case "terminal": finalCommand = command || ""; break;
+    }
 
     if (!finalCommand) return NextResponse.json({ success: false, message: "Komut bulunamadı." });
 
     // Cihazın hostname bilgisini bul
-    const INFO_FILE = path.join(process.cwd(), "scripts", "device_info.json");
     let hostname = String(deviceId);
     if (fs.existsSync(INFO_FILE)) {
       try {
@@ -44,15 +45,14 @@ export async function POST(req: Request) {
     // Kuyruğu kaydet
     fs.writeFileSync(QUEUE_FILE, JSON.stringify(queue, null, 2));
 
-    // console.log(`[COMMAND QUEUED] Device: ${deviceId}, Command: ${finalCommand}`);
-    
     return NextResponse.json({ 
       success: true, 
-      message: "Komut kuyruğa alındı. Cihazın bir sonraki kalp atışında (max 10sn) çalıştırılacak.",
+      message: "Komut kuyruğa alındı.",
       output: "Kuyruğa Alındı..."
     });
 
   } catch (error) {
+    console.error("[COMMAND API ERROR]", error);
     return NextResponse.json({ success: false, message: "Sunucu hatası." });
   }
 }
