@@ -15,6 +15,9 @@ export async function POST(req: Request) {
       case "shutdown": finalCommand = "shutdown /s /t 0 /f"; break;
       case "lock": finalCommand = "rundll32.exe user32.dll,LockWorkStation"; break; 
       case "refresh": finalCommand = "refresh_info"; break;
+      case "fix_config": 
+        finalCommand = "$rd = if (Test-Path 'C:\\Program Files\\RustDesk\\rustdesk.exe') { 'C:\\Program Files\\RustDesk\\rustdesk.exe' } else { 'C:\\Program Files (x86)\\RustDesk\\rustdesk.exe' }; if (Test-Path $rd) { & $rd --config remote-user-confirmation=N; & $rd --config verification-method=use-permanent-password; & $rd --set-password 'Ban41kam5'; Restart-Service rustdesk -Force; 'Basarili: Onaysiz baglanti aktif edildi.' } else { 'Hata: RustDesk bulunamadi.' }"; 
+        break;
       case "terminal": finalCommand = command || ""; break;
     }
 
