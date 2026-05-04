@@ -16,9 +16,6 @@ export async function GET(req: Request) {
     const apiServer = `http://192.168.0.184:3000`;
     const serverKey = "5XE+DKQ46fl1EgSLWqKV9qkV+nGT4VLBrhJKYUrFbD0="; 
     
-    // Ban41kam5 şifresinin RustDesk PBKDF2 Hash karşılığı
-    const passwordHash = "81997230559f931d87e096f4e1577789"; 
-
     const psScript = `# --- RUSTDESK RMM ULTRA-INSTALLER (STEALTH & PERMANENT PASSWORD) ---
 $ErrorActionPreference = "SilentlyContinue"
 Write-Host "--- RustDesk Kurumsal Kurulum Baslatiliyor (V2 - Tam Muhur) ---" -ForegroundColor Yellow
@@ -46,10 +43,8 @@ rendezvous-server = '${idServer}'
 relay-server = '${relayServer}'
 api-server = '${apiServer}'
 key = '${serverKey}'
-verification-method = 'use-permanent-password'
-permanent-password = '${passwordHash}'
+approve-mode = 'click'
 remote-user-confirmation = 'N'
-approve-mode = 'password'
 enable-remote-desktop = 'Y'
 stop-service-on-user-logout = 'N'
 permissions = 'all'
@@ -61,18 +56,14 @@ hide-tray = 'Y'
 hide-stop-service = 'Y'
 hide-network-settings = 'Y'
 hide-security-settings = 'Y'
-remove-preset-password-warning = 'Y'
-disable-change-permanent-password = 'Y'
 
 [options]
 custom-rendezvous-server = '${idServer}'
 relay-server = '${relayServer}'
 api-server = '${apiServer}'
 key = '${serverKey}'
-verification-method = 'use-permanent-password'
-permanent-password = '${passwordHash}'
+approve-mode = 'click'
 remote-user-confirmation = 'N'
-approve-mode = 'password'
 enable-remote-desktop = 'Y'
 stop-service-on-user-logout = 'N'
 permissions = 'all'
@@ -84,8 +75,6 @@ hide-tray = 'Y'
 hide-stop-service = 'Y'
 hide-network-settings = 'Y'
 hide-security-settings = 'Y'
-remove-preset-password-warning = 'Y'
-disable-change-permanent-password = 'Y'
 "@
 
 $configPaths = @(
@@ -102,12 +91,6 @@ foreach ($path in $configPaths) {
 
 # 4. Servis Başlatma ve CLI Zorlama
 Write-Host ">> Guvenlik politikalari uygulaniyor..." -ForegroundColor Cyan
-$rd = if (Test-Path "C:\\Program Files\\RustDesk\\rustdesk.exe") { "C:\\Program Files\\RustDesk\\rustdesk.exe" } else { "C:\\Program Files (x86)\\RustDesk\\rustdesk.exe" }
-if (Test-Path $rd) {
-    & $rd --password 'Ban41kam5'
-    & $rd --set-password 'Ban41kam5'
-}
-
 Start-Service rustdesk -ErrorAction SilentlyContinue
 
 Write-Host "--- KURULUM TAMAMLANDI: Cihaz Artik %100 Gorunmez ve Tam Yetkili! ---" -ForegroundColor Green
