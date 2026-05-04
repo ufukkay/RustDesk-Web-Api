@@ -132,12 +132,21 @@ Set args = WScript.Arguments
 Dim id
 id = args(0)
 id = Replace(id, "rdrmm://", "")
+id = Replace(id, "/", "")
+
 Dim rdExe
 rdExe = "C:\Program Files\RustDesk\rustdesk.exe"
 If Not CreateObject("Scripting.FileSystemObject").FileExists(rdExe) Then
     rdExe = "C:\Program Files (x86)\RustDesk\rustdesk.exe"
 End If
-CreateObject("WScript.Shell").Run """" & rdExe & """ --connect " & id & " ${password}", 0, False
+
+' Sifreyi panoya kopyala (kullanici Ctrl+V ile yapistirabilir)
+Dim oShell
+Set oShell = CreateObject("WScript.Shell")
+oShell.Run "cmd /c echo ${password}| clip", 0, True
+
+' RustDesk penceresi gorunur ac, ID girilmis olarak
+oShell.Run """" & rdExe & """ --connect " & id, 1, False
 '@
 [System.IO.File]::WriteAllText("$rmmDir\\connect.vbs", $connectVbs, (New-Object System.Text.UTF8Encoding($false)))
 
