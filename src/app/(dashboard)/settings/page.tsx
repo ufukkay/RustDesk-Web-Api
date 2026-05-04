@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Server, Save, ShieldCheck, Globe, Key, Eye, EyeOff, Activity, Database, Network, Mail, History, Layout, MailCheck } from "lucide-react";
+import { Server, Save, ShieldCheck, Globe, Key, Eye, EyeOff, Activity, Database, Network, Mail, History, Layout, MailCheck, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -66,135 +66,220 @@ export default function SettingsPage() {
   ];
 
   return (
-    <div className="p-8 space-y-8 max-w-[1400px] mx-auto animate-in fade-in duration-500">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold text-foreground tracking-tight">Sistem Ayarları</h1>
-        <p className="text-sm text-muted-foreground">Portal konfigürasyonunu ve bağlantıları yönetin.</p>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex items-center gap-1 border-b border-border">
+    <div className="rd2-page">
+      <div className="rd2-tabs">
         {tabs.map(({ key, label, icon: Icon }) => (
           <button
             key={key}
             onClick={() => setActiveTab(key)}
-            className={`px-5 py-3 text-xs font-semibold transition-all flex items-center gap-2 border-b-2 -mb-px ${
-              activeTab === key
-                ? "border-primary text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-t-md"
-            }`}
+            className={`rd2-tab${activeTab === key ? " on" : ""}`}
+            style={activeTab === key ? { borderColor: "#FFCC00", color: "#0E1116" } : {}}
           >
-            <Icon className="w-4 h-4" />
-            {label}
+            <Icon width="14" height="14" /> {label}
           </button>
         ))}
       </div>
 
-      <div className="max-w-6xl">
-        {activeTab === "server" && (
-          <div className="grid lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-6">
-              <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-border bg-muted/30 flex items-center gap-2">
-                  <Server className="w-4 h-4 text-primary" />
-                  <h3 className="font-semibold text-foreground text-sm uppercase">RustDesk Sunucu Yapılandırması</h3>
+      {activeTab === "server" && (
+        <div className="rd2-2col">
+          <section className="rd2-card">
+            <div className="rd2-card-head">
+              <div>
+                <h3>RustDesk Sunucu Yapılandırması</h3>
+                <p className="rd2-muted-sm">HBBS, HBBR ve API bağlantı bilgileri</p>
+              </div>
+            </div>
+            <div className="rd2-form">
+              <div className="rd2-form-row">
+                <div className="rd2-field-group">
+                  <label>ID Sunucu (hbbs)</label>
+                  <div className="rd2-field">
+                    <input 
+                      value={settings.idServer} 
+                      onChange={e => setSettings({...settings, idServer: e.target.value})}
+                      placeholder="192.168.x.x"
+                    />
+                  </div>
                 </div>
-                
-                <div className="p-8 space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label className="text-[11px] font-bold text-muted-foreground uppercase">ID Sunucu (hbbs)</Label>
-                      <Input 
-                        value={settings.idServer} 
-                        onChange={e => setSettings({...settings, idServer: e.target.value})}
-                        className="bg-secondary/30" 
-                        placeholder="Örn: 192.168.0.184"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[11px] font-bold text-muted-foreground uppercase">Relay Sunucu (hbbr)</Label>
-                      <Input 
-                        value={settings.relayServer} 
-                        onChange={e => setSettings({...settings, relayServer: e.target.value})}
-                        className="bg-secondary/30" 
-                        placeholder="Örn: 192.168.0.184"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[11px] font-bold text-muted-foreground uppercase">API Sunucu (Dashboard URL)</Label>
-                      <Input 
-                        value={settings.apiServer} 
-                        onChange={e => setSettings({...settings, apiServer: e.target.value})}
-                        className="bg-secondary/30" 
-                        placeholder="Örn: http://192.168.0.184:3000"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[11px] font-bold text-muted-foreground uppercase">Sunucu Key</Label>
-                      <Input 
-                        value={settings.serverKey} 
-                        onChange={e => setSettings({...settings, serverKey: e.target.value})}
-                        className="bg-secondary/30 font-mono text-xs" 
-                        placeholder="Public key içeriği"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 pt-4 border-t border-border">
-                    <Label className="text-[11px] font-bold text-muted-foreground uppercase">Varsayılan Bağlantı Şifresi</Label>
-                    <div className="relative">
-                      <Input 
-                        type={showPass ? "text" : "password"}
-                        value={settings.defaultPassword} 
-                        onChange={e => setSettings({...settings, defaultPassword: e.target.value})}
-                        className="pr-10 bg-secondary/30" 
-                        placeholder="Örn: Ban41kam5"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPass(!showPass)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      >
-                        {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-end pt-6 border-t border-border">
-                    <Button onClick={handleSave} disabled={isSaving} className="font-bold">
-                      <Save className="w-4 h-4 mr-2" />
-                      {isSaving ? "Kaydediliyor..." : "Ayarları Kaydet"}
-                    </Button>
+                <div className="rd2-field-group">
+                  <label>Relay (hbbr)</label>
+                  <div className="rd2-field">
+                    <input 
+                      value={settings.relayServer} 
+                      onChange={e => setSettings({...settings, relayServer: e.target.value})}
+                      placeholder="192.168.x.x"
+                    />
                   </div>
                 </div>
               </div>
+              <div className="rd2-field-group">
+                <label>API Sunucu URL</label>
+                <div className="rd2-field">
+                  <Globe width="14" height="14" />
+                  <input 
+                    value={settings.apiServer} 
+                    onChange={e => setSettings({...settings, apiServer: e.target.value})}
+                    placeholder="http://192.168.x.x:3000"
+                  />
+                </div>
+              </div>
+              <div className="rd2-field-group">
+                <label>Sunucu Key</label>
+                <div className="rd2-field">
+                  <Key width="14" height="14" />
+                  <input 
+                    value={settings.serverKey} 
+                    onChange={e => setSettings({...settings, serverKey: e.target.value})}
+                    className="rd2-mono" 
+                    style={{ fontSize: 11 }} 
+                    readOnly
+                    placeholder="AAAA..."
+                  />
+                </div>
+              </div>
+              <div className="rd2-field-group">
+                <label>Varsayılan Şifre</label>
+                <div className="rd2-field" style={{ position: "relative" }}>
+                  <ShieldCheck width="14" height="14" />
+                  <input 
+                    type={showPass ? "text" : "password"}
+                    value={settings.defaultPassword} 
+                    onChange={e => setSettings({...settings, defaultPassword: e.target.value})}
+                    placeholder="secretpass"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPass(!showPass)}
+                    style={{ position: "absolute", right: 10, background: "transparent", border: 0, cursor: "pointer", color: "var(--muted)" }}
+                  >
+                    {showPass ? <EyeOff width="14" height="14" /> : <Eye width="14" height="14" />}
+                  </button>
+                </div>
+              </div>
+              <div className="rd2-form-actions">
+                <button 
+                  className="rd2-btn rd2-btn-primary" 
+                  style={{ background: "#FFCC00", color: "#0E1116" }}
+                  onClick={handleSave}
+                  disabled={isSaving}
+                >
+                  <Save width="14" height="14" /> {isSaving ? "Kaydediliyor..." : "Kaydet"}
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <div className="rd2-info-panel" style={{ background: "#FFCC0018", border: "1px solid #FFCC0044" }}>
+            <div className="rd2-info-mark" style={{ background: "#FFCC00", color: "#0E1116" }}>
+              <ShieldCheck width="17" height="17" />
+            </div>
+            <h4>Güvenlik İpucu</h4>
+            <p>Sunucu anahtarı (key) her yeniden başlatmada değişebilir. Builder sayfasındaki anahtar her zaman güncel olarak okunur.</p>
+            <ul>
+              {["hbbs varsayılan port: 21115-21117", "hbbr varsayılan port: 21117", "API portu: 3000"].map((s, i) => (
+                <li key={i}>
+                  <span className="rd2-tick rd2-tick-sm" style={{ background: "#0E1116", color: "#FFCC00" }}>
+                    <Check width="9" height="9" />
+                  </span>
+                  {s}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "smtp" && (
+        <section className="rd2-card">
+          <div className="rd2-card-head">
+            <div>
+              <h3>SMTP & Mail Ayarları</h3>
+              <p className="rd2-muted-sm">Bildirim e-postaları bu sunucu üzerinden gönderilir</p>
             </div>
           </div>
-        )}
-
-        {activeTab === "smtp" && (
-          <div className="bg-card rounded-xl border border-border p-8">
-            <h3 className="font-bold mb-4">SMTP Ayarları</h3>
-            <p className="text-sm text-muted-foreground italic">Yakında eklenecek...</p>
+          <div className="rd2-form">
+            <div className="rd2-form-row">
+              <div className="rd2-field-group">
+                <label>SMTP Host</label>
+                <div className="rd2-field"><input defaultValue="smtp.rustdesk.local" /></div>
+              </div>
+              <div className="rd2-field-group">
+                <label>Port</label>
+                <div className="rd2-field"><input defaultValue="587" /></div>
+              </div>
+            </div>
+            <div className="rd2-field-group">
+              <label>E-posta</label>
+              <div className="rd2-field"><Mail width="14" height="14" /><input defaultValue="no-reply@rustdesk.local" /></div>
+            </div>
+            <div className="rd2-field-group">
+              <label>Şifre / App Password</label>
+              <div className="rd2-field"><Key width="14" height="14" /><input type="password" defaultValue="apppassword" /></div>
+            </div>
+            <div className="rd2-form-actions">
+              <button className="rd2-btn rd2-btn-ghost"><Mail width="13" height="13" /> Test Maili</button>
+              <button className="rd2-btn rd2-btn-primary" style={{ background: "#FFCC00", color: "#0E1116" }}><Check width="14" height="14" /> Kaydet</button>
+            </div>
           </div>
-        )}
+        </section>
+      )}
 
-        {activeTab === "logs" && (
-          <div className="bg-card rounded-xl border border-border p-8">
-            <h3 className="font-bold mb-4">Mail Logları</h3>
-            <p className="text-sm text-muted-foreground italic">Henüz kayıt yok.</p>
+      {activeTab === "logs" && (
+        <section className="rd2-card rd2-card-flush">
+          <div className="rd2-card-head" style={{ padding: "14px 18px", marginBottom: 0 }}>
+            <h3>Mail Logları</h3>
           </div>
-        )}
+          <table className="rd2-table">
+            <thead>
+              <tr><th>Tarih</th><th>Alıcı</th><th>Konu</th><th>Durum</th></tr>
+            </thead>
+            <tbody>
+              {[
+                { t: "Bugün, 14:30", to: "admin@rustdesk.local", subj: "Yeni teknisyen: Selin Demir", ok: true },
+                { t: "Dün, 09:15", to: "teknik@rustdesk.local", subj: "Güvenlik uyarısı: SVR-DB-01", ok: true },
+                { t: "28 Nis, 16:45", to: "ufuk@rustdesk.local", subj: "Şifre sıfırlama isteği", ok: false },
+              ].map((r, i) => (
+                <tr key={i} className="rd2-tr-hover">
+                  <td className="rd2-cell-muted">{r.t}</td>
+                  <td className="rd2-mono">{r.to}</td>
+                  <td>{r.subj}</td>
+                  <td>
+                    {r.ok ? (
+                      <span className="rd2-pill rd2-pill-on"><Check width="11" height="11" /> Başarılı</span>
+                    ) : (
+                      <span className="rd2-pill rd2-pill-bad">Hata</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
 
-        {activeTab === "updates" && <UpdateChecker />}
-
-        {activeTab === "brand" && (
-          <div className="bg-card rounded-xl border border-border p-8">
-            <h3 className="font-bold mb-4">Görünüm Ayarları</h3>
-            <p className="text-sm text-muted-foreground italic">Yakında eklenecek...</p>
+      {activeTab === "updates" && (
+        <section className="rd2-card">
+          <div className="rd2-card-head"><h3>Güncellemeler</h3></div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div className="rd2-update-row">
+              <div>
+                <div style={{ fontWeight: 700 }}>RustDesk Portal</div>
+                <div className="rd2-muted-sm">Mevcut: v1.0.0</div>
+              </div>
+              <span className="rd2-pill rd2-pill-on"><Check width="11" height="11" /> Güncel</span>
+            </div>
+            <div className="rd2-update-row">
+              <div>
+                <div style={{ fontWeight: 700 }}>RustDesk Core</div>
+                <div className="rd2-muted-sm">Mevcut: v1.4.6 · Yeni: v1.4.7</div>
+              </div>
+              <button className="rd2-btn rd2-btn-sm" style={{ background: "#FFCC00", color: "#0E1116" }}>
+                <MailCheck width="13" height="13" /> Güncelle
+              </button>
+            </div>
           </div>
-        )}
-      </div>
+        </section>
+      )}
     </div>
   );
 }
