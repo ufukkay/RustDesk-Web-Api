@@ -115,6 +115,8 @@ export async function GET() {
           ram: extra.ram || extra.memory || "-",
           disk: extra.disk || extra.storage || "-",
           version: extra.version || "-",
+          gateway: extra.gateway || "-",
+          dns: extra.dns || "-",
           net_details: localNets.length > 0 ? localNets : (extra.net_details || []),
           isDuplicate: extra.isDuplicate || false
         };

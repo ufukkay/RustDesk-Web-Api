@@ -116,15 +116,36 @@ while(\$true) {
         }
         if (!\$id) { \$id = \$env:COMPUTERNAME }
 
-        # IP (VPN Atlama)
-        \$ip = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object {\$_.InterfaceAlias -notlike '*Loopback*' -and \$_.InterfaceAlias -notlike '*Forti*'} | Select-Object -First 1).IPAddress
-        if (!\$ip) { \$ip = "127.0.0.1" }
+        # IP ve Ağ Detayları
+        \$netConfig = Get-NetIPConfiguration | Where-Object { \$_.IPv4Address -ne \$null -and \$_.InterfaceAlias -notlike '*Loopback*' } | Select-Object -First 1
+        \$ip = \$netConfig.IPv4Address.IPAddress
+        \$gateway = \$netConfig.IPv4DefaultGateway.NextHop
+        \$dns = \$netConfig.DNSServer.ServerAddresses -join ", "
+        
+        # Disk Detayı
+        \$diskC = Get-PSDrive C
+        \$free = [math]::Round(\$diskC.Free/1GB, 2)
+        \$total = [math]::Round((\$diskC.Used+\$diskC.Free)/1GB, 2)
+        \$percent = [math]::Round(((\$total-\$free)/\$total)*100, 1)
+        \$diskStr = "\$free GB bos / \$total GB toplam (%\$percent dolu)"
 
-        # Disk
-        \$diskInfo = Get-PSDrive C | Select-Object @{N='Free';E={[math]::Round(\$_.Free/1GB,2)}}, @{N='Total';E={[math]::Round((\$_.Used+\$_.Free)/1GB,2)}}
-        \$disk = "\$(\$diskInfo.Free)GB / \$(\$diskInfo.Total)GB"
+        # Kullanıcı Bilgisi
+        \$currentUser = \$env:USERNAME
+        if (\$currentUser -eq "SYSTEM") {
+            \$currentUser = (Get-CimInstance Win32_ComputerSystem).UserName
+            if (\$currentUser -match "\\") { \$currentUser = \$currentUser.Split("\\")[1] }
+        }
 
-        \$body = @{ id="\$id"; hostname="\$env:COMPUTERNAME"; os="windows"; ip="\$ip"; disk="\$disk" } | ConvertTo-Json
+        \$body = @{ 
+            id="\$id"; 
+            hostname="\$env:COMPUTERNAME"; 
+            os="windows"; 
+            ip="\$ip"; 
+            disk="\$diskStr";
+            user="\$currentUser";
+            gateway="\$gateway";
+            dns="\$dns"
+        } | ConvertTo-Json
         \$res = Invoke-RestMethod -Uri "\$api/api/heartbeat" -Method Post -Body \$body -ContentType "application/json" -TimeoutSec 5
 
         if (\$res.command) {

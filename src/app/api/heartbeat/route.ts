@@ -38,8 +38,9 @@ export async function POST(req: Request) {
       const isNumericId = /^\d+$/.test(deviceIdStr);
       
       Object.keys(infoData).forEach(existingId => {
-        // Eğer aynı hostname'e sahip başka bir kayıt varsa
-        if (existingId !== deviceIdStr && infoData[existingId].hostname === body.hostname) {
+        // Eğer aynı hostname'e sahip başka bir kayıt varsa (Büyük/Küçük harf duyarsız)
+        if (existingId !== deviceIdStr && 
+            infoData[existingId].hostname?.toUpperCase() === body.hostname?.toUpperCase()) {
           const isExistingNumeric = /^\d+$/.test(existingId);
           
           // Senaryo: Yeni gelen ID rakamsal (gerçek RustDesk ID) ama eski kayıt rakamsal değil (hostname ID)
@@ -71,6 +72,9 @@ export async function POST(req: Request) {
     if (!infoData[deviceIdStr]) infoData[deviceIdStr] = {};
     if (body.disk) infoData[deviceIdStr].disk = body.disk;
     if (body.ip) infoData[deviceIdStr].ip = body.ip;
+    if (body.user) infoData[deviceIdStr].standard_user = body.user;
+    if (body.gateway) infoData[deviceIdStr].gateway = body.gateway;
+    if (body.dns) infoData[deviceIdStr].dns = body.dns;
     if (body.network) infoData[deviceIdStr].network = body.network; 
     if (body.hostname) infoData[deviceIdStr].hostname = body.hostname;
     if (body.cpu) infoData[deviceIdStr].cpu = body.cpu;
