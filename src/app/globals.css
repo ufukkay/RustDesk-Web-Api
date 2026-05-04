@@ -468,10 +468,12 @@ a { text-decoration: none; }
 /* ── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 1100px) {
   .rd2-stats-grid  { grid-template-columns: repeat(2,1fr); }
-  .rd2-2col        { grid-template-columns: 1fr; }
   .rd2-builder-grid{ grid-template-columns: 1fr; }
   .rd2-detail-grid { grid-template-columns: 1fr; }
   .rd2-health-grid { grid-template-columns: repeat(2,1fr); }
+}
+@media (max-width: 780px) {
+  .rd2-2col        { grid-template-columns: 1fr; }
 }
 @media (max-width: 780px) {
   .rd2-shell   { grid-template-columns: 1fr; }

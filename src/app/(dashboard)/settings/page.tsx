@@ -134,18 +134,18 @@ export default function SettingsPage() {
               </div>
               <div className="rd2-field-group">
                 <label>Varsayılan Şifre</label>
-                <div className="rd2-field" style={{ position: "relative" }}>
+                <div className="rd2-field">
                   <ShieldCheck width="14" height="14" />
-                  <input 
+                  <input
                     type={showPass ? "text" : "password"}
-                    value={settings.defaultPassword} 
+                    value={settings.defaultPassword}
                     onChange={e => setSettings({...settings, defaultPassword: e.target.value})}
                     placeholder="secretpass"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPass(!showPass)}
-                    style={{ position: "absolute", right: 10, background: "transparent", border: 0, cursor: "pointer", color: "var(--muted)" }}
+                    style={{ background: "transparent", border: 0, cursor: "pointer", color: "var(--muted)", padding: 0, display: "flex", flexShrink: 0 }}
                   >
                     {showPass ? <EyeOff width="14" height="14" /> : <Eye width="14" height="14" />}
                   </button>
