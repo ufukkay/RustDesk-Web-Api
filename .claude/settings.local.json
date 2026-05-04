@@ -4,7 +4,9 @@
       "WebFetch(domain:rustdesk.com)",
       "WebSearch",
       "WebFetch(domain:github.com)",
-      "PowerShell(git push origin main)"
+      "PowerShell(git push origin main)",
+      "PowerShell(git add \"src/app/api/rustdesk/builder/install/route.ts\")",
+      "PowerShell(git commit -m \"fix: store plain text password in TOML not MD5 hash - permanent-password field expects clear text`n`nCo-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>\")"
     ]
   }
 }

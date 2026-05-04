@@ -102,15 +102,25 @@ foreach ($path in $configPaths) {
     [System.IO.File]::WriteAllText($path, $toml, (New-Object System.Text.UTF8Encoding($false)))
 }
 
-# 4. CLI ile sifre zorla (aktif kullanici profili icin)
+# 4. Servisi baslat ve tam ayaga kalkmasini bekle
+Write-Host ">> Servis baslatiliyor..." -ForegroundColor Cyan
+Start-Service rustdesk -ErrorAction SilentlyContinue
+$waited = 0
+while ($waited -lt 15) {
+    $svc = Get-Service -Name "rustdesk" -ErrorAction SilentlyContinue
+    if ($svc -and $svc.Status -eq "Running") { break }
+    Start-Sleep -Seconds 1
+    $waited++
+}
+
+# 5. Servis calistiktan SONRA CLI ile sifreyi ayarla
 Write-Host ">> Sifre politikasi uygulaniyor..." -ForegroundColor Cyan
 $rd = if (Test-Path "C:\\Program Files\\RustDesk\\rustdesk.exe") { "C:\\Program Files\\RustDesk\\rustdesk.exe" } else { "C:\\Program Files (x86)\\RustDesk\\rustdesk.exe" }
 if (Test-Path $rd) {
     & $rd --password '${password}' 2>$null
+    Start-Sleep -Seconds 2
     & $rd --set-password '${password}' 2>$null
 }
-
-Start-Service rustdesk -ErrorAction SilentlyContinue
 
 # 5. rdrmm:// URI Scheme Handler Kurulumu (tüm kullanıcılar için)
 Write-Host ">> rdrmm:// URI handler kuruluyor..." -ForegroundColor Cyan
