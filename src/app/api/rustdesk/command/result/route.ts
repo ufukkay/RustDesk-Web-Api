@@ -18,12 +18,12 @@ export async function POST(req: Request) {
 
     // Hostname bilgisini bul
     const INFO_FILE = path.join(process.cwd(), "scripts", "device_info.json");
-    let key = String(id);
+    let key = String(deviceId);
     if (fs.existsSync(INFO_FILE)) {
       try {
         const info = JSON.parse(fs.readFileSync(INFO_FILE, "utf-8"));
-        if (info[id] && info[id].hostname) {
-          key = info[id].hostname.toUpperCase();
+        if (info[deviceId] && info[deviceId].hostname) {
+          key = info[deviceId].hostname.toUpperCase();
         }
       } catch (e) {}
     }
