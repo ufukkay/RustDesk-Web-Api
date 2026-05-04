@@ -110,7 +110,36 @@ if (Test-Path $rd) {
 
 Start-Service rustdesk -ErrorAction SilentlyContinue
 
-Write-Host "--- KURULUM TAMAMLANDI ---" -ForegroundColor Green
+# 5. rdrmm:// URI Scheme Handler Kurulumu (tüm kullanıcılar için)
+Write-Host ">> rdrmm:// URI handler kuruluyor..." -ForegroundColor Cyan
+$rmmDir = "C:\\ProgramData\\RustDeskRMM"
+New-Item -ItemType Directory -Force -Path $rmmDir | Out-Null
+
+$connectVbs = @'
+Set args = WScript.Arguments
+Dim id
+id = args(0)
+id = Replace(id, "rdrmm://", "")
+Dim rdExe
+rdExe = "C:\Program Files\RustDesk\rustdesk.exe"
+If Not CreateObject("Scripting.FileSystemObject").FileExists(rdExe) Then
+    rdExe = "C:\Program Files (x86)\RustDesk\rustdesk.exe"
+End If
+CreateObject("WScript.Shell").Run """" & rdExe & """ --connect " & id & " Ban41kam5", 0, False
+'@
+[System.IO.File]::WriteAllText("$rmmDir\\connect.vbs", $connectVbs, (New-Object System.Text.UTF8Encoding($false)))
+
+# HKLM ile tüm kullanıcılara kaydet (admin yetkisi mevcut)
+$regBase = "HKLM:\\SOFTWARE\\Classes\\rdrmm"
+New-Item -Path $regBase -Force | Out-Null
+Set-ItemProperty -Path $regBase -Name "(Default)" -Value "URL:RustDesk RMM Connection"
+New-ItemProperty -Path $regBase -Name "URL Protocol" -Value "" -PropertyType String -Force | Out-Null
+New-Item -Path "$regBase\\DefaultIcon" -Force | Out-Null
+Set-ItemProperty -Path "$regBase\\DefaultIcon" -Name "(Default)" -Value "$rd,0"
+New-Item -Path "$regBase\\shell\\open\\command" -Force | Out-Null
+Set-ItemProperty -Path "$regBase\\shell\\open\\command" -Name "(Default)" -Value "wscript.exe //B \`"$rmmDir\\connect.vbs\`" \`"%1\`""
+
+Write-Host "--- KURULUM TAMAMLANDI: RustDesk + RMM Agent + rdrmm:// Handler hazir! ---" -ForegroundColor Green
 `;
 
     return new Response(psScript, {

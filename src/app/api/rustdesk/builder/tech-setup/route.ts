@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 
 /**
  * GET /api/rustdesk/builder/tech-setup
- * Teknisyen makinesine rdrmm:// URI scheme handler kuran PowerShell scripti döner.
- * Bu script her teknisyenin kendi makinesinde bir kez çalıştırması gerekir.
- * Kurulumdan sonra dashboard'dan tek tıkla şifresiz bağlantı sağlar.
+ * Artık bu adım install scripti içine gömüldü.
+ * Geriye dönük uyumluluk için endpoint korunuyor.
  */
 export async function GET() {
   const psScript = `# --- RUSTDESK RMM TEKNISYEN KURULUMU ---

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:rustdesk.com)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "PowerShell(git push origin main)"
+    ]
+  }
+}
