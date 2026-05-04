@@ -1,13 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Server, Save, ShieldCheck, Globe, Key, Eye, EyeOff, Activity, Database, Network, Mail, History, Layout, MailCheck, Check } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { UpdateChecker } from "@/components/UpdateChecker";
+import { Server, Save, ShieldCheck, Globe, Key, Eye, EyeOff, Mail, History, MailCheck, Check } from "lucide-react";
 
-type Tab = "server" | "smtp" | "logs" | "updates" | "brand";
+type Tab = "server" | "smtp" | "logs" | "updates";
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("server");
@@ -62,7 +58,6 @@ export default function SettingsPage() {
     { key: "smtp",    label: "SMTP & Mail",     icon: Server },
     { key: "logs",    label: "Mail Logları",    icon: History },
     { key: "updates", label: "Güncellemeler",   icon: MailCheck },
-    { key: "brand",   label: "Görünüm",         icon: Layout },
   ];
 
   return (

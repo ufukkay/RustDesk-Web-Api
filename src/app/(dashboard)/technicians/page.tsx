@@ -3,16 +3,6 @@
 import { useAppStore, Technician } from "@/lib/store";
 import { Search, Plus, Mail, Shield, Edit2, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 
 export default function TechniciansPage() {
   const { technicians, addTechnician, deleteTechnician, fetchTechnicians } = useAppStore();
@@ -40,8 +30,8 @@ export default function TechniciansPage() {
       {/* Mini stats */}
       <div className="rd2-stats-grid rd2-stats-3">
         {[
-          { label: "Toplam Teknisyen", val: technicians.length, sub: "Tümü aktif" },
-          { label: "Yöneticiler", val: technicians.filter(t => t.role === "Admin").length, sub: "Tam yetkili" },
+          { label: "Toplam", val: technicians.length, sub: "Tümü aktif" },
+          { label: "Yönetici", val: technicians.filter(t => t.role === "Admin").length, sub: "Tam yetkili" },
           { label: "Bugün Aktif", val: technicians.length, sub: "Sisteme girenler" },
         ].map((s) => (
           <div key={s.label} className="rd2-stat rd2-stat-mini">
