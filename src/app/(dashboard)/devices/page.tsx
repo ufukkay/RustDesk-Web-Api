@@ -51,13 +51,13 @@ export default function DevicesPage() {
   }, [filteredDevices]);
 
   return (
-    <div className="rd2-devices-layout">
+    <div className="flex flex-col lg:flex-row gap-6 rd2-devices-layout">
       {/* Filter Sidebar */}
-      <aside className="rd2-filter-sidebar min-h-[400px]">
-        <div className="rd2-filter-head">
-          <span>Filtreler</span>
+      <aside className="w-full lg:w-64 flex flex-col gap-6 rd2-filter-sidebar">
+        <div className="flex items-center justify-between rd2-filter-head">
+          <span className="font-bold text-[14px]">Filtreler</span>
           {(search || filter !== "all") && (
-            <button className="rd2-clear-btn" onClick={() => { setSearch(""); setFilter("all"); }}>Temizle</button>
+            <button className="text-[12px] font-bold text-muted hover:text-text rd2-clear-btn" onClick={() => { setSearch(""); setFilter("all"); }}>Temizle</button>
           )}
         </div>
 
@@ -99,9 +99,9 @@ export default function DevicesPage() {
       </aside>
 
       {/* Main Content */}
-      <div className="rd2-devices-content">
+      <div className="flex-1 flex flex-col gap-4 rd2-devices-content">
         {/* Toolbar */}
-        <div className="rd2-toolbar">
+        <div className="flex items-center justify-between gap-4 rd2-toolbar">
           <div className="text-[13px] font-semibold text-muted-foreground">
             <b className="text-foreground">{filteredDevices.length}</b> / {devices.length} cihaz listeleniyor
           </div>

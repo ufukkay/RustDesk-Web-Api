@@ -16,7 +16,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="rd2-sidebar w-60">
+    <aside className="w-60 bg-white border-r border-black/5 flex flex-col h-screen sticky top-0 shrink-0 rd2-sidebar">
       {/* Brand */}
       <div className="rd2-brand">
         <div className="w-8.5 h-8.5 rounded-[9px] bg-brand-yellow text-brand-ink flex items-center justify-center font-black text-[11px] tracking-tight shadow-inner shrink-0">

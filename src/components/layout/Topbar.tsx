@@ -39,10 +39,10 @@ export function Topbar() {
   if (!mounted) return <header className="rd2-topbar h-16" />;
 
   return (
-    <header className="rd2-topbar h-16">
+    <header className="h-16 flex items-center justify-between px-8 bg-[#F7F7F5]/80 backdrop-blur-md border-b border-black/5 sticky top-0 z-20 rd2-topbar">
       <div>
-        <h1 className="rd2-h1">{getTitle()}</h1>
-        <p className="rd2-sub">Hoş geldin, {user?.name?.split(" ")[0] || "Ufuk"}</p>
+        <h1 className="text-[20px] font-black tracking-tight rd2-h1">{getTitle()}</h1>
+        <p className="text-[12px] text-[#5C6573] mt-0.5 rd2-sub">Hoş geldin, {user?.name?.split(" ")[0] || "Ufuk"}</p>
       </div>
 
       <div className="rd2-top-r">

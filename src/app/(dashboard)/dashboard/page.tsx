@@ -33,21 +33,21 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="rd2-page">
+    <div className="flex flex-col gap-6 rd2-page">
       {/* Stats Grid */}
-      <div className="rd2-stats-grid">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 rd2-stats-grid">
         {stats.map((s) => (
-          <div key={s.label} className="rd2-stat">
-            <div className={`rd2-stat-icon ${s.bg} ${s.color}`}>
-              <s.icon className="w-4.5 h-4.5" />
+          <div key={s.label} className="bg-white border border-black/5 rounded-xl p-5 shadow-sm rd2-stat">
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-4 rd2-stat-icon ${s.bg} ${s.color}`}>
+              <s.icon className="w-5 h-5" />
             </div>
-            <div className="rd2-stat-val">{s.value}</div>
-            <div className="rd2-stat-label">{s.label}</div>
+            <div className="text-2xl font-black tracking-tight rd2-stat-val">{s.value}</div>
+            <div className="text-[12px] font-bold text-[#5C6573] mt-1 rd2-stat-label">{s.label}</div>
           </div>
         ))}
       </div>
 
-      <div className="rd2-2col">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 rd2-2col">
         {/* Recent Devices */}
         <section className="rd2-card">
           <div className="rd2-card-head">
@@ -118,16 +118,16 @@ export default function DashboardPage() {
         <div className="rd2-card-head !mb-4">
           <h3>Sunucu Durumu</h3>
         </div>
-        <div className="rd2-health-grid">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 rd2-health-grid">
           {[
             { label: "HBBS (ID Servisi)", val: health.hbbs === "Çalışıyor" ? "Aktif" : "Hata", color: health.hbbs === "Çalışıyor" ? "text-green" : "text-red", bg: health.hbbs === "Çalışıyor" ? "bg-green-bg" : "bg-red-bg" },
             { label: "HBBR (Relay)", val: health.hbbr === "Çalışıyor" ? "Aktif" : "Hata", color: health.hbbr === "Çalışıyor" ? "text-green" : "text-red", bg: health.hbbr === "Çalışıyor" ? "bg-green-bg" : "bg-red-bg" },
             { label: "API Sunucusu", val: "Çalışıyor", color: "text-green", bg: "bg-green-bg" },
             { label: "Uptime", val: "99.9%", color: "text-brand-ink", bg: "bg-brand-yellow" },
           ].map((s) => (
-            <div key={s.label} className={`rd2-health-item ${s.bg}`}>
-              <div className={`rd2-health-val ${s.color}`}>{s.val}</div>
-              <div className="rd2-health-label">{s.label}</div>
+            <div key={s.label} className={`p-3.5 rounded-xl rd2-health-item ${s.bg}`}>
+              <div className={`text-[15px] font-black rd2-health-val ${s.color}`}>{s.val}</div>
+              <div className="text-[11px] text-[#5C6573] font-bold mt-0.5 rd2-health-label">{s.label}</div>
             </div>
           ))}
         </div>
