@@ -164,7 +164,7 @@ export default function DeviceDetailsPage() {
         const host = "192.168.0.184";
         const key = "5XE+DKQ46fl1EgSLWqKV9qkV+nGT4VLBrhJKYUrFbD0=";
         const password = "Ban41kam5";
-        const url = `rustdesk://${cleanId}?password=${password}&server=${host}&key=${encodeURIComponent(key)}`;
+        const url = `rustdesk://${cleanId}?password=${password}&host=${host}&key=${encodeURIComponent(key)}`;
         window.open(url, "_self");
       },
       needsConfirm: false

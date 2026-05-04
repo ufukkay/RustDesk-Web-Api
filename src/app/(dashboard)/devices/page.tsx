@@ -25,15 +25,16 @@ export default function DevicesPage() {
     const cleanId = String(id).replace(/\s+/g, "");
     if (!cleanId) return;
 
-    // RustDesk resmi protokolünü kullan (Sıfır Kurulum - Zero Config)
-    // Şifre, Sunucu ve Key bilgilerini URL içine gömüyoruz.
+    // RustDesk resmi protokolü
+    // Parametreleri 'host' ve 'key' olarak güncelledik (En yaygın desteklenen format)
     const host = "192.168.0.184";
     const key = "5XE+DKQ46fl1EgSLWqKV9qkV+nGT4VLBrhJKYUrFbD0=";
     const password = "Ban41kam5";
     
-    const url = `rustdesk://${cleanId}?password=${password}&server=${host}&key=${encodeURIComponent(key)}`;
+    // Bazı sürümler host yerine server bekleyebilir, her iki ihtimali de ekleyebiliriz 
+    // ama standart genellikle host'tur.
+    const url = `rustdesk://${cleanId}?password=${password}&host=${host}&key=${encodeURIComponent(key)}`;
     
-    // Dosya transferi ile aynı yöntemi kullanarak açıyoruz
     window.open(url, "_self");
   };
 
