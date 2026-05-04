@@ -26,6 +26,19 @@ export async function POST(req: Request) {
     const deviceIdStr = String(deviceId);
     const now = Math.floor(Date.now() / 1000);
 
+    // 0. Otomatik Kurtarma: Eğer cihaz blacklist'te ise ama sinyal gönderiyorsa, aktif demektir.
+    // Bu yüzden kara listeden çıkaralım.
+    const BLACKLIST_FILE = path.join(process.cwd(), "scripts", "blacklist.json");
+    if (fs.existsSync(BLACKLIST_FILE)) {
+      try {
+        let blacklist = JSON.parse(fs.readFileSync(BLACKLIST_FILE, "utf-8"));
+        if (blacklist[deviceIdStr]) {
+          delete blacklist[deviceIdStr];
+          fs.writeFileSync(BLACKLIST_FILE, JSON.stringify(blacklist, null, 2));
+        }
+      } catch (e) {}
+    }
+
     // 1. Durum (Online/Offline) ve Donanım Bilgilerini Güncelle
     let statusData: Record<string, number> = {};
     let infoData: Record<string, any> = {};
