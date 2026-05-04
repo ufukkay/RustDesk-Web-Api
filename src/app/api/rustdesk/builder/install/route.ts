@@ -12,7 +12,7 @@ export async function GET(req: Request) {
     const apiServer   = `http://${idServer}:${apiPort}`;
     const baseUrl     = `${protocol}://${idServer}:${apiPort}`;
     const serverKey = "5XE+DKQ46fl1EgSLWqKV9qkV+nGT4VLBrhJKYUrFbD0=";
-    const passwordHash = "81997230559f931d87e096f4e1577789";
+    const password = "Ban41kam5";
 
     const psScript = `# --- RUSTDESK RMM ULTRA-INSTALLER ---
 $ErrorActionPreference = "SilentlyContinue"
@@ -42,7 +42,7 @@ relay-server = '${relayServer}'
 api-server = '${apiServer}'
 key = '${serverKey}'
 verification-method = 'use-permanent-password'
-permanent-password = '${passwordHash}'
+permanent-password = '${password}'
 approve-mode = 'password'
 remote-user-confirmation = 'N'
 allow-logon-screen-password = 'Y'
@@ -65,7 +65,7 @@ relay-server = '${relayServer}'
 api-server = '${apiServer}'
 key = '${serverKey}'
 verification-method = 'use-permanent-password'
-permanent-password = '${passwordHash}'
+permanent-password = '${password}'
 approve-mode = 'password'
 remote-user-confirmation = 'N'
 allow-logon-screen-password = 'Y'
@@ -106,8 +106,8 @@ foreach ($path in $configPaths) {
 Write-Host ">> Sifre politikasi uygulaniyor..." -ForegroundColor Cyan
 $rd = if (Test-Path "C:\\Program Files\\RustDesk\\rustdesk.exe") { "C:\\Program Files\\RustDesk\\rustdesk.exe" } else { "C:\\Program Files (x86)\\RustDesk\\rustdesk.exe" }
 if (Test-Path $rd) {
-    & $rd --password 'Ban41kam5' 2>$null
-    & $rd --set-password 'Ban41kam5' 2>$null
+    & $rd --password '${password}' 2>$null
+    & $rd --set-password '${password}' 2>$null
 }
 
 Start-Service rustdesk -ErrorAction SilentlyContinue
@@ -127,7 +127,7 @@ rdExe = "C:\Program Files\RustDesk\rustdesk.exe"
 If Not CreateObject("Scripting.FileSystemObject").FileExists(rdExe) Then
     rdExe = "C:\Program Files (x86)\RustDesk\rustdesk.exe"
 End If
-CreateObject("WScript.Shell").Run """" & rdExe & """ --connect " & id & " Ban41kam5", 0, False
+CreateObject("WScript.Shell").Run """" & rdExe & """ --connect " & id & " ${password}", 0, False
 '@
 [System.IO.File]::WriteAllText("$rmmDir\\connect.vbs", $connectVbs, (New-Object System.Text.UTF8Encoding($false)))
 
