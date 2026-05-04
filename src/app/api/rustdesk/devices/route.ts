@@ -41,11 +41,11 @@ export async function GET() {
     // Python komutunu belirle (python3 veya python)
     let stdout = "";
     try {
-      const res = await execAsync(`python3 "\${scriptPath}"`);
+      const res = await execAsync(`python3 "${scriptPath}"`);
       stdout = res.stdout;
     } catch (e) {
       try {
-        const res = await execAsync(`python "\${scriptPath}"`);
+        const res = await execAsync(`python "${scriptPath}"`);
         stdout = res.stdout;
       } catch (e2) {
         console.error("[DEVICES API] Python bulunamadı veya script hatası");
@@ -92,7 +92,7 @@ export async function GET() {
         if (extra.local_network_raw) {
           const ips = typeof extra.local_network_raw === 'string' ? extra.local_network_raw.split(',') : extra.local_network_raw;
           localNets = Array.isArray(ips) ? ips.map((ip: string, i: number) => ({
-            name: `Ağ Kartı \${i + 1}`,
+            name: `Ağ Kartı ${i + 1}`,
             ipv4: ip.trim(),
             mac: "-",
             mask: "-"

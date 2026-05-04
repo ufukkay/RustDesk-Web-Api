@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     // Kuyruğu kaydet
     fs.writeFileSync(QUEUE_FILE, JSON.stringify(queue, null, 2));
 
-    // console.log(`[COMMAND QUEUED] Device: \${deviceId}, Command: \${finalCommand}`);
+    // console.log(`[COMMAND QUEUED] Device: ${deviceId}, Command: ${finalCommand}`);
     
     return NextResponse.json({ 
       success: true, 

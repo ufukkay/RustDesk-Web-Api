@@ -1,7 +1,7 @@
 "use client";
 
 import { useAppStore } from "@/lib/store";
-import { Monitor, Activity, Server, Database, ChevronRight, User as UserIcon, ShieldCheck } from "lucide-react";
+import { Monitor, Activity, Server, Database, ChevronRight, User as UserIcon, ShieldCheck, Laptop } from "lucide-react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
