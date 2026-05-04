@@ -1,80 +1,83 @@
 import { NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
+import { getSettings } from "@/lib/settings";
 
 export async function GET(req: Request) {
   try {
-    const reqUrl = new URL(req.url);
-    const protocol = req.headers.get("x-forwarded-proto") || "http";
+    const { searchParams } = new URL(req.url);
+    const settings = getSettings();
 
-    // Builder sayfasından gelen ?host= ve ?port= parametrelerini kullan
-    const idServer = reqUrl.searchParams.get("host") || "192.168.0.184";
-    const apiPort  = reqUrl.searchParams.get("port") || "3000";
-    const relayServer = idServer;
-    const apiServer   = `http://${idServer}:${apiPort}`;
-    const baseUrl     = `${protocol}://${idServer}:${apiPort}`;
-    const serverKey = "5XE+DKQ46fl1EgSLWqKV9qkV+nGT4VLBrhJKYUrFbD0=";
-    const password = "Ban41kam5";
+    const host            = searchParams.get("host") || settings.host;
+    const port            = searchParams.get("port") || settings.port;
+    const apiPort         = settings.port || "3000";
+    const defaultPassword = settings.defaultPassword || "";
 
-    const psScript = `# --- RUSTDESK RMM ULTRA-INSTALLER ---
+    // Sunucu anahtarını dosya sisteminden oku
+    const keyPaths = [
+      "C:\\ProgramData\\RustDesk\\config\\id_ed25519.pub",
+      "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk\\config\\id_ed25519.pub",
+      path.join(process.cwd(), "id_ed25519.pub")
+    ];
+
+    let serverKey = "";
+    for (const p of keyPaths) {
+      try {
+        if (fs.existsSync(p)) {
+          serverKey = fs.readFileSync(p, "utf-8").trim();
+          break;
+        }
+      } catch { continue; }
+    }
+
+    // Dosyada yoksa settings'den dene
+    if (!serverKey) serverKey = settings.serverKey || "5XE+DKQ46fl1EgSLWqKV9qkV+nGT4VLBrhJKYUrFbD0=";
+
+    const serverUrl   = `http://${host}:${port}`;
+    const apiServer   = `http://${host}:${apiPort}`;
+    const relayServer = host;
+
+    const psScript = `# --- RUSTDESK OTOMATIK KURULUM SCRIPT ---
 $ErrorActionPreference = "SilentlyContinue"
-Write-Host "--- RustDesk Kurumsal Kurulum Baslatiliyor ---" -ForegroundColor Yellow
+$hostIp     = "${host}"
+$serverKey  = "${serverKey}"
+$password   = "${defaultPassword}"
+$serverUrl  = "${serverUrl}"
+$apiServer  = "${apiServer}"
 
-# 1. RMM Ajanini Indir ve Kur
-Write-Host ">> RMM Ajani kuruluyor..." -ForegroundColor Cyan
-$rmmPath = Join-Path $env:TEMP "RustDeskRMM.exe"
-Invoke-WebRequest -Uri "${baseUrl}/api/rustdesk/builder/agent" -OutFile $rmmPath -UseBasicParsing
-Start-Process $rmmPath -ArgumentList "--install" -Wait -WindowStyle Hidden
+Write-Host ">> Sistem Hazirlaniyor..." -ForegroundColor Cyan
 
-# 2. RustDesk Uygulamasini Indir ve Sessiz Kur
-Write-Host ">> RustDesk yukleniyor..." -ForegroundColor Cyan
-$setupPath = Join-Path $env:TEMP "rustdesk_setup.exe"
-Invoke-WebRequest -Uri "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe" -OutFile $setupPath -UseBasicParsing
-$proc = Start-Process $setupPath -ArgumentList "--silent-install" -PassThru
-$timeout = 0
-while ($proc -and !$proc.HasExited -and $timeout -lt 20) { Start-Sleep -Seconds 1; $timeout++ }
+# 1. Klasor olustur
+$rmmDir = "C:\\ProgramData\\RustDeskRMM"
+if (!(Test-Path $rmmDir)) { New-Item -ItemType Directory -Path $rmmDir -Force | Out-Null }
 
-# 3. Ayarlari Muhurle - Password mode (kilitli oturum dahil calisir)
-Write-Host ">> Ayarlar muhurleniyor..." -ForegroundColor Cyan
-Stop-Service -Name "rustdesk" -Force -ErrorAction SilentlyContinue
+# 2. RustDesk Indir ve Kur
+Write-Host ">> RustDesk Client indiriliyor..." -ForegroundColor Cyan
+$url           = "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe"
+$setupFilename = "rustdesk-host=$($hostIp)-key=$($serverKey).exe"
+$setupPath     = Join-Path $env:TEMP $setupFilename
 
+(New-Object Net.WebClient).DownloadFile($url, $setupPath)
+Start-Process $setupPath -ArgumentList "--silent-install" -Wait
+
+# 3. Konfigürasyon Dosyalarini Yaz
 $toml = @"
-rendezvous-server = '${idServer}'
-relay-server = '${relayServer}'
-api-server = '${apiServer}'
-key = '${serverKey}'
-verification-method = 'use-permanent-password'
-permanent-password = '${password}'
-approve-mode = 'password'
-remote-user-confirmation = 'N'
-allow-logon-screen-password = 'Y'
-enable-remote-desktop = 'Y'
-stop-service-on-user-logout = 'N'
-permissions = 'all'
-enable-uac = 'Y'
-enable-remote-restart = 'Y'
-allow-hostname-as-id = 'Y'
-hide-tray = 'Y'
-hide-stop-service = 'Y'
-hide-network-settings = 'Y'
-hide-security-settings = 'Y'
-disable-change-permanent-password = 'Y'
-remove-preset-password-warning = 'Y'
+rendezvous_server = '$hostIp'
+relay_server = '$hostIp'
 
 [options]
-custom-rendezvous-server = '${idServer}'
-relay-server = '${relayServer}'
-api-server = '${apiServer}'
-key = '${serverKey}'
+custom-rendezvous-server = '$hostIp'
+key = '$serverKey'
+relay-server = '$hostIp'
+api-server = '$apiServer'
 verification-method = 'use-permanent-password'
-permanent-password = '${password}'
 approve-mode = 'password'
-remote-user-confirmation = 'N'
 allow-logon-screen-password = 'Y'
 enable-remote-desktop = 'Y'
 stop-service-on-user-logout = 'N'
 permissions = 'all'
 enable-uac = 'Y'
 enable-remote-restart = 'Y'
-allow-hostname-as-id = 'Y'
 hide-tray = 'Y'
 hide-stop-service = 'Y'
 hide-network-settings = 'Y'
@@ -83,84 +86,69 @@ disable-change-permanent-password = 'Y'
 remove-preset-password-warning = 'Y'
 "@
 
-# Sistem config path'leri
+Stop-Service "rustdesk" -ErrorAction SilentlyContinue
+Get-Process RustDesk | Stop-Process -Force -ErrorAction SilentlyContinue
+
 $configPaths = @(
-    "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk\\config\\RustDesk2.toml",
-    "C:\\Windows\\System32\\config\\systemprofile\\AppData\\Roaming\\RustDesk\\config\\RustDesk2.toml",
-    "$env:ProgramData\\RustDesk\\config\\RustDesk2.toml",
-    "$env:USERPROFILE\\AppData\\Roaming\\RustDesk\\config\\RustDesk2.toml"
+    "C:\\ProgramData\\RustDesk\\config",
+    "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk\\config"
 )
 
 # Tum kullanici profilleri
 Get-ChildItem "C:\\Users" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-    $configPaths += "$($_.FullName)\\AppData\\Roaming\\RustDesk\\config\\RustDesk2.toml"
+    $configPaths += "$($_.FullName)\\AppData\\Roaming\\RustDesk\\config"
 }
 
-foreach ($path in $configPaths) {
-    $dir = Split-Path $path
-    if (!(Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
-    [System.IO.File]::WriteAllText($path, $toml, (New-Object System.Text.UTF8Encoding($false)))
+foreach ($p in $configPaths) {
+    if (!(Test-Path $p)) { New-Item -ItemType Directory -Path $p -Force | Out-Null }
+    [System.IO.File]::WriteAllText((Join-Path $p "RustDesk2.toml"), $toml, (New-Object System.Text.UTF8Encoding($false)))
+    [System.IO.File]::WriteAllText((Join-Path $p "RustDesk.toml"),  $toml, (New-Object System.Text.UTF8Encoding($false)))
 }
 
-# 4. Servisi baslat ve tam ayaga kalkmasini bekle
+# 4. Servisi Baslat ve Bekle
 Write-Host ">> Servis baslatiliyor..." -ForegroundColor Cyan
-Start-Service rustdesk -ErrorAction SilentlyContinue
+Start-Service "rustdesk" -ErrorAction SilentlyContinue
 $waited = 0
 while ($waited -lt 15) {
     $svc = Get-Service -Name "rustdesk" -ErrorAction SilentlyContinue
     if ($svc -and $svc.Status -eq "Running") { break }
-    Start-Sleep -Seconds 1
-    $waited++
+    Start-Sleep -Seconds 1; $waited++
 }
 
-# 5. Servis calistiktan SONRA CLI ile sifreyi ayarla
+# 5. Sifre Ayarla
 Write-Host ">> Sifre politikasi uygulaniyor..." -ForegroundColor Cyan
-$rd = if (Test-Path "C:\\Program Files\\RustDesk\\rustdesk.exe") { "C:\\Program Files\\RustDesk\\rustdesk.exe" } else { "C:\\Program Files (x86)\\RustDesk\\rustdesk.exe" }
-if (Test-Path $rd) {
-    & $rd --password '${password}' 2>$null
+$rd = if (Test-Path "C:\\Program Files\\RustDesk\\rustdesk.exe") {
+    "C:\\Program Files\\RustDesk\\rustdesk.exe"
+} else {
+    "C:\\Program Files (x86)\\RustDesk\\rustdesk.exe"
+}
+if ($password -and (Test-Path $rd)) {
+    & $rd --password "$password" 2>$null
     Start-Sleep -Seconds 2
-    & $rd --set-password '${password}' 2>$null
+    & $rd --set-password "$password" 2>$null
 }
 
-# 5. rdrmm:// URI Scheme Handler Kurulumu (tüm kullanıcılar için)
+# 6. rdrmm:// URI Scheme Handler
 Write-Host ">> rdrmm:// URI handler kuruluyor..." -ForegroundColor Cyan
-$rmmDir = "C:\\ProgramData\\RustDeskRMM"
-New-Item -ItemType Directory -Force -Path $rmmDir | Out-Null
-
 $connectVbs = @"
 Set args = WScript.Arguments
 Dim id
 id = args(0)
-
-' URI temizleme (rdrmm://123 veya rdrmm:123 formatlarını destekler)
-If InStr(id, "://") > 0 Then
-    id = Mid(id, InStr(id, "://") + 3)
-ElseIf InStr(id, ":") > 0 Then
-    id = Mid(id, InStr(id, ":") + 1)
+If InStr(id, "://") > 0 Then id = Mid(id, InStr(id, "://") + 3)
+ElseIf InStr(id, ":") > 0 Then id = Mid(id, InStr(id, ":") + 1)
 End If
-
-' Sondaki slash varsa temizle
 If Right(id, 1) = "/" Then id = Left(id, Len(id) - 1)
-
 Dim rdExe
 rdExe = "C:\\Program Files\\RustDesk\\rustdesk.exe"
 If Not CreateObject("Scripting.FileSystemObject").FileExists(rdExe) Then
     rdExe = "C:\\Program Files (x86)\\RustDesk\\rustdesk.exe"
 End If
-
 Dim oShell
 Set oShell = CreateObject("WScript.Shell")
-
-' Sifreyi panoya kopyala (yedek olarak)
-oShell.Run "cmd /c set /p=${password}<nul | clip", 0, True
-
-' RustDesk'i direkt baglanti komutuyla ac (Sifre parametresiyle)
-' Not: Pencereyi gorunur acmak icin 1, gizli baglanti icin 0 (burada 1 tercih edildi)
-oShell.Run """" & rdExe & """ --connect " & id & " ${password}", 1, False
+oShell.Run chr(34) & rdExe & chr(34) & " --connect " & id & " ${defaultPassword}", 1, False
 "@
 [System.IO.File]::WriteAllText("$rmmDir\\connect.vbs", $connectVbs, (New-Object System.Text.UTF8Encoding($false)))
 
-# HKLM ile tüm kullanıcılara kaydet (admin yetkisi mevcut)
 $regBase = "HKLM:\\SOFTWARE\\Classes\\rdrmm"
 New-Item -Path $regBase -Force | Out-Null
 Set-ItemProperty -Path $regBase -Name "(Default)" -Value "URL:RustDesk RMM Connection"
@@ -170,7 +158,7 @@ Set-ItemProperty -Path "$regBase\\DefaultIcon" -Name "(Default)" -Value "$rd,0"
 New-Item -Path "$regBase\\shell\\open\\command" -Force | Out-Null
 Set-ItemProperty -Path "$regBase\\shell\\open\\command" -Name "(Default)" -Value "wscript.exe //B \`"$rmmDir\\connect.vbs\`" \`"%1\`""
 
-Write-Host "--- KURULUM TAMAMLANDI: RustDesk + RMM Agent + rdrmm:// Handler hazir! ---" -ForegroundColor Green
+Write-Host "--- KURULUM TAMAMLANDI! ---" -ForegroundColor Green
 `;
 
     return new Response(psScript, {
@@ -180,7 +168,8 @@ Write-Host "--- KURULUM TAMAMLANDI: RustDesk + RMM Agent + rdrmm:// Handler hazi
       }
     });
 
-  } catch (error) {
-    return NextResponse.json({ error: "Script olusturulamadi" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Builder Error:", error);
+    return NextResponse.json({ error: "Script oluşturulamadı" }, { status: 500 });
   }
 }
