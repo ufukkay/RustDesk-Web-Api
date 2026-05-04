@@ -14,7 +14,6 @@ const execAsync = promisify(exec);
  */
 const STATUS_FILE = path.join(process.cwd(), "scripts", "online_status.json");
 const INFO_FILE = path.join(process.cwd(), "scripts", "device_info.json");
-const BLACKLIST_FILE = path.join(process.cwd(), "scripts", "blacklist.json");
 
 let cachedDevices: any[] = [];
 let lastFetchTime = 0;
@@ -28,12 +27,6 @@ export async function GET() {
     const now_ms = Date.now();
     if (now_ms - lastFetchTime < CACHE_TTL && cachedDevices.length > 0) {
       return NextResponse.json(cachedDevices);
-    }
-
-    // Blacklist'i oku
-    let blacklist: Record<string, any> = {};
-    if (fs.existsSync(BLACKLIST_FILE)) {
-      try { blacklist = JSON.parse(fs.readFileSync(BLACKLIST_FILE, "utf-8")); } catch (e) {}
     }
 
     const scriptPath = path.join(process.cwd(), "scripts", "read_db.py");
@@ -77,7 +70,6 @@ export async function GET() {
     ]);
 
     const rawDevices = Array.from(allIds)
-      .filter(id => !blacklist[id]) 
       .map(id => {
         const sqliteRow = sqliteDevices.find((d: any) => String(d.id) === id) || {};
         const lastHeartbeat = onlineStatus[id] || 0;
@@ -179,28 +171,13 @@ export async function DELETE(req: Request) {
     const { id } = await req.json();
     if (!id) return NextResponse.json({ error: "ID gerekli" }, { status: 400 });
 
-    const now = Math.floor(Date.now() / 1000);
-    let blacklist: Record<string, any> = {};
     let hardwareInfo: Record<string, any> = {};
-    
-    if (fs.existsSync(BLACKLIST_FILE)) {
-      try { blacklist = JSON.parse(fs.readFileSync(BLACKLIST_FILE, "utf-8")); } catch (e) {}
-    }
     if (fs.existsSync(INFO_FILE)) {
       try { hardwareInfo = JSON.parse(fs.readFileSync(INFO_FILE, "utf-8")); } catch (e) {}
     }
 
-    // 1. Hostname bilgisini bul
     const deviceHostname = hardwareInfo[id]?.hostname || hardwareInfo[id]?.computer_name;
-    
-    // 2. Blacklist'e mühürlü ekle (Timestamp ile)
-    blacklist[String(id)] = { deleted_at: now };
-    if (deviceHostname) {
-      blacklist[String(deviceHostname).toUpperCase()] = { deleted_at: now };
-    }
-    fs.writeFileSync(BLACKLIST_FILE, JSON.stringify(blacklist, null, 2));
 
-    // 3. Verileri temizle
     [STATUS_FILE, INFO_FILE].forEach(file => {
       if (fs.existsSync(file)) {
         try {
