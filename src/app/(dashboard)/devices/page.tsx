@@ -15,16 +15,25 @@ export default function DevicesPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [collGrps, setCollGrps] = useState<Record<string, boolean>>({});
+  const [connSettings, setConnSettings] = useState({ host: "", serverKey: "", defaultPassword: "" });
 
   useEffect(() => { fetchDevices(); }, [fetchDevices]);
+
+  useEffect(() => {
+    fetch("/api/rustdesk/settings")
+      .then(r => r.json())
+      .then(d => setConnSettings({ host: d.host || "", serverKey: d.serverKey || "", defaultPassword: d.defaultPassword || "" }))
+      .catch(() => {});
+  }, []);
 
   const handleConnect = (id: string) => {
     const cleanId = String(id).replace(/\s+/g, "");
     if (!cleanId) return;
-    const host     = "192.168.0.184";
-    const key      = "5XE+DKQ46fl1EgSLWqKV9qkV+nGT4VLBrhJKYUrFbD0=";
-    const password = "Ban41kam5";
-    window.open(`rustdesk://${cleanId}?password=${password}&host=${host}&key=${encodeURIComponent(key)}`, "_self");
+    const { host, serverKey, defaultPassword } = connSettings;
+    const url = serverKey
+      ? `rustdesk://${cleanId}?password=${defaultPassword}&host=${host}&key=${encodeURIComponent(serverKey)}`
+      : `rustdesk://${cleanId}?password=${defaultPassword}&host=${host}`;
+    window.open(url, "_self");
   };
 
   const filteredDevices = useMemo(() =>

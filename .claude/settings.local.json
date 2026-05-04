@@ -8,7 +8,11 @@
       "PowerShell(git add \"src/app/api/rustdesk/builder/install/route.ts\")",
       "PowerShell(git commit -m \"fix: store plain text password in TOML not MD5 hash - permanent-password field expects clear text`n`nCo-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>\")",
       "PowerShell(git commit -m \"fix: start service before running --password CLI command`n`nService must be running for --password to take effect.`nAdded wait loop \\(up to 15s\\) to ensure service is fully up`nbefore setting the permanent password via CLI.`n`nCo-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>\")",
-      "PowerShell(git commit -m \"fix: show RustDesk window and copy password to clipboard on rdrmm:// open\")"
+      "PowerShell(git commit -m \"fix: show RustDesk window and copy password to clipboard on rdrmm:// open\")",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(npx tsc *)"
     ]
   }
 }
