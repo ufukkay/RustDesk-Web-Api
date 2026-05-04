@@ -43,11 +43,11 @@ export async function POST(req: Request) {
       );
 
       if (!user) {
-        console.log(`Giriş Başarısız: ${username}`);
+
         return NextResponse.json({ error: "Invalid username or password" }, { status: 400 });
       }
 
-      console.log(`Giriş Başarılı: ${username}`);
+
       return NextResponse.json({ 
         access_token: "token-" + Math.random().toString(36).substring(7),
         type: "access_token",

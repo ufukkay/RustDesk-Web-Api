@@ -16,11 +16,20 @@ const STATUS_FILE = path.join(process.cwd(), "scripts", "online_status.json");
 const INFO_FILE = path.join(process.cwd(), "scripts", "device_info.json");
 const BLACKLIST_FILE = path.join(process.cwd(), "scripts", "blacklist.json");
 
+let cachedDevices: any[] = [];
+let lastFetchTime = 0;
+const CACHE_TTL = 5000; // 5 saniye
+
 /**
  * GET /api/rustdesk/devices
  */
 export async function GET() {
   try {
+    const now_ms = Date.now();
+    if (now_ms - lastFetchTime < CACHE_TTL && cachedDevices.length > 0) {
+      return NextResponse.json(cachedDevices);
+    }
+
     // Blacklist'i oku
     let blacklist: Record<string, boolean> = {};
     if (fs.existsSync(BLACKLIST_FILE)) {
@@ -28,8 +37,23 @@ export async function GET() {
     }
 
     const scriptPath = path.join(process.cwd(), "scripts", "read_db.py");
-    const { stdout } = await execAsync(`python3 "${scriptPath}"`);
+    
+    // Python komutunu belirle (python3 veya python)
+    let stdout = "";
+    try {
+      const res = await execAsync(`python3 "\${scriptPath}"`);
+      stdout = res.stdout;
+    } catch (e) {
+      try {
+        const res = await execAsync(`python "\${scriptPath}"`);
+        stdout = res.stdout;
+      } catch (e2) {
+        console.error("[DEVICES API] Python bulunamadı veya script hatası");
+        return NextResponse.json([]);
+      }
+    }
 
+    if (!stdout) return NextResponse.json([]);
     const result = JSON.parse(stdout.trim());
     if (!result.ok) return NextResponse.json([]);
 
@@ -43,7 +67,7 @@ export async function GET() {
       try { hardwareInfo = JSON.parse(fs.readFileSync(INFO_FILE, "utf-8")); } catch (e) {}
     }
 
-    const now = Math.floor(Date.now() / 1000);
+    const now = Math.floor(now_ms / 1000);
     const sqliteDevices = Array.isArray(result.data) ? result.data : [];
     
     // Tüm cihaz ID'lerini topla (SQLite + Agent)
@@ -68,7 +92,7 @@ export async function GET() {
         if (extra.local_network_raw) {
           const ips = typeof extra.local_network_raw === 'string' ? extra.local_network_raw.split(',') : extra.local_network_raw;
           localNets = Array.isArray(ips) ? ips.map((ip: string, i: number) => ({
-            name: `Ağ Kartı ${i + 1}`,
+            name: `Ağ Kartı \${i + 1}`,
             ipv4: ip.trim(),
             mac: "-",
             mask: "-"
@@ -94,6 +118,8 @@ export async function GET() {
         };
       });
 
+    cachedDevices = devices;
+    lastFetchTime = now_ms;
     return NextResponse.json(devices);
   } catch (error) {
     console.error("[DEVICES API] Hata:", error);

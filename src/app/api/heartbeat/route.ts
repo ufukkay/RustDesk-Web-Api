@@ -71,7 +71,7 @@ export async function POST(req: Request) {
           // Kuyruktaki ilk komutu al (FIFO)
           pendingCommand = queue[deviceIdStr].shift(); 
           fs.writeFileSync(QUEUE_FILE, JSON.stringify(queue, null, 2));
-          console.log(`[HEARTBEAT] Komut cihaza gönderildi (${deviceIdStr}): ${pendingCommand}`);
+
         }
       } catch (e) {}
     }

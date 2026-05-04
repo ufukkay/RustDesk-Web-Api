@@ -10,8 +10,8 @@ export async function POST(req: Request) {
     const body = await req.json();
     const deviceId = body.id || body.uuid;
 
-    // GELEN TÜM VERİYİ ANALİZ İÇİN DOSYAYA YAZALIM
-    fs.writeFileSync(DEBUG_FILE, JSON.stringify(body, null, 2));
+    // GELEN TÜM VERİYİ ANALİZ İÇİN DOSYAYA YAZALIM (DEBUG)
+    // fs.writeFileSync(DEBUG_FILE, JSON.stringify(body, null, 2));
 
     if (deviceId) {
       let infoData: Record<string, any> = {};

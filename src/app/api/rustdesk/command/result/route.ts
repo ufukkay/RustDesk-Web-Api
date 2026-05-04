@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     const resultFile = path.join(RESULTS_DIR, `${id}.txt`);
     fs.writeFileSync(resultFile, result || "Boş çıktı", "utf-8");
 
-    console.log(`[COMMAND RESULT] Cihaz: ${id}, Boyut: ${result?.length || 0} karakter`);
+
 
     return NextResponse.json({ ok: true });
   } catch (error) {
