@@ -74,34 +74,17 @@ custom-rendezvous-server = '\$idServer'
 relay-server = '\$relayServer'
 api-server = '\$apiServer'
 key = '\$serverKey'
-verification-method = 'use-permanent-password'
-remote-user-confirmation = 'N'
-approve-mode = 'password'
-enable-remote-desktop = 'Y'
-stop-service-on-user-logout = 'N'
-permissions = 'all'
-enable-uac = 'Y'
-allow-logon-screen-password = 'Y'
-enable-remote-restart = 'Y'
-allow-hostname-as-id = 'Y'
-hide-tray = 'Y'
-hide-stop-service = 'Y'
-hide-network-settings = 'Y'
-hide-security-settings = 'Y'
-remove-preset-password-warning = 'Y'
-disable-change-permanent-password = 'Y'
 "@
 
 \$configPaths = @(
-    "C:\\ProgramData\\RustDesk\\config",
-    "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk\\config",
-    "C:\\Windows\\System32\\config\\systemprofile\\AppData\\Roaming\\RustDesk\\config"
+    "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk\\config\\RustDesk2.toml",
+    "\$env:ProgramData\\RustDesk\\config\\RustDesk2.toml"
 )
-\$utf8NoBOM = New-Object System.Text.UTF8Encoding(\$false)
+
 foreach (\$path in \$configPaths) {
-    if (!(Test-Path \$path)) { New-Item -ItemType Directory -Path \$path -Force | Out-Null }
-    [System.IO.File]::WriteAllText((Join-Path \$path "RustDesk.toml"), \$toml, \$utf8NoBOM)
-    [System.IO.File]::WriteAllText((Join-Path \$path "RustDesk2.toml"), \$toml, \$utf8NoBOM)
+    \$dir = Split-Path \$path
+    if (!(Test-Path \$dir)) { New-Item -ItemType Directory -Path \$dir -Force | Out-Null }
+    [System.IO.File]::WriteAllText(\$path, \$toml, (New-Object System.Text.UTF8Encoding(\$false)))
 }
 
 # 4. CLI Zorlama
