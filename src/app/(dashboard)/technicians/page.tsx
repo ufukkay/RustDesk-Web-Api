@@ -35,160 +35,144 @@ export default function TechniciansPage() {
   };
 
   return (
-    <div className="p-8 space-y-8 max-w-[1400px] mx-auto animate-in fade-in duration-500">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Teknisyenler</h1>
-          <p className="text-sm text-muted-foreground">Yetkili kullanıcıları yönetin.</p>
-        </div>
-        
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <Button onClick={() => setIsOpen(true)} className="bg-brand-yellow text-brand-ink hover:opacity-90 font-black px-6 h-11 rounded-brand shadow-brand-sm">
-            <Plus className="w-4 h-4 mr-2" /> Yeni Teknisyen
-          </Button>
-          <DialogContent className="sm:max-w-md bg-card border-border">
-            <DialogHeader>
-              <DialogTitle className="text-foreground font-black uppercase tracking-tight text-sm">Yeni Teknisyen Hesabı</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-5 py-4">
-              <div className="space-y-2">
-                <Label className="text-[12px] font-black text-muted-foreground uppercase">Ad Soyad</Label>
-                <Input placeholder="Örn: Ahmet Yılmaz" value={newTech.name} onChange={e => setNewTech({...newTech, name: e.target.value})} className="bg-muted/50 border-border h-11" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[12px] font-black text-muted-foreground uppercase">Kullanıcı Adı</Label>
-                <Input placeholder="Örn: ufuk" value={newTech.username} onChange={e => setNewTech({...newTech, username: e.target.value})} className="bg-muted/50 border-border h-11" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[12px] font-black text-muted-foreground uppercase">E-posta Adresi</Label>
-                <Input placeholder="ahmet@sirket.com" value={newTech.email} onChange={e => setNewTech({...newTech, email: e.target.value})} className="bg-muted/50 border-border h-11" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[12px] font-black text-muted-foreground uppercase">Şifre</Label>
-                <Input type="password" placeholder="••••••••" value={newTech.password} onChange={e => setNewTech({...newTech, password: e.target.value})} className="bg-muted/50 border-border h-11" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[12px] font-black text-muted-foreground uppercase">Yetki Rolü</Label>
-                <select 
-                  value={newTech.role} 
-                  onChange={e => setNewTech({...newTech, role: e.target.value as any})}
-                  className="flex h-11 w-full rounded-md border border-border bg-muted/50 px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow"
-                >
-                  <option value="Teknisyen">Teknisyen (Sınırlı)</option>
-                  <option value="Admin">Admin (Tam Yetki)</option>
-                </select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button onClick={handleAdd} className="bg-brand-yellow text-brand-ink hover:opacity-90 font-black w-full h-11 rounded-brand">
-                Hesabı Oluştur
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Mini Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+  return (
+    <div className="rd2-page">
+      {/* Mini stats */}
+      <div className="rd2-stats-grid rd2-stats-3">
         {[
-          { label: "Toplam Teknisyen", value: technicians.length, sub: "Tümü aktif" },
-          { label: "Yöneticiler", value: technicians.filter(t => t.role === "Admin").length, sub: "Tam yetkili" },
-          { label: "Bugün Aktif", value: technicians.length, sub: "Sisteme girenler" },
+          { label: "Toplam Teknisyen", val: technicians.length, sub: "Tümü aktif" },
+          { label: "Yöneticiler", val: technicians.filter(t => t.role === "Admin").length, sub: "Tam yetkili" },
+          { label: "Bugün Aktif", val: technicians.length, sub: "Sisteme girenler" },
         ].map((s) => (
-          <div key={s.label} className="bg-card p-5 rounded-brand border border-border shadow-brand-sm">
-            <p className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider">{s.label}</p>
-            <div className="flex items-end gap-2 mt-2">
-              <p className="text-2xl font-black text-foreground leading-none">{s.value}</p>
-              <p className="text-[11px] text-muted-foreground font-bold pb-0.5">{s.sub}</p>
-            </div>
+          <div key={s.label} className="rd2-stat rd2-stat-mini">
+            <div className="rd2-stat-val">{s.val}</div>
+            <div className="rd2-stat-label">{s.label}</div>
+            <div className="rd2-muted-sm">{s.sub}</div>
           </div>
         ))}
       </div>
 
-      {/* Table Container */}
-      <div className="bg-card rounded-brand-lg border border-border shadow-brand-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-muted/20">
-          <div className="relative w-72">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input placeholder="Teknisyen ara..." className="pl-10 h-10 bg-card border-border text-xs rounded-lg" />
-          </div>
-          <Button variant="outline" className="h-10 text-[11px] font-black border-border hover:bg-secondary rounded-lg">
-            <Mail className="w-3.5 h-3.5 mr-2" /> Toplu Davet Gönder
-          </Button>
+      <div className="rd2-toolbar">
+        <div className="rd2-search rd2-search-lg">
+          <Search width="15" height="15" />
+          <input placeholder="Teknisyen ara..." />
         </div>
-        
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-muted/30 border-b border-border">
-                <th className="px-6 py-4 text-left text-[10px] font-black text-muted-foreground uppercase tracking-widest">Kullanıcı</th>
-                <th className="px-6 py-4 text-left text-[10px] font-black text-muted-foreground uppercase tracking-widest">E-posta</th>
-                <th className="px-6 py-4 text-left text-[10px] font-black text-muted-foreground uppercase tracking-widest">Rol</th>
-                <th className="px-6 py-4 text-left text-[10px] font-black text-muted-foreground uppercase tracking-widest">Durum</th>
-                <th className="px-6 py-4 text-left text-[10px] font-black text-muted-foreground uppercase tracking-widest">Son Giriş</th>
-                <th className="px-6 py-4 text-right text-[10px] font-black text-muted-foreground uppercase tracking-widest">İşlem</th>
+        <div style={{ flex: 1 }} />
+        <button className="rd2-btn rd2-btn-ghost">
+          <Mail width="15" height="15" /> Toplu Davet Gönder
+        </button>
+        <button className="rd2-btn rd2-btn-primary" style={{ background: "#FFCC00", color: "#0E1116" }} onClick={() => setIsOpen(true)}>
+          <Plus width="15" height="15" /> Yeni Teknisyen
+        </button>
+      </div>
+
+      <section className="rd2-card rd2-card-flush">
+        <table className="rd2-table">
+          <thead>
+            <tr>
+              <th>Kullanıcı</th>
+              <th>E-posta</th>
+              <th>Rol</th>
+              <th>Durum</th>
+              <th>Son Giriş</th>
+              <th className="rd2-tr">İşlem</th>
+            </tr>
+          </thead>
+          <tbody>
+            {technicians.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="rd2-empty">Kayıtlı teknisyen bulunmuyor.</td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {technicians.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground italic text-sm">
-                    Kayıtlı teknisyen bulunmuyor.
+            ) : (
+              technicians.map((t) => (
+                <tr key={t.id} className="rd2-tr-hover">
+                  <td>
+                    <div className="rd2-device-cell">
+                      <div className="rd2-avatar" style={{ background: t.role === "Admin" ? "#FFCC00" : "#F1F2F4", color: t.role === "Admin" ? "#0E1116" : "#5C6573" }}>
+                        {t.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                      </div>
+                      <div>
+                        <div className="rd2-device-name">{t.name}</div>
+                        <div className="rd2-device-meta">@{t.username || t.email.split("@")[0]}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="rd2-cell-muted">{t.email}</td>
+                  <td>
+                    {t.role === "Admin" ? (
+                      <span className="rd2-pill" style={{ background: "#FFCC00", color: "#0E1116" }}>
+                        <Shield width="11" height="11" /> Yönetici
+                      </span>
+                    ) : (
+                      <span className="rd2-pill rd2-pill-off">Teknisyen</span>
+                    )}
+                  </td>
+                  <td>
+                    <span className="rd2-pill rd2-pill-on">
+                      <span className="rd2-dot rd2-dot-green" />{t.status}
+                    </span>
+                  </td>
+                  <td className="rd2-cell-muted">{t.lastLogin}</td>
+                  <td className="rd2-tr">
+                    <div className="rd2-row-actions">
+                      <button className="rd2-icon-btn rd2-icon-btn-sm"><Edit2 width="13" height="13" /></button>
+                      <button className="rd2-icon-btn rd2-icon-btn-sm rd2-danger" onClick={() => deleteTechnician(t.id)}><Trash2 width="13" height="13" /></button>
+                    </div>
                   </td>
                 </tr>
-              ) : (
-                technicians.map(t => (
-                  <tr key={t.id} className="hover:bg-muted/20 transition-colors group">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-brand-ink font-black text-xs ring-1 ring-border shadow-brand-sm ${t.role === "Admin" ? "bg-brand-yellow" : "bg-muted"}`}>
-                          {t.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
-                        </div>
-                        <div>
-                          <p className="text-[13.5px] font-black text-foreground">{t.name}</p>
-                          <p className="text-[11px] text-muted-foreground font-bold mt-0.5 tracking-tight">@{t.username || t.email.split("@")[0]}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-[13px] font-bold text-muted-foreground">{t.email}</td>
-                    <td className="px-6 py-4">
-                      <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black ${
-                        t.role === "Admin" ? "bg-brand-yellow/20 text-brand-yellow ring-1 ring-brand-yellow/30" : "bg-muted text-muted-foreground ring-1 ring-border"
-                      }`}>
-                        {t.role === "Admin" && <Shield className="w-3 h-3" />}
-                        {t.role === "Admin" ? "Yönetici" : "Teknisyen"}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 text-emerald-500 text-[11px] font-black rounded-full ring-1 ring-emerald-500/20 w-fit">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-brand-pulse" />
-                        {t.status}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-[13px] font-medium text-muted-foreground">{t.lastLogin}</td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground">
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-500"
-                          onClick={() => deleteTechnician(t.id)}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+              ))
+            )}
+          </tbody>
+        </table>
+      </section>
+
+      {/* Modal */}
+      {isOpen && (
+        <div className="rd2-overlay" onClick={() => setIsOpen(false)}>
+          <div className="rd2-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ margin: "0 0 20px", fontSize: 15, fontWeight: 800 }}>Yeni Teknisyen Hesabı</h3>
+            <div className="rd2-form">
+              <div className="rd2-field-group">
+                <label>Ad Soyad</label>
+                <div className="rd2-field">
+                  <input type="text" value={newTech.name} onChange={e => setNewTech({ ...newTech, name: e.target.value })} placeholder="Örn: Ahmet Yılmaz" />
+                </div>
+              </div>
+              <div className="rd2-field-group">
+                <label>Kullanıcı Adı</label>
+                <div className="rd2-field">
+                  <input type="text" value={newTech.username} onChange={e => setNewTech({ ...newTech, username: e.target.value })} placeholder="Örn: ahmet" />
+                </div>
+              </div>
+              <div className="rd2-field-group">
+                <label>E-posta Adresi</label>
+                <div className="rd2-field">
+                  <input type="email" value={newTech.email} onChange={e => setNewTech({ ...newTech, email: e.target.value })} placeholder="ahmet@rustdesk.local" />
+                </div>
+              </div>
+              <div className="rd2-field-group">
+                <label>Şifre</label>
+                <div className="rd2-field">
+                  <input type="password" value={newTech.password} onChange={e => setNewTech({ ...newTech, password: e.target.value })} placeholder="••••••••" />
+                </div>
+              </div>
+              <div className="rd2-field-group">
+                <label>Rol</label>
+                <div className="rd2-field">
+                  <select value={newTech.role} onChange={e => setNewTech({ ...newTech, role: e.target.value as any })}>
+                    <option value="Teknisyen">Teknisyen (Sınırlı)</option>
+                    <option value="Admin">Admin (Tam Yetki)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="rd2-modal-foot">
+              <button className="rd2-btn rd2-btn-ghost" onClick={() => setIsOpen(false)}>İptal</button>
+              <button className="rd2-btn rd2-btn-primary" style={{ background: "#FFCC00", color: "#0E1116" }} onClick={handleAdd}>Oluştur</button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

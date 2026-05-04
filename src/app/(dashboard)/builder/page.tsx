@@ -52,168 +52,138 @@ export default function BuilderPage() {
   ];
 
   return (
-    <div className="flex flex-col gap-6 rd2-page max-w-6xl">
-      {/* Header */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-[20px] font-black tracking-tight rd2-h1">Paket Oluşturucu</h1>
-        <p className="text-[12px] text-[#5C6573] font-bold rd2-sub">Kullanıcılarınıza özel RustDesk ve RMM Ajanı paketlerini hazırlayın.</p>
-      </div>
-
-      <div className="grid lg:grid-cols-12 gap-6 rd2-builder-grid">
-        {/* Configuration Panel */}
-        <div className="lg:col-span-8 flex flex-col gap-6">
-          <div className="bg-white border border-black/5 rounded-xl shadow-sm overflow-hidden rd2-card p-0">
-            <div className="px-5 py-3 border-b border-black/[0.03] bg-[#F1F2F4]/30 rd2-card-head mb-0">
-              <h2 className="text-[11px] font-black text-[#0E1116] uppercase tracking-widest flex items-center gap-2">
-                <Globe className="w-4 h-4 text-[#FFCC00]" /> Dağıtım Yapılandırması
-              </h2>
+    <div className="rd2-page">
+      <div className="rd2-builder-grid">
+        {/* Config + command */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* Config card */}
+          <section className="rd2-card">
+            <div className="rd2-card-head">
+              <div>
+                <h3>Dağıtım Yapılandırması</h3>
+                <p className="rd2-muted-sm">Sunucu adresi ve port</p>
+              </div>
             </div>
-            <div className="p-6 flex flex-col gap-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="flex flex-col gap-2 rd2-field-group">
-                  <label className="text-[11px] font-black text-[#5C6573] uppercase tracking-wider">Sunucu Host (IP/Domain)</label>
-                  <div className="flex items-center gap-2 px-3 py-2.5 bg-[#F1F2F4] border border-black/5 rounded-xl rd2-field">
+            <div className="rd2-form">
+              <div className="rd2-form-row">
+                <div className="rd2-field-group">
+                  <label>Sunucu Host (IP/Domain)</label>
+                  <div className="rd2-field">
+                    <Globe width="14" height="14" />
                     <input 
                       value={host} 
                       onChange={e => setHost(e.target.value)}
-                      className="bg-transparent border-0 outline-0 text-[13.5px] font-bold flex-1"
                       placeholder="192.168.x.x"
                     />
                   </div>
                 </div>
-                <div className="flex flex-col gap-2 rd2-field-group">
-                  <label className="text-[11px] font-black text-[#5C6573] uppercase tracking-wider">API Port</label>
-                  <div className="flex items-center gap-2 px-3 py-2.5 bg-[#F1F2F4] border border-black/5 rounded-xl rd2-field">
+                <div className="rd2-field-group">
+                  <label>API Port</label>
+                  <div className="rd2-field">
                     <input 
                       value={port} 
                       onChange={e => setPort(e.target.value)}
-                      className="bg-transparent border-0 outline-0 text-[13.5px] font-bold flex-1"
                       placeholder="3000"
                     />
                   </div>
                 </div>
               </div>
-
-              <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100 flex flex-col gap-2">
-                <div className="flex items-center gap-2 text-[12px] font-black text-emerald-800">
-                  <Shield className="w-4 h-4" /> Aktif Sunucu Anahtarı (Key)
+              <div className="rd2-field-group">
+                <label>Sunucu Key</label>
+                <div className="rd2-field">
+                  <Shield width="14" height="14" />
+                  <input readOnly value={serverKey} className="rd2-mono" style={{ fontSize: 12 }} />
                 </div>
-                <p className="text-[11px] text-emerald-700 font-mono font-bold break-all bg-white/60 p-2 rounded-lg border border-emerald-200/50">
-                  {serverKey}
-                </p>
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* Master Deployment Section */}
-          <div className="bg-[#0E1116] text-white rounded-xl shadow-xl overflow-hidden relative group">
-            <div className="p-8 flex flex-col gap-6 relative z-10">
-              <div className="flex flex-col gap-2">
-                <div className="inline-flex items-center w-fit px-2 py-0.5 rounded bg-[#FFCC00] text-[#0E1116] text-[9px] font-black uppercase tracking-widest">Önerilen</div>
-                <h3 className="text-xl font-black text-white flex items-center gap-2">
-                  <Terminal className="w-6 h-6 text-[#FFCC00]" /> PowerShell Tek Tık Kurulum
-                </h3>
-                <p className="text-white/60 text-sm max-w-[500px] font-bold">
-                  Bu komut RustDesk 1.4.6'yı otomatik indirir, yapılandırır ve <b className="text-white">RMM Ajanını</b> sisteme servis olarak kurar.
-                </p>
+          {/* PowerShell command */}
+          <div className="rd2-ps-card" style={{ background: "#0E1116" }}>
+            <div className="rd2-ps-head">
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Terminal width="16" height="16" style={{ color: "#FFCC00" }} />
+                <span style={{ fontWeight: 800, fontSize: 13, color: "rgba(255,255,255,.85)" }}>
+                  PowerShell Tek Tık Kurulum
+                </span>
+                <span style={{ fontSize: 10, fontWeight: 700, background: "rgba(255,255,255,.08)", color: "#FFCC00", padding: "2px 8px", borderRadius: 4, letterSpacing: ".06em", textTransform: "uppercase" }}>
+                  Önerilen
+                </span>
               </div>
+              <div style={{ display: "flex", gap: 5 }}>
+                <div style={{ width: 11, height: 11, borderRadius: "50%", background: "rgba(239,68,68,.6)" }} />
+                <div style={{ width: 11, height: 11, borderRadius: "50%", background: "rgba(245,158,11,.6)" }} />
+                <div style={{ width: 11, height: 11, borderRadius: "50%", background: "rgba(16,185,129,.6)" }} />
+              </div>
+            </div>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,.45)", margin: "0 0 14px", lineHeight: 1.5 }}>
+              RustDesk 1.4.6'yı indirip yapılandırır, RMM Ajanını servis olarak kurar.
+            </p>
+            <div className="rd2-ps-cmd">
+              <span style={{ color: "rgba(255,255,255,.25)", marginRight: 6 }}>$</span>
+              <span className="rd2-mono" style={{ color: "#FFCC00", fontSize: 12, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {installCommand}
+              </span>
+              <button className="rd2-copy-btn" style={{ background: "#FFCC00", color: "#0E1116" }} onClick={copyToClipboard}>
+                {copied ? <Check width="14" height="14" /> : <Copy width="14" height="14" />}
+              </button>
+            </div>
 
-              <div className="relative group/cmd">
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-5 font-mono text-sm text-[#FFCC00] overflow-x-auto whitespace-nowrap scrollbar-hide ring-1 ring-white/5">
-                  <span className="text-white/30 mr-2">$</span>
-                  {installCommand}
+            <div className="rd2-ps-uninstall">
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: ".14em", textTransform: "uppercase", color: "rgba(255,255,255,.25)", marginBottom: 8 }}>
+                Kaldırma Komutu
+              </div>
+              <div className="rd2-ps-cmd" style={{ background: "rgba(255,255,255,.04)" }}>
+                <span style={{ color: "rgba(255,255,255,.25)", marginRight: 6 }}>$</span>
+                <span className="rd2-mono" style={{ color: "#fca5a5", fontSize: 11, flex: 1 }}>
+                  {`irm "http://${host}:${port}/api/rustdesk/builder/uninstall" | iex`}
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 16, marginTop: 16, fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,.3)", letterSpacing: ".05em" }}>
+              <span><Shield width="12" height="12" style={{ display: "inline-block", marginRight: 4, color: "#4ade80" }} /> Tam Otomatik</span>
+              <span><Cpu width="12" height="12" style={{ display: "inline-block", marginRight: 4, color: "#60a5fa" }} /> RMM Ajanı</span>
+              <span><Download width="12" height="12" style={{ display: "inline-block", marginRight: 4, color: "#FFCC00" }} /> v1.4.6</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Individual packages */}
+        <section className="rd2-card">
+          <div className="rd2-card-head">
+            <div>
+              <h3>Bireysel Paketler</h3>
+              <p className="rd2-muted-sm">Platform bazlı indirme</p>
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {downloads.map(pkg => (
+              <div key={pkg.name} className="rd2-pkg-row">
+                <div className="rd2-pkg-icon">
+                  <Download width="16" height="16" />
                 </div>
-                <button
-                  onClick={copyToClipboard}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 bg-[#FFCC00] text-[#0E1116] rounded-lg hover:scale-105 active:scale-95 transition-all shadow-xl"
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13 }}>{pkg.name}</div>
+                  <div style={{ fontSize: 11, color: "#8B92A0", marginTop: 2, fontWeight: 600, letterSpacing: ".04em" }}>
+                    {pkg.type} dosyası
+                  </div>
+                </div>
+                <button 
+                  className="rd2-btn rd2-btn-sm" 
+                  style={{ background: "#F1F2F4", color: "#0E1116" }}
+                  onClick={() => window.open(`https://github.com/rustdesk/rustdesk/releases/download/1.4.6/${pkg.file}`, '_blank')}
                 >
-                  {copied ? <Check className="w-4 h-4 stroke-[3]" /> : <Copy className="w-4 h-4 stroke-[3]" />}
+                  İndir
                 </button>
               </div>
-
-              {/* Kaldırma Komutu */}
-              <div className="flex flex-col gap-3 pt-4 border-t border-white/5">
-                <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Sistemden Kaldırma (Uninstall)</p>
-                <div className="relative group/cmd">
-                  <div className="bg-white/5 border border-white/5 rounded-xl p-4 font-mono text-xs text-red-400 overflow-x-auto whitespace-nowrap scrollbar-hide">
-                    <span className="text-white/20 mr-2">$</span>
-                    {`irm "http://${host}:${port}/api/rustdesk/builder/uninstall" | iex`}
-                  </div>
-                  <button
-                    onClick={() => {
-                      const cmd = `irm "http://${host}:${port}/api/rustdesk/builder/uninstall" | iex`;
-                      navigator.clipboard.writeText(cmd);
-                      alert("Kaldırma komutu kopyalandı!");
-                    }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-white/40 hover:text-red-400 transition-colors"
-                    title="Kopyala"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 text-[10px] text-white/40 font-black uppercase tracking-widest">
-                <span className="flex items-center gap-1.5"><Shield className="w-3.5 h-3.5 text-emerald-500" /> Tam Otomatik</span>
-                <span className="flex items-center gap-1.5"><Cpu className="w-3.5 h-3.5 text-blue-400" /> RMM Ajanı Dahil</span>
-                <span className="flex items-center gap-1.5"><Download className="w-3.5 h-3.5 text-[#FFCC00]" /> v1.4.6 Core</span>
-              </div>
-            </div>
-            <div className="absolute top-0 right-0 w-64 h-64 bg-[#FFCC00]/5 rounded-full blur-[100px] -mr-32 -mt-32" />
+            ))}
           </div>
-        </div>
-
-        {/* Individual Packages */}
-        <div className="lg:col-span-4 flex flex-col gap-6">
-          <div className="bg-white border border-black/5 rounded-xl shadow-sm overflow-hidden rd2-card p-0 h-fit">
-            <div className="px-5 py-3 border-b border-black/[0.03] bg-[#F1F2F4]/30 rd2-card-head mb-0">
-              <h2 className="text-[11px] font-black text-[#0E1116] uppercase tracking-widest">Bireysel Paketler</h2>
-            </div>
-            <div className="p-5 flex flex-col gap-4">
-              {downloads.map((d) => (
-                <div key={d.name} className="group p-4 border border-black/5 rounded-xl hover:bg-[#F1F2F4]/50 transition-all rd2-pkg-row">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-lg bg-[#F1F2F4] flex items-center justify-center text-[#5C6573] group-hover:bg-[#FFCC00]/20 group-hover:text-[#0E1116] transition-all rd2-pkg-icon">
-                      <Download className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-[13px] font-black text-[#0E1116]">{d.name}</p>
-                      <p className="text-[10px] text-[#8B92A0] font-black uppercase tracking-tight">{d.type} Dosyası</p>
-                    </div>
-                  </div>
-                  <button 
-                    className="w-full py-2 rounded-lg bg-white border border-black/5 text-[11px] font-black uppercase tracking-widest text-[#0E1116] hover:bg-[#FFCC00] hover:border-[#FFCC00] transition-all rd2-btn rd2-btn-sm"
-                    onClick={() => {
-                      window.open(`https://github.com/rustdesk/rustdesk/releases/download/1.4.6/${d.file}`, '_blank');
-                    }}
-                  >
-                    Resmi Paketi İndir
-                  </button>
-                </div>
-              ))}
-              
-              <div className="pt-4 mt-2 border-t border-black/[0.03]">
-                <a 
-                  href="https://github.com/rustdesk/rustdesk/releases/tag/1.4.6" 
-                  target="_blank" 
-                  className="flex items-center justify-center gap-2 text-[11px] font-black text-[#8B92A0] hover:text-[#0E1116] transition-colors"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" /> Tüm Sürümleri Gör (GitHub)
-                </a>
-              </div>
-            </div>
+          <div className="rd2-pkg-note">
+            <Info width="13" height="13" />
+            <span>Windows için .exe dosyasının adını değiştirmeyin — otomatik konfigürasyon için gerekli.</span>
           </div>
-
-          {/* Tips */}
-          <div className="bg-[#FFCC00]/10 border border-[#FFCC00]/20 rounded-xl p-5 flex flex-col gap-3 rd2-info-panel">
-            <div className="flex items-center gap-2 text-[#0E1116] font-black text-[11px] uppercase tracking-wider">
-              <Info className="w-4 h-4 text-[#FFCC00]" /> Önemli Not
-            </div>
-            <p className="text-[12px] text-[#5C6573] font-bold leading-relaxed">
-              Windows üzerinde isimlendirme ile otomatik konfigürasyon için indirilen <b>.exe</b> dosyasının adını değiştirmeyin. PowerShell kurulumu bu işlemi sizin yerinize otomatik yapar.
-            </p>
-          </div>
-        </div>
+        </section>
       </div>
     </div>
   );
