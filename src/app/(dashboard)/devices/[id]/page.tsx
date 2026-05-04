@@ -98,47 +98,60 @@ export default function DeviceDetailsPage() {
       </div>
 
       {/* Action Bar */}
-      <div className="rd2-card rd2-action-bar">
+      <div className="rd2-card rd2-action-bar" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
         <button 
           onClick={handleConnect}
           disabled={!isOnline}
-          className="rd2-action-btn bg-brand-yellow text-brand-ink"
+          className="rd2-btn"
+          style={isOnline ? { background: "#FFCC00", color: "#0E1116", border: "1px solid #0E111614" } : { opacity: 0.5 }}
         >
-          <Play className="w-4 h-4 fill-current" /> Uzaktan Bağlan
+          <Play width="14" height="14" /> Uzaktan Bağlan
         </button>
+        
         <button 
           onClick={() => window.open(`rustdesk://file-transfer/${device.id}`, "_self")}
           disabled={!isOnline}
-          className="rd2-action-btn bg-blue-600 text-white"
+          className="rd2-btn"
+          style={isOnline ? { background: "#0E1116", color: "#FFFFFF", border: "none" } : { opacity: 0.5 }}
         >
-          <FolderUp className="w-4 h-4" /> Dosya
+          <FolderUp width="14" height="14" /> Dosya Transferi
         </button>
+
+        <div style={{ width: 1, height: 24, background: "var(--line)", margin: "0 4px" }} />
+
         <button 
           onClick={() => runAction("restart")}
           disabled={!isOnline}
-          className="rd2-action-btn bg-orange-500 text-white"
+          className="rd2-btn rd2-btn-sm"
+          style={isOnline ? { background: "#F1F2F4" } : { opacity: 0.5 }}
         >
-          <RotateCcw className="w-4 h-4" /> Yeniden Başlat
+          <RotateCcw width="13" height="13" /> {actionStatus.restart === "running" ? "Bekleyin..." : "Yeniden Başlat"}
         </button>
+
         <button 
           onClick={() => runAction("shutdown")}
           disabled={!isOnline}
-          className="rd2-action-btn bg-red-500 text-white"
+          className="rd2-btn rd2-btn-sm"
+          style={isOnline ? { background: "#FCEAEA", color: "#C0392B" } : { opacity: 0.5 }}
         >
-          <Power className="w-4 h-4" /> Kapat
+          <Power width="13" height="13" /> Kapat
         </button>
+
         <button 
           onClick={() => runAction("lock")}
           disabled={!isOnline}
-          className="rd2-action-btn bg-violet-500 text-white"
+          className="rd2-btn rd2-btn-sm"
+          style={isOnline ? { background: "#F1F2F4" } : { opacity: 0.5 }}
         >
-          <Lock className="w-4 h-4" /> Kilitle
+          <Lock width="13" height="13" /> Kilitle
         </button>
+
         <button 
           onClick={() => { fetchDevices(); setActionStatus(prev => ({ ...prev, refresh: "success" })); }}
-          className="rd2-action-btn bg-secondary text-muted-foreground ml-auto"
+          className="rd2-icon-btn rd2-icon-btn-sm"
+          style={{ marginLeft: "auto" }}
         >
-          <RefreshCw className={`w-4 h-4 ${actionStatus.refresh === "running" ? "animate-spin" : ""}`} />
+          <RefreshCw width="14" height="14" className={actionStatus.refresh === "running" ? "animate-spin" : ""} />
         </button>
       </div>
 
