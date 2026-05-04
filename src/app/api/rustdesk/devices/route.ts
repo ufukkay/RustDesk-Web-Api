@@ -14,6 +14,7 @@ const execAsync = promisify(exec);
  */
 const STATUS_FILE = path.join(process.cwd(), "scripts", "online_status.json");
 const INFO_FILE = path.join(process.cwd(), "scripts", "device_info.json");
+const DELETED_FILE = path.join(process.cwd(), "scripts", "deleted_devices.json");
 
 let cachedDevices: any[] = [];
 let lastFetchTime = 0;
@@ -52,12 +53,16 @@ export async function GET() {
 
     let onlineStatus: Record<string, number> = {};
     let hardwareInfo: Record<string, any> = {};
+    let deletedDevices: string[] = [];
 
     if (fs.existsSync(STATUS_FILE)) {
       try { onlineStatus = JSON.parse(fs.readFileSync(STATUS_FILE, "utf-8")); } catch (e) {}
     }
     if (fs.existsSync(INFO_FILE)) {
       try { hardwareInfo = JSON.parse(fs.readFileSync(INFO_FILE, "utf-8")); } catch (e) {}
+    }
+    if (fs.existsSync(DELETED_FILE)) {
+      try { deletedDevices = JSON.parse(fs.readFileSync(DELETED_FILE, "utf-8")); } catch (e) {}
     }
 
     const now = Math.floor(now_ms / 1000);
@@ -79,6 +84,13 @@ export async function GET() {
         try { if (sqliteRow.info) sqliteInfo = JSON.parse(sqliteRow.info); } catch (e) {}
 
         const isOnline = (now - lastHeartbeat) < 90;
+
+        // Kullanıcı isteği: Sadece silinmemiş cihazları veya SİLİNMİŞ AMA ONLINE olanları getir.
+        // Yani: Silinmişse VE offline ise getirme.
+        const isDeleted = deletedDevices.includes(id);
+        if (isDeleted && !isOnline) {
+          return null;
+        }
 
         let localNets: any[] = [];
         if (extra.local_network_raw) {
@@ -112,7 +124,8 @@ export async function GET() {
           net_details: localNets.length > 0 ? localNets : (extra.net_details || []),
           isDuplicate: extra.isDuplicate || false
         };
-      });
+      })
+      .filter(Boolean) as any[];
 
     // --- AGGRESSIVE MERGING BY HOSTNAME ---
     const mergedMap = new Map<string, any>();
@@ -170,6 +183,16 @@ export async function DELETE(req: Request) {
   try {
     const { id } = await req.json();
     if (!id) return NextResponse.json({ error: "ID gerekli" }, { status: 400 });
+
+    // 1. SİLİNENLER LİSTESİNE EKLE (Hafızada tutalım ki offline ise bir daha gelmesin)
+    let deletedDevices: string[] = [];
+    if (fs.existsSync(DELETED_FILE)) {
+      try { deletedDevices = JSON.parse(fs.readFileSync(DELETED_FILE, "utf-8")); } catch (e) {}
+    }
+    if (!deletedDevices.includes(id)) {
+      deletedDevices.push(id);
+      fs.writeFileSync(DELETED_FILE, JSON.stringify(deletedDevices, null, 2));
+    }
 
     let hardwareInfo: Record<string, any> = {};
     if (fs.existsSync(INFO_FILE)) {
