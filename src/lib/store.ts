@@ -17,8 +17,10 @@ export interface Device {
   ram?: string;
   disk?: string;
   version?: string;
-  net_details?: any[]; // Detaylı ağ kartı bilgileri
-  isDuplicate?: boolean; // Tekrar eden eski kayıt mı?
+  gateway?: string;
+  dns?: string;
+  net_details?: any[];
+  isDuplicate?: boolean;
 }
 
 /**

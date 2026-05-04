@@ -159,7 +159,7 @@ export default function DeviceDetailsPage() {
     { 
       id: "connect", label: "Uzaktan Bağlan", icon: Play, 
       color: "bg-brand-yellow text-brand-ink hover:bg-brand-yellow/90", 
-      onClick: () => window.open(`rustdesk://${device.id}`, "_self"),
+      onClick: () => window.open(`rdrmm://${device.id}`, "_self"),
       needsConfirm: false
     },
     { 

@@ -134,6 +134,40 @@ export default function BuilderPage() {
                 </button>
               </div>
 
+              {/* Teknisyen Kurulum */}
+              <div className="space-y-3 pt-4 border-t border-white/5">
+                <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Teknisyen Makine Kurulumu (Tek Seferlik)</p>
+                <p className="text-[11px] text-white/50 leading-relaxed">
+                  Her teknisyen kendi bilgisayarında bu komutu <b>bir kez</b> çalıştırır.
+                  Kurulumdan sonra cihazlara şifre girmeden tek tıkla bağlanılır.
+                </p>
+                <div className="relative group/cmd">
+                  <div className="bg-black/20 border border-white/5 rounded-xl p-4 font-mono text-xs text-emerald-400 overflow-x-auto whitespace-nowrap scrollbar-hide">
+                    <span className="text-white/20 mr-2">$</span>
+                    {`irm "http://${host}:${port}/api/rustdesk/builder/tech-setup" | iex`}
+                  </div>
+                  <button
+                    onClick={() => {
+                      const cmd = `irm "http://${host}:${port}/api/rustdesk/builder/tech-setup" | iex`;
+                      if (navigator.clipboard && window.isSecureContext) {
+                        navigator.clipboard.writeText(cmd);
+                      } else {
+                        const ta = document.createElement("textarea");
+                        ta.value = cmd;
+                        document.body.appendChild(ta);
+                        ta.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(ta);
+                      }
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-white/40 hover:text-emerald-400 transition-colors"
+                    title="Kopyala"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
               {/* Kaldırma Komutu */}
               <div className="space-y-3 pt-4 border-t border-white/5">
                 <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">Sistemden Kaldırma (Uninstall)</p>
