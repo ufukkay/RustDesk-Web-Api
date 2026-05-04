@@ -45,9 +45,8 @@ export default function DeviceDetailsPage() {
     const cleanId = String(device.id).replace(/\s+/g, "");
     const { host, serverKey, defaultPassword } = connSettings;
     
-    const url = serverKey
-      ? `rustdesk://${cleanId}?password=${defaultPassword}&host=${host}&key=${encodeURIComponent(serverKey)}`
-      : `rustdesk://${cleanId}?password=${defaultPassword}&host=${host}`;
+    // Test: key parametresini cikardik
+    const url = `rustdesk://${cleanId}?password=${defaultPassword}&host=${host}`;
     
     window.open(url, "_self");
   };
