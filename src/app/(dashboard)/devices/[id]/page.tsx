@@ -161,7 +161,11 @@ export default function DeviceDetailsPage() {
       color: "bg-brand-yellow text-brand-ink hover:bg-brand-yellow/90", 
       onClick: () => {
         const cleanId = String(device.id).replace(/\s+/g, "");
-        window.location.href = `rdrmm://${cleanId}`;
+        const host = "192.168.0.184";
+        const key = "5XE+DKQ46fl1EgSLWqKV9qkV+nGT4VLBrhJKYUrFbD0=";
+        const password = "Ban41kam5";
+        const url = `rustdesk://${cleanId}?password=${password}&server=${host}&key=${encodeURIComponent(key)}`;
+        window.open(url, "_self");
       },
       needsConfirm: false
     },

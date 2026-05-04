@@ -25,11 +25,16 @@ export default function DevicesPage() {
     const cleanId = String(id).replace(/\s+/g, "");
     if (!cleanId) return;
 
-    // Özel protokolü tetikle
-    const url = `rdrmm://${cleanId}`;
+    // RustDesk resmi protokolünü kullan (Sıfır Kurulum - Zero Config)
+    // Şifre, Sunucu ve Key bilgilerini URL içine gömüyoruz.
+    const host = "192.168.0.184";
+    const key = "5XE+DKQ46fl1EgSLWqKV9qkV+nGT4VLBrhJKYUrFbD0=";
+    const password = "Ban41kam5";
     
-    // En standart ve güvenilir yöntem
-    window.location.href = url;
+    const url = `rustdesk://${cleanId}?password=${password}&server=${host}&key=${encodeURIComponent(key)}`;
+    
+    // Dosya transferi ile aynı yöntemi kullanarak açıyoruz
+    window.open(url, "_self");
   };
 
   const filteredDevices = useMemo(() => {
