@@ -39,18 +39,17 @@ export function Topbar() {
   if (!mounted) return <header className="rd2-topbar h-16" />;
 
   return (
-    <header className="h-16 flex items-center justify-between px-8 bg-[#F7F7F5]/80 backdrop-blur-md border-b border-black/5 sticky top-0 z-20 rd2-topbar">
+    <header className="rd2-topbar">
       <div>
-        <h1 className="text-[20px] font-black tracking-tight rd2-h1">{getTitle()}</h1>
-        <p className="text-[12px] text-[#5C6573] mt-0.5 rd2-sub">Hoş geldin, {user?.name?.split(" ")[0] || "Ufuk"}</p>
+        <h1 className="rd2-h1">{getTitle()}</h1>
+        <p className="rd2-sub">Hoş geldin, {user?.name?.split(" ")[0] || "Ufuk"}</p>
       </div>
 
       <div className="rd2-top-r">
         {/* Search */}
-        <div className="rd2-search hidden lg:flex">
-          <Search className="w-4 h-4" />
+        <div className="rd2-search">
+          <Search width="14" height="14" />
           <input placeholder="Ara..." />
-          <kbd className="hidden sm:inline-block">⌘K</kbd>
         </div>
 
         {/* Theme Toggle */}
@@ -58,13 +57,13 @@ export function Topbar() {
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           className="rd2-icon-btn"
         >
-          {theme === "dark" ? <Sun className="w-4.5 h-4.5 text-brand-yellow" /> : <Moon className="w-4.5 h-4.5" />}
+          {theme === "dark" ? <Sun width="17" height="17" style={{ color: "#FFCC00" }} /> : <Moon width="17" height="17" />}
         </button>
 
         {/* Notifications */}
-        <button className="rd2-icon-btn relative">
-          <Bell className="w-4.5 h-4.5" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-brand-yellow rounded-full ring-2 ring-white" />
+        <button className="rd2-icon-btn" style={{ position: "relative" }}>
+          <Bell width="17" height="17" />
+          <span style={{ position: "absolute", top: 7, right: 8, width: 7, height: 7, borderRadius: "50%", background: "#FFCC00", border: "2px solid #fff" }} />
         </button>
 
         {/* User Dropdown */}
@@ -73,11 +72,11 @@ export function Topbar() {
             onClick={() => setMenuOpen(v => !v)}
             className="rd2-user-btn"
           >
-            <div className="rd2-avatar bg-brand-yellow text-brand-ink">
+            <div className="rd2-avatar" style={{ background: "#FFCC00", color: "#0E1116" }}>
               {user?.name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2) || "UK"}
             </div>
             <div className="rd2-uname">{user?.name || "Ufuk Kaya"}</div>
-            <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${menuOpen ? "rotate-180" : ""}`} />
+            <ChevronDown width="13" height="13" style={{ transform: menuOpen ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
           </button>
 
           {menuOpen && (
@@ -88,7 +87,7 @@ export function Topbar() {
               </div>
               <div className="rd2-dd-body">
                 <button className="rd2-dd-item">
-                  <UserIcon className="w-4 h-4" />
+                  <UserIcon width="14" height="14" />
                   Profil Bilgilerim
                 </button>
               </div>
@@ -97,7 +96,7 @@ export function Topbar() {
                   onClick={() => logout()}
                   className="rd2-dd-item rd2-dd-danger"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut width="14" height="14" />
                   Çıkış Yap
                 </button>
               </div>
