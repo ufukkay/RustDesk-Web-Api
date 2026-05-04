@@ -358,57 +358,51 @@ export default function DeviceDetailsPage() {
         {/* Right Column */}
         <div className="space-y-6">
           {/* System Details */}
-          <div className="bg-card border border-border rounded-brand-lg overflow-hidden">
-            <div className="px-5 py-3 border-b border-border bg-muted/20">
-              <h3 className="font-black text-[10px] uppercase tracking-widest text-brand-ink/70">Sistem Detayları</h3>
+          <div className="bg-card border border-border rounded-brand-lg overflow-hidden shadow-sm">
+            <div className="px-5 py-3 border-b border-border bg-muted/20 flex items-center justify-between">
+              <h3 className="font-black text-[10px] uppercase tracking-widest text-brand-ink/70">Sistem Bilgileri</h3>
+              <FileText className="w-4 h-4 text-muted-foreground/50" />
             </div>
-            <div className="p-5 space-y-5">
+            <div className="p-5 space-y-4">
               <DetailItem icon={Monitor} label="İşletim Sistemi" value={device.os} />
-              <DetailItem icon={UserIcon} label="Aktif Kullanıcı" value={device.user} />
+              <DetailItem icon={UserIcon} label="Aktif Kullanıcı" value={device.user || "-"} />
               <DetailItem icon={Clock} label="Son Görülme" value={device.lastSeen} />
-              <DetailItem icon={Shield} label="Versiyon" value={device.version || "Bilinmiyor"} />
-              <DetailItem icon={Activity} label="Grup" value={device.group || "Genel"} />
-            </div>
-          </div>
-
-          {/* Connection Security */}
-          <div className="bg-card border border-border p-5 rounded-brand-lg">
-            <h3 className="font-black text-[10px] uppercase tracking-widest text-muted-foreground mb-4">Bağlantı Güvenliği</h3>
-            <div className="flex items-center gap-3 p-3 bg-emerald-500/5 rounded-lg border border-emerald-500/10">
-              <Shield className="w-5 h-5 text-emerald-500" />
-              <div>
-                <p className="text-[12px] font-bold text-emerald-700 leading-none">Uçtan Uca Şifreli</p>
-                <p className="text-[10px] text-emerald-600/70 mt-1 uppercase font-bold">AES-256 Bit</p>
-              </div>
+              <DetailItem icon={Shield} label="Sürüm / Grup" value={`${device.version || "1.4.x"} · ${device.group || "Genel"}`} />
             </div>
           </div>
 
           {/* Network Details */}
-          <div className="bg-card border border-border rounded-brand-lg overflow-hidden">
+          <div className="bg-card border border-border rounded-brand-lg overflow-hidden shadow-sm">
             <div className="px-5 py-3 border-b border-border bg-muted/20 flex items-center justify-between">
-              <h3 className="font-black text-[10px] uppercase tracking-widest text-brand-ink/70">Ağ Kartları</h3>
-              <Globe className="w-4 h-4 text-muted-foreground" />
+              <h3 className="font-black text-[10px] uppercase tracking-widest text-brand-ink/70">Ağ Yapılandırması</h3>
+              <Globe className="w-4 h-4 text-muted-foreground/50" />
             </div>
-            <div className="divide-y divide-border max-h-[400px] overflow-y-auto">
-              {!device.network || device.network.length === 0 ? (
-                <div className="p-6 text-center text-xs text-muted-foreground font-bold uppercase italic">
-                  Ağ bilgisi bulunamadı. Verileri Güncelle'ye basın.
+            <div className="p-5 space-y-4">
+              <div className="grid grid-cols-1 gap-3">
+                <div className="flex flex-col gap-1 p-3 bg-secondary/30 rounded-lg border border-border/50">
+                  <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Yerel IP Adresi</p>
+                  <p className="text-sm font-bold text-foreground font-mono">{(device.ip || "-").replace(/^::ffff:/, "")}</p>
                 </div>
-              ) : (
-                device.network.map((net: any, idx: number) => (
-                  <div key={idx} className="p-4 space-y-2 hover:bg-muted/10 transition-colors">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${net.ip ? "bg-emerald-500" : "bg-muted"}`} />
-                      <p className="text-[10px] font-black text-brand-ink uppercase">{net.name || `Bağdaştırıcı ${idx + 1}`}</p>
-                    </div>
-                    <div className="grid grid-cols-1 gap-1.5 pl-4">
-                      <NetInfoRow label="IP Adresi" value={net.ip || "-"} />
-                      <NetInfoRow label="Alt Ağ" value={net.mask ? `/${net.mask}` : "-"} />
-                      <NetInfoRow label="Gateway" value={net.gw || "-"} />
-                    </div>
-                  </div>
-                ))
-              )}
+                <div className="flex flex-col gap-1 p-3 bg-secondary/30 rounded-lg border border-border/50">
+                  <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Ağ Geçidi (Gateway)</p>
+                  <p className="text-sm font-bold text-foreground font-mono">{device.gateway || "-"}</p>
+                </div>
+                <div className="flex flex-col gap-1 p-3 bg-secondary/30 rounded-lg border border-border/50">
+                  <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">DNS Sunucuları</p>
+                  <p className="text-[11px] font-bold text-foreground font-mono break-all">{device.dns || "-"}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Connection Security */}
+          <div className="bg-emerald-500/5 border border-emerald-500/10 p-5 rounded-brand-lg flex items-center gap-4">
+            <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+              <Shield className="w-5 h-5 text-emerald-500" />
+            </div>
+            <div>
+              <p className="text-[12px] font-bold text-emerald-800 leading-none">Güvenli Bağlantı</p>
+              <p className="text-[10px] text-emerald-600/70 mt-1 uppercase font-black tracking-wider">AES-256 Bit Şifreleme</p>
             </div>
           </div>
         </div>
