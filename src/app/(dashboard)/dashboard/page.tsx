@@ -1,14 +1,10 @@
 "use client";
 
 import { useAppStore } from "@/lib/store";
-import { Monitor, Activity, Server, Database, ChevronRight, User as UserIcon, ShieldCheck, Laptop } from "lucide-react";
+import { Monitor, Zap, Users, Activity, ChevronRight, User as UserIcon, ShieldCheck, Laptop, Server, Database } from "lucide-react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 
-/**
- * DashboardPage - Sistemin genel durumunu özetleyen ana sayfa.
- */
 export default function DashboardPage() {
   const { devices, fetchDevices } = useAppStore();
   const [health, setHealth] = useState({ hbbs: "...", hbbr: "..." });
@@ -18,7 +14,6 @@ export default function DashboardPage() {
 
     const interval = setInterval(() => {
       fetchDevices();
-      
       fetch("/api/system/health")
         .then(res => res.json())
         .then(data => setHealth(data))
@@ -31,122 +26,112 @@ export default function DashboardPage() {
   const onlineCount = devices.filter(d => d.status === "online").length;
   
   const stats = [
-    { label: "Toplam Cihaz", value: devices.length, icon: Monitor, color: "text-blue-500", bg: "bg-blue-500/10" },
-    { label: "Online Cihaz", value: onlineCount, icon: Activity, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-    { label: "HBBS (ID Servis)", value: health.hbbs, icon: Server, color: health.hbbs === "Çalışıyor" ? "text-emerald-500" : "text-red-500", bg: health.hbbs === "Çalışıyor" ? "bg-emerald-500/10" : "bg-red-500/10" },
-    { label: "HBBR (Relay)", value: health.hbbr, icon: Database, color: health.hbbr === "Çalışıyor" ? "text-emerald-500" : "text-red-500", bg: health.hbbr === "Çalışıyor" ? "bg-emerald-500/10" : "bg-red-500/10" },
+    { label: "Toplam Cihaz", value: devices.length, icon: Monitor, bg: "bg-brand-yellow", color: "text-brand-ink" },
+    { label: "Online", value: onlineCount, icon: Zap, bg: "bg-green-bg", color: "text-green" },
+    { label: "Offline", value: devices.length - onlineCount, icon: Monitor, bg: "bg-gray-bg", color: "text-muted" },
+    { label: "Sistem", value: "Aktif", icon: ShieldCheck, bg: "bg-[#F0ECFF]", color: "text-[#5B30C8]" },
   ];
 
   return (
-    <div className="p-8 space-y-8 max-w-[1400px] mx-auto animate-in fade-in duration-500">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold text-foreground tracking-tight">Genel Bakış</h1>
-        <p className="text-sm text-muted-foreground">Sisteminizin durumunu ve aktif bağlantılarınızı takip edin.</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="rd2-page">
+      {/* Stats Grid */}
+      <div className="rd2-stats-grid">
         {stats.map((s) => (
-          <div key={s.label} className="bg-card rounded-brand-lg border border-border p-6 shadow-brand-sm hover:shadow-brand transition-all">
-            <div className="flex items-center justify-between mb-4">
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${s.bg}`}>
-                <s.icon className={`w-5 h-5 ${s.color}`} />
-              </div>
+          <div key={s.label} className="rd2-stat">
+            <div className={`rd2-stat-icon ${s.bg} ${s.color}`}>
+              <s.icon className="w-4.5 h-4.5" />
             </div>
-            <p className="text-3xl font-black text-foreground tracking-tight">{s.value}</p>
-            <p className="text-[12px] font-bold text-muted-foreground uppercase tracking-widest mt-1">{s.label}</p>
+            <div className="rd2-stat-val">{s.value}</div>
+            <div className="rd2-stat-label">{s.label}</div>
           </div>
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-card rounded-brand-lg border border-border shadow-brand-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-border bg-muted/20 flex items-center justify-between">
-              <h2 className="text-[11px] font-black text-brand-ink uppercase tracking-widest">Son Eklenen Cihazlar</h2>
-              <div className="flex items-center gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="text-[9px] font-black uppercase tracking-widest h-7 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all"
-                  onClick={async () => {
-                    if (confirm("Tüm offline cihazları listeden temizlemek istediğinize emin misiniz?")) {
-                      await fetch("/api/system/cleanup", { method: "POST" });
-                      fetchDevices();
-                    }
-                  }}
-                >
-                  Offline Temizle
-                </Button>
-                <Link href="/devices">
-                  <Button variant="ghost" size="sm" className="text-[10px] font-black uppercase tracking-widest hover:text-primary transition-all group h-7">
-                    Tümünü Gör <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
-                  </Button>
-                </Link>
-              </div>
+      <div className="rd2-2col">
+        {/* Recent Devices */}
+        <section className="rd2-card">
+          <div className="rd2-card-head">
+            <div>
+              <h3>Son Cihazlar</h3>
+              <p className="rd2-muted-sm">Anlık durum</p>
             </div>
-            <div className="divide-y divide-border">
-              {devices.length === 0 ? (
-                <div className="p-12 text-center text-muted-foreground text-sm italic">Henüz cihaz bulunmuyor.</div>
-              ) : (
-                devices.slice(0, 5).map(d => (
-                  <div key={d.id} className="p-4 px-6 hover:bg-muted/10 transition-colors flex items-center justify-between group">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground group-hover:text-foreground transition-all">
-                        {d.os.includes("Windows") ? <Monitor className="w-5 h-5" /> : <Laptop className="w-5 h-5" />}
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-foreground tracking-tight">{d.name}</p>
-                        <p className="text-[11px] text-muted-foreground font-mono mt-0.5">{d.id} · {d.os}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black ${
-                        d.status === "online" ? "bg-emerald-500/10 text-emerald-500" : "bg-muted text-muted-foreground"
-                      }`}>
-                        <div className={`w-1.5 h-1.5 rounded-full ${d.status === "online" ? "bg-emerald-500 animate-brand-pulse" : "bg-muted-foreground/50"}`} />
-                        {d.status === "online" ? "ONLINE" : "OFFLINE"}
-                      </div>
-                    </div>
+            <Link href="/devices" className="rd2-link-btn">
+              Tümünü gör <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+          <ul className="rd2-list">
+            {devices.slice(0, 5).map(d => (
+              <li key={d.id} className="rd2-list-row group">
+                <Link href={`/devices/${d.id}`} className="rd2-device-cell flex-1">
+                  <div className={`rd2-device-icon ${d.status === "online" ? "bg-brand-yellow/20 text-brand-ink" : "bg-gray-bg text-muted-foreground"}`}>
+                    {d.os.includes("Windows") ? <Monitor className="w-4 h-4" /> : <Laptop className="w-4 h-4" />}
                   </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
+                  <div>
+                    <div className="rd2-device-name">{d.name}</div>
+                    <div className="rd2-device-meta font-mono">{d.id} · {d.os}</div>
+                  </div>
+                </Link>
+                <span className={`rd2-pill ${d.status === "online" ? "rd2-pill-on" : "rd2-pill-off"}`}>
+                  <span className={`rd2-dot ${d.status === "online" ? "rd2-dot-green animate-brand-pulse" : "rd2-dot-gray"}`} />
+                  {d.status === "online" ? "Online" : "Offline"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
 
-        <div className="bg-card rounded-brand-lg border border-border shadow-brand-sm overflow-hidden h-fit">
-          <div className="px-6 py-4 border-b border-border bg-muted/20">
-            <h2 className="text-[11px] font-black text-brand-ink uppercase tracking-widest">Son Aktiviteler</h2>
+        {/* Activity Timeline */}
+        <section className="rd2-card">
+          <div className="rd2-card-head">
+            <div>
+              <h3>Son Aktiviteler</h3>
+              <p className="rd2-muted-sm">Bugün</p>
+            </div>
+            <span className="rd2-live">
+              <span className="rd2-pulse bg-brand-yellow" /> Canlı
+            </span>
           </div>
-          <div className="p-6 space-y-6">
+          <div className="rd2-timeline mt-2">
             {[
               { name: "Ufuk Kaya", action: "Sisteme giriş yaptı", time: "2 dk önce" },
               { name: "Ahmet Yılmaz", action: "Muhasebe-PC bağlantısı", time: "12 dk önce" },
               { name: "Selin Demir", action: "Yeni cihaz kaydı", time: "45 dk önce" },
             ].map((a, i) => (
-              <div key={i} className="flex gap-4 relative">
-                {i !== 2 && (
-                  <div className="absolute left-[17px] top-10 bottom-[-24px] w-[2px] bg-border/50" />
-                )}
-                <div className="w-[34px] h-[34px] rounded-full bg-secondary border border-border flex items-center justify-center shrink-0 z-10">
-                  <UserIcon className="w-3.5 h-3.5 text-muted-foreground" />
+              <div key={i} className="rd2-tl-row">
+                <div className="rd2-tl-avatar bg-brand-yellow text-brand-ink">
+                  {a.name.split(" ").map(n => n[0]).join("")}
                 </div>
-                <div className="pt-1">
-                  <p className="text-[13px] text-foreground leading-tight">
-                    <span className="font-semibold">{a.name}</span> <span className="text-muted-foreground">{a.action}</span>
-                  </p>
-                  <p className="text-[10px] text-muted-foreground mt-1 tracking-tight">{a.time}</p>
+                <div>
+                  <div className="rd2-tl-text text-[13.5px]">
+                    <span className="font-bold">{a.name}</span> <span className="opacity-70">{a.action}</span>
+                  </div>
+                  <div className="rd2-tl-time">{a.time}</div>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       </div>
 
-      <div className="flex items-center gap-2 bg-muted/30 w-fit px-4 py-2 rounded-lg border border-border text-[11px] font-black uppercase tracking-widest text-muted-foreground">
-        <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-        Sistem Sağlıklı · Uptime: <span className="text-foreground ml-0.5">99.9%</span>
-      </div>
+      {/* Server Health */}
+      <section className="rd2-card">
+        <div className="rd2-card-head !mb-4">
+          <h3>Sunucu Durumu</h3>
+        </div>
+        <div className="rd2-health-grid">
+          {[
+            { label: "HBBS (ID Servisi)", val: health.hbbs === "Çalışıyor" ? "Aktif" : "Hata", color: health.hbbs === "Çalışıyor" ? "text-green" : "text-red", bg: health.hbbs === "Çalışıyor" ? "bg-green-bg" : "bg-red-bg" },
+            { label: "HBBR (Relay)", val: health.hbbr === "Çalışıyor" ? "Aktif" : "Hata", color: health.hbbr === "Çalışıyor" ? "text-green" : "text-red", bg: health.hbbr === "Çalışıyor" ? "bg-green-bg" : "bg-red-bg" },
+            { label: "API Sunucusu", val: "Çalışıyor", color: "text-green", bg: "bg-green-bg" },
+            { label: "Uptime", val: "99.9%", color: "text-brand-ink", bg: "bg-brand-yellow" },
+          ].map((s) => (
+            <div key={s.label} className={`rd2-health-item ${s.bg}`}>
+              <div className={`rd2-health-val ${s.color}`}>{s.val}</div>
+              <div className="rd2-health-label">{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

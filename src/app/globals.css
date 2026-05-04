@@ -4,106 +4,134 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
-  /* Google-like Minimalist mapping */
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-
+  /* Brand Colors from New Design */
   --color-brand-yellow: #FFCC00;
   --color-brand-ink: #0E1116;
   
-  --radius-brand: 8px;
+  --radius-brand: 10px;
   --radius-brand-lg: 12px;
 }
 
 @layer base {
   :root {
-    --background: #F8F9FA;
-    --foreground: #202124;
-    
-    --card: #FFFFFF;
-    --card-foreground: #202124;
-    
-    --popover: #FFFFFF;
-    --popover-foreground: #202124;
-    
+    --bg: #F7F7F5;
+    --surface: #FFFFFF;
+    --line: rgba(14, 17, 22, 0.07);
+    --line2: rgba(14, 17, 22, 0.04);
+    --text: #0E1116;
+    --muted: #5C6573;
+    --muted2: #8B92A0;
+    --green: #1A8245;
+    --green-bg: #E8F7EE;
+    --red: #C0392B;
+    --red-bg: #FCEAEA;
+    --gray-bg: #F1F2F4;
+    --shadow: 0 1px 3px rgba(14,17,22,.06), 0 1px 2px rgba(14,17,22,.04);
+    --r: 10px;
+
+    /* Shadcn compatibility */
+    --background: var(--bg);
+    --foreground: var(--text);
+    --card: var(--surface);
+    --card-foreground: var(--text);
+    --popover: var(--surface);
+    --popover-foreground: var(--text);
     --primary: #FFCC00;
     --primary-foreground: #0E1116;
-    
-    --secondary: #F1F3F4;
-    --secondary-foreground: #202124;
-    
-    --muted: #F8F9FA;
-    --muted-foreground: #5F6368;
-    
+    --secondary: var(--gray-bg);
+    --secondary-foreground: var(--text);
+    --muted-foreground: var(--muted);
     --accent: #FFCC00;
     --accent-foreground: #0E1116;
-    
-    --destructive: #D93025;
+    --destructive: #C0392B;
     --destructive-foreground: #FFFFFF;
-    
-    --border: #E8EAED;
-    --input: #E8EAED;
+    --border: var(--line);
+    --input: var(--line);
     --ring: #FFCC00;
   }
 
-  /* PREMIUM DARK MODE (Gece Mavisi / Antrasit Tonları) */
   .dark {
-    --background: #0B0E14; /* Daha derin bir siyah-lacivert */
-    --foreground: #F1F3F4;
+    --bg: #0B0E14;
+    --surface: #151921;
+    --line: rgba(255, 255, 255, 0.1);
+    --line2: rgba(255, 255, 255, 0.05);
+    --text: #F1F3F4;
+    --muted: #9AA0A6;
+    --muted2: #5F6368;
+    --gray-bg: #1F242D;
     
-    --card: #151921; /* Kartlar daha belirgin */
-    --card-foreground: #F1F3F4;
-    
-    --popover: #151921;
-    --popover-foreground: #F1F3F4;
-    
-    --secondary: #1F242D;
-    --secondary-foreground: #F1F3F4;
-    
-    --muted: #1F242D;
-    --muted-foreground: #9AA0A6;
-    
-    --border: #2A303C;
-    --input: #2A303C;
-    --ring: #FFCC00;
+    --background: var(--bg);
+    --foreground: var(--text);
+    --card: var(--surface);
+    --border: var(--line);
   }
 }
 
-/* Base Styles */
 body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-  transition: background-color 0.3s ease, color 0.3s ease;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }
 
-@utility shadow-brand {
-  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, .30), 0 1px 3px 1px rgba(60, 64, 67, .15);
-}
-.dark .shadow-brand {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+/* --- RD2 DESIGN SYSTEM CLASSES --- */
+
+.rd2-sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  display: flex; flex-direction: column;
+  padding: 16px 12px;
+  position: sticky; top: 0; height: 100vh;
 }
 
-@utility shadow-brand-sm {
-  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, .10);
+.rd2-brand {
+  display: flex; align-items: center; gap: 10px;
+  padding: 2px 6px 16px; border-bottom: 1px solid var(--line2);
 }
+
+.rd2-nav-btn {
+  display: flex; align-items: center; gap: 11px;
+  padding: 9px 12px; border-radius: var(--r);
+  font-size: 13.5px; font-weight: 600; color: var(--muted);
+  text-align: left; background: transparent;
+  transition: background .1s, color .1s;
+  border: 1px solid transparent;
+}
+
+.rd2-nav-btn:hover { background: var(--gray-bg); color: var(--text); }
+.rd2-nav-btn.on { font-weight: 700; background: var(--primary); color: var(--primary-foreground); box-shadow: 0 1px 2px rgba(14,17,22,.08); }
+
+.rd2-topbar {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 28px;
+  border-bottom: 1px solid var(--line2);
+  position: sticky; top: 0; z-index: 10;
+  background: var(--bg);
+  backdrop-filter: saturate(160%) blur(8px);
+}
+
+.rd2-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--r) + 2px);
+  box-shadow: var(--shadow);
+  padding: 16px 18px;
+}
+
+.rd2-table thead th {
+  text-align: left; padding: 10px 16px;
+  font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--muted2); background: rgba(14,17,22,.025); border-bottom: 1px solid var(--line);
+}
+
+.rd2-table tbody td {
+  padding: 11px 16px; font-size: 13px; color: var(--text);
+  border-bottom: 1px solid var(--line2); vertical-align: middle;
+}
+
+.rd2-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+.rd2-pill-on  { background: var(--green-bg); color: var(--green); }
+.rd2-pill-off { background: var(--gray-bg); color: var(--muted); }
 
 /* Custom RustDesk animations */
 @keyframes rd-pulse {
