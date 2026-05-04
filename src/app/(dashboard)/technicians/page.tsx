@@ -34,7 +34,7 @@ export default function TechniciansPage() {
     setNewTech({ name: "", username: "", email: "", role: "Teknisyen", password: "" });
   };
 
-  return (
+
   return (
     <div className="rd2-page">
       {/* Mini stats */}
