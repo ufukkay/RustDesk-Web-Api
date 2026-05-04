@@ -26,15 +26,23 @@ export async function POST(req: Request) {
     const deviceIdStr = String(deviceId);
     const now = Math.floor(Date.now() / 1000);
 
-    // 0. Otomatik Kurtarma: Eğer cihaz blacklist'te ise ama sinyal gönderiyorsa, aktif demektir.
-    // Bu yüzden kara listeden çıkaralım.
+    // 0. Akıllı Kurtarma: Eğer cihaz blacklist'te ise ama sinyal gönderiyorsa, aktif demektir.
+    // Sadece 5 dakikadan önce silinmiş cihazları otomatik geri getirelim (Hatalı silme koruması)
     const BLACKLIST_FILE = path.join(process.cwd(), "scripts", "blacklist.json");
     if (fs.existsSync(BLACKLIST_FILE)) {
       try {
         let blacklist = JSON.parse(fs.readFileSync(BLACKLIST_FILE, "utf-8"));
-        if (blacklist[deviceIdStr]) {
-          delete blacklist[deviceIdStr];
-          fs.writeFileSync(BLACKLIST_FILE, JSON.stringify(blacklist, null, 2));
+        const entry = blacklist[deviceIdStr];
+        if (entry) {
+          const deletedAt = entry.deleted_at || 0;
+          // Eğer üzerinden 5 dakika (300 saniye) geçmişse ve hala sinyal varsa geri getir
+          if (now - deletedAt > 300) {
+            delete blacklist[deviceIdStr];
+            fs.writeFileSync(BLACKLIST_FILE, JSON.stringify(blacklist, null, 2));
+          } else {
+            // Hala yasaklı sürede, işlemi durdur ve cihaza cevap verme (veya sessiz kal)
+            return NextResponse.json({ ok: false, error: "Blacklisted" });
+          }
         }
       } catch (e) {}
     }

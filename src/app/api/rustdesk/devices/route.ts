@@ -31,7 +31,7 @@ export async function GET() {
     }
 
     // Blacklist'i oku
-    let blacklist: Record<string, boolean> = {};
+    let blacklist: Record<string, any> = {};
     if (fs.existsSync(BLACKLIST_FILE)) {
       try { blacklist = JSON.parse(fs.readFileSync(BLACKLIST_FILE, "utf-8")); } catch (e) {}
     }
@@ -179,29 +179,46 @@ export async function DELETE(req: Request) {
     const { id } = await req.json();
     if (!id) return NextResponse.json({ error: "ID gerekli" }, { status: 400 });
 
-    // 1. Blacklist'e ekle (Gelecekte de görünmesin)
-    let blacklist: Record<string, boolean> = {};
+    const now = Math.floor(Date.now() / 1000);
+    let blacklist: Record<string, any> = {};
+    let hardwareInfo: Record<string, any> = {};
+    
     if (fs.existsSync(BLACKLIST_FILE)) {
       try { blacklist = JSON.parse(fs.readFileSync(BLACKLIST_FILE, "utf-8")); } catch (e) {}
     }
-    blacklist[String(id)] = true;
+    if (fs.existsSync(INFO_FILE)) {
+      try { hardwareInfo = JSON.parse(fs.readFileSync(INFO_FILE, "utf-8")); } catch (e) {}
+    }
+
+    // 1. Hostname bilgisini bul
+    const deviceHostname = hardwareInfo[id]?.hostname || hardwareInfo[id]?.computer_name;
+    
+    // 2. Blacklist'e mühürlü ekle (Timestamp ile)
+    blacklist[String(id)] = { deleted_at: now };
+    if (deviceHostname) {
+      blacklist[String(deviceHostname).toUpperCase()] = { deleted_at: now };
+    }
     fs.writeFileSync(BLACKLIST_FILE, JSON.stringify(blacklist, null, 2));
 
-    // 2. Mevcut verilerden temizle
+    // 3. Verileri temizle
     [STATUS_FILE, INFO_FILE].forEach(file => {
       if (fs.existsSync(file)) {
         try {
           const data = JSON.parse(fs.readFileSync(file, "utf-8"));
-          if (data[id]) {
-            delete data[id];
-            fs.writeFileSync(file, JSON.stringify(data, null, 2));
+          let changed = false;
+          if (data[id]) { delete data[id]; changed = true; }
+          if (deviceHostname) {
+            const h = String(deviceHostname).toUpperCase();
+            if (data[h]) { delete data[h]; changed = true; }
           }
+          if (changed) fs.writeFileSync(file, JSON.stringify(data, null, 2));
         } catch (e) {}
       }
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error("[DEVICES DELETE] Hata:", error);
     return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }
