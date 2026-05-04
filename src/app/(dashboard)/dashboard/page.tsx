@@ -26,10 +26,10 @@ export default function DashboardPage() {
   const onlineCount = devices.filter(d => d.status === "online").length;
   
   const stats = [
-    { label: "Toplam Cihaz", value: devices.length, icon: Monitor, bg: "bg-brand-yellow", color: "text-brand-ink" },
-    { label: "Online", value: onlineCount, icon: Zap, bg: "bg-green-bg", color: "text-green" },
-    { label: "Offline", value: devices.length - onlineCount, icon: Monitor, bg: "bg-gray-bg", color: "text-muted" },
-    { label: "Sistem", value: "Aktif", icon: ShieldCheck, bg: "bg-[#F0ECFF]", color: "text-[#5B30C8]" },
+    { label: "Toplam Cihaz", value: devices.length, icon: Monitor, bg: "#FFCC00", color: "#0E1116" },
+    { label: "Online", value: onlineCount, icon: Zap, bg: "var(--green-bg)", color: "var(--green)" },
+    { label: "Offline", value: devices.length - onlineCount, icon: Monitor, bg: "var(--gray-bg)", color: "var(--muted)" },
+    { label: "Sistem", value: "Aktif", icon: ShieldCheck, bg: "#F0ECFF", color: "#5B30C8" },
   ];
 
   return (
@@ -38,7 +38,7 @@ export default function DashboardPage() {
       <div className="rd2-stats-grid">
         {stats.map((s) => (
           <div key={s.label} className="rd2-stat">
-            <div className="rd2-stat-icon" style={{ background: s.bg.replace('bg-[','').replace('bg-','').replace(']',''), color: s.color.replace('text-[','').replace('text-','').replace(']','') }}>
+            <div className="rd2-stat-icon" style={{ background: s.bg, color: s.color }}>
               <s.icon width="18" height="18" />
             </div>
             <div className="rd2-stat-val">{s.value}</div>

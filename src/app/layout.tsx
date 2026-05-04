@@ -21,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans min-h-screen antialiased bg-background text-foreground`}>
+      <body className={`${inter.variable} rd2-root`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
