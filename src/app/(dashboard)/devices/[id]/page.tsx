@@ -40,6 +40,12 @@ export default function DeviceDetailsPage() {
 
   const device = devices.find(d => d.id === params.id);
 
+  useEffect(() => {
+    if (terminalRef.current) {
+      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+    }
+  }, [terminalHistory]);
+
   const handleConnect = () => {
     if (!device) return;
     const cleanId = String(device.id).replace(/\s+/g, "");

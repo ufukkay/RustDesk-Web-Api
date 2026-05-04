@@ -10,8 +10,11 @@ const RESULTS_DIR = path.join(process.cwd(), "scripts", "command_results");
  */
 export async function POST(req: Request) {
   try {
-    const { id, result } = await req.json();
-    if (!id) return NextResponse.json({ ok: false });
+    const body = await req.json();
+    const deviceId = body.deviceId || body.id;
+    const output = body.output || body.result;
+    
+    if (!deviceId) return NextResponse.json({ ok: false });
 
     // Hostname bilgisini bul
     const INFO_FILE = path.join(process.cwd(), "scripts", "device_info.json");
@@ -30,7 +33,7 @@ export async function POST(req: Request) {
     }
 
     const resultFile = path.join(RESULTS_DIR, `${key}.txt`);
-    fs.writeFileSync(resultFile, result || "Boş çıktı", "utf-8");
+    fs.writeFileSync(resultFile, output || "Boş çıktı", "utf-8");
 
     return NextResponse.json({ ok: true });
   } catch (error) {
