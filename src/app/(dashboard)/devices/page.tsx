@@ -25,17 +25,9 @@ export default function DevicesPage() {
     const cleanId = String(id).replace(/\s+/g, "");
     if (!cleanId) return;
 
-    // RustDesk resmi protokolü
-    // Parametreleri 'host' ve 'key' olarak güncelledik (En yaygın desteklenen format)
-    const host = "192.168.0.184";
-    const key = "5XE+DKQ46fl1EgSLWqKV9qkV+nGT4VLBrhJKYUrFbD0=";
-    const password = "Ban41kam5";
-    
-    // Bazı sürümler host yerine server bekleyebilir, her iki ihtimali de ekleyebiliriz 
-    // ama standart genellikle host'tur.
-    const url = `rustdesk://${cleanId}?password=${password}&host=${host}&key=${encodeURIComponent(key)}`;
-    
-    window.open(url, "_self");
+    // Kullanıcının istediği özel rdrmm:// protokolüne geri dönüyoruz
+    const url = `rdrmm://${cleanId}`;
+    window.location.href = url;
   };
 
   const filteredDevices = useMemo(() => {
