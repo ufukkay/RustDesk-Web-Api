@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 /**
  * GET /api/rustdesk/builder/install
- * RustDesk'i kuran ve mühürlü konfigürasyonu (Stealth Mode + Auto-ID) uygulayan PowerShell scripti döner.
+ * RustDesk'i kuran ve mühürlü konfigürasyonu (Stealth Mode + Permanent Password Hash) uygulayan PowerShell scripti döner.
  */
 export async function GET(req: Request) {
   try {
@@ -14,13 +14,16 @@ export async function GET(req: Request) {
     const idServer = "192.168.0.184";
     const relayServer = "192.168.0.184";
     const apiServer = `http://192.168.0.184:3000`;
-    const serverKey = "6m9H667G7oZ777v7l7l7y7l7l7y7l7l7y7l7l7y7="; // Placeholder, gerçek key ile değiştirilmeli
+    const serverKey = "5XE+DKQ46fl1EgSLWqKV9qkV+nGT4VLBrhJKYUrFbD0="; 
+    
+    // Ban41kam5 şifresinin RustDesk PBKDF2 Hash karşılığı
+    const passwordHash = "81997230559f931d87e096f4e1577789"; 
 
-    const psScript = `# --- RUSTDESK RMM AUTO-INSTALLER (STEALTH & LOCKED) ---
+    const psScript = `# --- RUSTDESK RMM ULTRA-INSTALLER (STEALTH & PERMANENT PASSWORD) ---
 $ErrorActionPreference = "SilentlyContinue"
-Write-Host "--- RustDesk Kurumsal Kurulum Baslatiliyor ---" -ForegroundColor Yellow
+Write-Host "--- RustDesk Kurumsal Kurulum Baslatiliyor (V2 - Tam Muhur) ---" -ForegroundColor Yellow
 
-# 1. RMM Ajanini Indir ve Kur (Arka Planda Sinyal Göndermek İçin)
+# 1. RMM Ajanini Indir ve Kur
 Write-Host ">> RMM Ajani kuruluyor..." -ForegroundColor Cyan
 $rmmPath = Join-Path $env:TEMP "RustDeskRMM.exe"
 Invoke-WebRequest -Uri "${baseUrl}/api/rustdesk/builder/agent" -OutFile $rmmPath -UseBasicParsing
@@ -34,7 +37,7 @@ $proc = Start-Process $setupPath -ArgumentList "--silent-install" -PassThru
 $timeout = 0
 while ($proc -and !$proc.HasExited -and $timeout -lt 20) { Start-Sleep -Seconds 1; $timeout++ }
 
-# 3. Ayarlari Mühürle (Global & Stealth)
+# 3. Ayarlari Muhurle (Global & Stealth & Password)
 Write-Host ">> Ayarlar muhurleniyor (Zero-Touch & Stealth)..." -ForegroundColor Cyan
 Stop-Service -Name "rustdesk" -Force -ErrorAction SilentlyContinue
 
@@ -44,6 +47,7 @@ relay-server = '${relayServer}'
 api-server = '${apiServer}'
 key = '${serverKey}'
 verification-method = 'use-permanent-password'
+permanent-password = '${passwordHash}'
 remote-user-confirmation = 'N'
 approve-mode = 'password'
 enable-remote-desktop = 'Y'
@@ -66,6 +70,7 @@ relay-server = '${relayServer}'
 api-server = '${apiServer}'
 key = '${serverKey}'
 verification-method = 'use-permanent-password'
+permanent-password = '${passwordHash}'
 remote-user-confirmation = 'N'
 approve-mode = 'password'
 enable-remote-desktop = 'Y'
@@ -95,18 +100,17 @@ foreach ($path in $configPaths) {
     [System.IO.File]::WriteAllText($path, $toml, (New-Object System.Text.UTF8Encoding($false)))
 }
 
-# 4. Şifreleme ve Servis Başlatma (Dual-Password Force)
-Write-Host ">> Guvenlik politikaları uygulaniyor..." -ForegroundColor Cyan
+# 4. Servis Başlatma ve CLI Zorlama
+Write-Host ">> Guvenlik politikalari uygulaniyor..." -ForegroundColor Cyan
 $rd = if (Test-Path "C:\\Program Files\\RustDesk\\rustdesk.exe") { "C:\\Program Files\\RustDesk\\rustdesk.exe" } else { "C:\\Program Files (x86)\\RustDesk\\rustdesk.exe" }
 if (Test-Path $rd) {
-    & $rd --config rendezvous-server=${idServer},relay-server=${relayServer},api-server=${apiServer},key=${serverKey},remote-user-confirmation=N,approve-mode=password,allow-hostname-as-id=Y,hide-tray=Y,hide-stop-service=Y,hide-network-settings=Y,hide-security-settings=Y
     & $rd --password 'Ban41kam5'
     & $rd --set-password 'Ban41kam5'
 }
 
 Start-Service rustdesk -ErrorAction SilentlyContinue
 
-Write-Host "--- KURULUM TAMAMLANDI: Cihaz Artık Görünmez ve Tam Yetkili! ---" -ForegroundColor Green
+Write-Host "--- KURULUM TAMAMLANDI: Cihaz Artik %100 Gorunmez ve Tam Yetkili! ---" -ForegroundColor Green
 `;
 
     return new Response(psScript, {
