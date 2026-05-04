@@ -5,6 +5,8 @@
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
+/* --- Official RustDesk Portal v2 Styles --- */
+
 :root {
   --bg:      #F7F7F5;
   --surface: #FFFFFF;
@@ -20,55 +22,94 @@
   --gray-bg: #F1F2F4;
   --shadow:  0 1px 3px rgba(14,17,22,.06), 0 1px 2px rgba(14,17,22,.04);
   --r: 10px;
-  --primary: #FFCC00;
-  --primary-foreground: #0E1116;
 }
 
 @layer base {
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
   body {
     font-family: var(--font-sans);
     font-size: 14px;
     color: var(--text);
     background: var(--bg);
-    min-height: 100vh;
     -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv11","ss01";
   }
+  button { font: inherit; cursor: pointer; border: 0; background: 0; }
+  input, select { font: inherit; color: var(--text); }
+  table { border-collapse: collapse; width: 100%; }
+  a { text-decoration: none; color: inherit; }
 }
 
 @layer components {
-  /* ── Shell ──────────────────────────────────────────────────── */
-  .rd2-shell { display: flex !important; min-height: 100vh !important; width: 100% !important; overflow: hidden !important; }
-  .rd2-main { flex: 1 !important; display: flex !important; flex-direction: column !important; min-width: 0 !important; background: var(--bg) !important; height: 100vh !important; }
-  .rd2-content { flex: 1 !important; padding: 24px 32px !important; overflow-y: auto !important; }
-  .rd2-page { display: flex !important; flex-direction: column !important; gap: 20px !important; width: 100% !important; }
+  /* ── Shell (Using Flex for React Layout) ─────────────────────── */
+  .rd2-shell { display: flex !important; min-height: 100vh !important; }
+  .rd2-main  { display: flex !important; flex-direction: column !important; min-width: 0 !important; flex: 1 !important; background: var(--bg) !important; }
+  .rd2-content { flex: 1 !important; padding: 22px 28px 32px !important; }
+  .rd2-page { display: flex !important; flex-direction: column !important; gap: 18px !important; }
 
   /* ── Sidebar ────────────────────────────────────────────────── */
-  .rd2-sidebar { width: 240px !important; background: var(--surface) !important; border-right: 1px solid var(--line) !important; display: flex !important; flex-direction: column !important; padding: 16px 12px !important; height: 100vh !important; position: sticky !important; top: 0 !important; flex-shrink: 0 !important; }
-  .rd2-brand { display: flex !important; align-items: center !important; gap: 10px !important; padding: 8px 8px 24px !important; border-bottom: 1px solid var(--line2) !important; margin-bottom: 16px !important; }
-  .rd2-nav { display: flex !important; flex-direction: column !important; gap: 4px !important; }
-  .rd2-nav-btn { display: flex !important; align-items: center !important; gap: 12px !important; padding: 10px 12px !important; border-radius: var(--r) !important; font-size: 13.5px !important; font-weight: 600 !important; color: var(--muted) !important; transition: all 0.2s !important; }
-  .rd2-nav-btn.on { background: #FFCC00 !important; color: #0E1116 !important; font-weight: 700 !important; box-shadow: 0 1px 2px rgba(14,17,22,0.1) !important; }
+  .rd2-sidebar {
+    background: var(--surface) !important;
+    border-right: 1px solid var(--line) !important;
+    display: flex !important; flex-direction: column !important;
+    padding: 16px 12px !important;
+    position: sticky !important; top: 0 !important; height: 100vh !important;
+    width: 240px !important; flex-shrink: 0 !important;
+  }
+  .rd2-brand { display: flex !important; align-items: center !important; gap: 10px !important; padding: 2px 6px 16px !important; border-bottom: 1px solid var(--line2) !important; }
+  .rd2-nav { display: flex !important; flex-direction: column !important; gap: 2px !important; margin-top: 12px !important; }
+  .rd2-nav-btn {
+    display: flex !important; align-items: center !important; gap: 11px !important;
+    padding: 9px 12px !important; border-radius: var(--r) !important;
+    font-size: 13.5px !important; font-weight: 600 !important; color: var(--muted) !important;
+    transition: background .1s, color .1s !important;
+  }
+  .rd2-nav-btn:hover { background: var(--gray-bg) !important; color: var(--text) !important; }
+  .rd2-nav-btn.on { background: #FFCC00 !important; color: #0E1116 !important; font-weight: 700 !important; box-shadow: 0 1px 2px rgba(14,17,22,.08) !important; }
 
   /* ── Topbar ─────────────────────────────────────────────────── */
-  .rd2-topbar { height: 64px !important; display: flex !important; align-items: center !important; justify-content: space-between !important; padding: 0 32px !important; background: var(--bg) !important; border-bottom: 1px solid var(--line2) !important; flex-shrink: 0 !important; backdrop-filter: blur(8px) !important; }
-  .rd2-h1 { font-size: 20px !important; font-weight: 800 !important; letter-spacing: -0.02em !important; }
-  .rd2-sub { font-size: 12px !important; color: var(--muted) !important; margin-top: 2px !important; }
-  .rd2-top-r { display: flex !important; align-items: center !important; gap: 12px !important; }
+  .rd2-topbar {
+    display: flex !important; align-items: center !important; gap: 16px !important;
+    padding: 16px 28px !important;
+    border-bottom: 1px solid var(--line2) !important;
+    position: sticky !important; top: 0 !important; z-index: 10 !important;
+    background: var(--bg) !important;
+    backdrop-filter: saturate(160%) blur(8px) !important;
+    height: 64px !important;
+  }
+  .rd2-h1 { font-size: 20px !important; font-weight: 800 !important; letter-spacing: -.025em !important; }
+  .rd2-sub { font-size: 12.5px !important; color: var(--muted) !important; margin-top: 2px !important; }
 
-  /* ── Stats ──────────────────────────────────────────────────── */
+  /* ── Cards & Grid ────────────────────────────────────────────── */
+  .rd2-card { background: var(--surface) !important; border: 1px solid var(--line) !important; border-radius: calc(var(--r) + 2px) !important; box-shadow: var(--shadow) !important; padding: 16px 18px !important; }
   .rd2-stats-grid { display: grid !important; gap: 12px !important; grid-template-columns: repeat(4, minmax(0,1fr)) !important; }
   .rd2-stat { background: var(--surface) !important; border: 1px solid var(--line) !important; border-radius: calc(var(--r) + 2px) !important; padding: 15px 16px !important; box-shadow: var(--shadow) !important; }
+  .rd2-stat-icon { width: 34px !important; height: 34px !important; border-radius: 9px !important; display: grid !important; place-items: center !important; }
   .rd2-stat-val { font-size: 26px !important; font-weight: 900 !important; letter-spacing: -.03em !important; line-height: 1 !important; margin-top: 10px !important; }
+  .rd2-stat-label { font-size: 11.5px !important; color: var(--muted) !important; font-weight: 700 !important; margin-top: 4px !important; }
+
+  /* ── Status & Pills ───────────────────────────────────────────── */
+  .rd2-pill { display: inline-flex !important; align-items: center !important; gap: 5px !important; font-size: 11.5px !important; font-weight: 700 !important; padding: 3px 9px !important; border-radius: 999px !important; white-space: nowrap !important; }
+  .rd2-pill-on { background: var(--green-bg) !important; color: var(--green) !important; }
+  .rd2-pill-off { background: var(--gray-bg) !important; color: var(--muted) !important; }
+  .rd2-dot { width: 7px !important; height: 7px !important; border-radius: 50% !important; display: inline-block !important; }
+  .rd2-dot-green { background: #22c55e !important; box-shadow: 0 0 0 3px rgba(34,197,94,.15) !important; }
+  .rd2-dot-gray { background: #B6BAC2 !important; }
+
+  /* ── Tables ─────────────────────────────────────────────────── */
+  .rd2-table thead th { text-align: left !important; padding: 10px 16px !important; font-size: 10.5px !important; font-weight: 800 !important; text-transform: uppercase !important; color: var(--muted2) !important; background: rgba(14,17,22,.025) !important; border-bottom: 1px solid var(--line) !important; }
+  .rd2-table tbody td { padding: 11px 16px !important; font-size: 13px !important; border-bottom: 1px solid var(--line2) !important; }
 
   /* ── Login ──────────────────────────────────────────────────── */
-  .rd2-login { display: grid !important; grid-template-columns: 1fr 1fr !important; min-height: 100vh !important; background: #FFFFFF !important; }
-  .rd2-login-left { display: flex !important; align-items: stretch !important; overflow: hidden !important; position: relative !important; background: #FFCC00 !important; color: #0E1116 !important; }
-  .rd2-btn-primary-full { display: flex !important; align-items: center !important; justify-content: center !important; gap: 8px !important; width: 100% !important; padding: 12px !important; border-radius: 10px !important; font-size: 14px !important; font-weight: 800 !important; background: #FFCC00 !important; color: #0E1116 !important; border: 1px solid rgba(14,17,22,.08) !important; box-shadow: 0 1px 0 rgba(14,17,22,.06) !important; cursor: pointer !important; transition: filter 0.2s !important; }
+  .rd2-login { display: grid !important; grid-template-columns: 1fr 1fr !important; min-height: 100vh !important; background: var(--surface) !important; }
+  .rd2-login-left { display: flex !important; align-items: stretch !important; overflow: hidden !important; position: relative !important; background: #FFCC00 !important; }
+  .rd2-login-left::before { content:"" !important; position:absolute !important;inset:0 !important;background:radial-gradient(circle at 20% 80%,rgba(14,17,22,.07),transparent 40%),radial-gradient(circle at 80% 10%,rgba(14,17,22,.04),transparent 30%) !important; pointer-events:none !important; }
 }
 
 /* Next.js Dev Overlay Gizleme */
 nextjs-portal, #nextjs-dev-overlay, #nextjs-portal { display: none !important; }
 
 /* Responsive */
+@media (max-width: 1100px) { .rd2-stats-grid { grid-template-columns: repeat(2,1fr) !important; } }
 @media (max-width: 780px) { .rd2-shell { flex-direction: column !important; } .rd2-sidebar { width: 100% !important; height: auto !important; position: relative !important; } .rd2-login { grid-template-columns: 1fr !important; } .rd2-login-left { display:none !important; } }
