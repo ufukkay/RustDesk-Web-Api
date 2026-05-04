@@ -2,13 +2,15 @@ import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
   try {
-    const host = req.headers.get("host");
+    const reqUrl = new URL(req.url);
     const protocol = req.headers.get("x-forwarded-proto") || "http";
-    const baseUrl = `${protocol}://${host}`;
 
-    const idServer = "192.168.0.184";
-    const relayServer = "192.168.0.184";
-    const apiServer = `http://192.168.0.184:3000`;
+    // Builder sayfasından gelen ?host= ve ?port= parametrelerini kullan
+    const idServer = reqUrl.searchParams.get("host") || "192.168.0.184";
+    const apiPort  = reqUrl.searchParams.get("port") || "3000";
+    const relayServer = idServer;
+    const apiServer   = `http://${idServer}:${apiPort}`;
+    const baseUrl     = `${protocol}://${idServer}:${apiPort}`;
     const serverKey = "5XE+DKQ46fl1EgSLWqKV9qkV+nGT4VLBrhJKYUrFbD0=";
     const passwordHash = "81997230559f931d87e096f4e1577789";
 
