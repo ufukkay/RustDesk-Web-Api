@@ -76,17 +76,19 @@ export default function DevicesPage() {
         {/* Status */}
         <div className="rd2-filter-section">
           <div className="rd2-filter-label">Durum</div>
-          <div className="rd2-filter-pills">
+          <div className="rd2-filter-pills gap-2">
             {(["all", "online", "offline"] as const).map((k) => (
               <button
                 key={k}
                 onClick={() => setFilter(k)}
-                className={`rd2-fpill ${filter === k ? "on" : ""}`}
+                className={`rd2-fpill flex justify-between items-center ${filter === k ? "on" : ""}`}
                 style={filter === k ? { background: "var(--primary)", color: "var(--primary-foreground)" } : {}}
               >
-                {k === "online" && <span className="rd2-dot rd2-dot-green" />}
-                {k === "offline" && <span className="rd2-dot rd2-dot-gray" />}
-                {k === "all" ? "Tümü" : k.charAt(0).toUpperCase() + k.slice(1)}
+                <div className="flex items-center gap-2">
+                  {k === "online" && <span className="rd2-dot rd2-dot-green" />}
+                  {k === "offline" && <span className="rd2-dot rd2-dot-gray" />}
+                  <span>{k === "all" ? "Tümü" : k.charAt(0).toUpperCase() + k.slice(1)}</span>
+                </div>
                 <span className="rd2-fpill-count">
                   {k === "all" ? devices.length : devices.filter(d => d.status === k).length}
                 </span>
