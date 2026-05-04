@@ -187,12 +187,6 @@ export default function DeviceDetailsPage() {
       needsConfirm: false
     },
     { 
-      id: "fix_config", label: "Tam Yetki Ver", icon: Shield, 
-      color: "bg-indigo-600 text-white hover:bg-indigo-700", 
-      onClick: () => runAction("fix_config"),
-      needsConfirm: true
-    },
-    { 
       id: "refresh", label: "Verileri Güncelle", icon: RefreshCw, 
       color: "bg-emerald-500 text-white hover:bg-emerald-600", 
       onClick: () => { fetchDevices(); setActionStatus(prev => ({ ...prev, refresh: "success" })); setTimeout(() => setActionStatus(prev => ({ ...prev, refresh: "idle" })), 2000); },
