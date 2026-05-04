@@ -22,7 +22,11 @@ export default function DevicesPage() {
   useEffect(() => {
     fetch("/api/rustdesk/settings")
       .then(r => r.json())
-      .then(d => setConnSettings({ host: d.host || "", serverKey: d.serverKey || "", defaultPassword: d.defaultPassword || "" }))
+      .then(d => setConnSettings({ 
+        host: d.idServer || d.host || "", 
+        serverKey: d.serverKey || "", 
+        defaultPassword: d.defaultPassword || "" 
+      }))
       .catch(() => {});
   }, []);
 

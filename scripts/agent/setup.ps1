@@ -13,10 +13,17 @@ $possiblePaths = @(
 )
 foreach ($p in $possiblePaths) {
     if (Test-Path $p) {
-        $content = Get-Content $p
-        if ($content -match "id\s*=\s*'(\d+)'") { $rdId = $matches[1]; break }
+        $content = Get-Content $p -Raw
+        if ($content -match 'id\s*=\s*''?(\d+)''?') { 
+            $rdId = $matches[1]
+            Write-Host "RustDesk ID bulundu: $rdId ($p)" -ForegroundColor Cyan
+            break 
+        }
     }
 }
+
+# Ekstra kontrol: RustDesk servisi calisiyorsa servisten de alinabilir mi? (Gelecek plani)
+# Simdilik mevcut yontemi guclendirdik.
 if (-not $rdId) { $rdId = Read-Host "RustDesk ID otomatik bulunamadi, lutfen elle girin" }
 if (-not $rdId) { Write-Error "ID olmadan devam edilemez!"; return }
 

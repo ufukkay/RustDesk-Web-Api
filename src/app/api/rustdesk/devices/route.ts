@@ -127,48 +127,68 @@ export async function GET() {
       })
       .filter(Boolean) as any[];
 
-    // --- AGGRESSIVE MERGING BY HOSTNAME ---
+    // --- AGGRESSIVE MERGING ---
     const mergedMap = new Map<string, any>();
 
     rawDevices.forEach(dev => {
-      const key = dev.hostname;
-      const existing = mergedMap.get(key);
+      const isNumeric = /^\d+$/.test(dev.id);
+      
+      // Eşleştirme için anahtarlar:
+      // 1. Hostname (Büyük harf)
+      // 2. Eğer ID rakamsal değilse, ID'nin kendisi bir hostname olabilir
+      const keys = [dev.hostname];
+      if (!isNumeric) keys.push(dev.id.toUpperCase());
+
+      let existing = null;
+      let matchedKey = "";
+
+      for (const k of keys) {
+        if (mergedMap.has(k)) {
+          existing = mergedMap.get(k);
+          matchedKey = k;
+          break;
+        }
+      }
 
       if (!existing) {
-        mergedMap.set(key, dev);
+        // Yeni kayıt: Tüm anahtarlarıyla ekleyelim
+        keys.forEach(k => mergedMap.set(k, dev));
       } else {
         // Birleştirme Mantığı:
-        // 1. Rakamsal ID (Gerçek RustDesk ID) olanı ana ID olarak seç
-        const isNewNumeric = /^\d+$/.test(dev.id);
         const isExistingNumeric = /^\d+$/.test(existing.id);
 
         let primary = existing;
         let secondary = dev;
 
-        if (isNewNumeric && !isExistingNumeric) {
+        // Rakam olan her zaman kazanır
+        if (isNumeric && !isExistingNumeric) {
           primary = dev;
           secondary = existing;
         }
 
-        // Verileri birleştir (Boş olmayanları al)
         const merged = {
-          ...secondary, // Önce ikincil verileri koy
-          ...primary,   // Sonra birincil verilerle ez
-          // Ama donanım verileri hangisinde doluysa onu alalım
-          cpu: primary.cpu !== "-" ? primary.cpu : secondary.cpu,
-          ram: primary.ram !== "-" ? primary.ram : secondary.ram,
-          disk: primary.disk !== "-" ? primary.disk : secondary.disk,
-          ip: primary.ip !== "-" ? primary.ip : secondary.ip,
-          // Durum olarak en güncel olanı al
+          ...secondary,
+          ...primary,
+          // Online durumu her zaman kazanır
           status: (primary.status === "online" || secondary.status === "online") ? "online" : "offline",
-          lastSeen: primary.lastSeenTimestamp > secondary.lastSeenTimestamp ? primary.lastSeen : secondary.lastSeen
+          // Donanım verilerini birleştir
+          cpu: (primary.cpu && primary.cpu !== "-") ? primary.cpu : secondary.cpu,
+          ram: (primary.ram && primary.ram !== "-") ? primary.ram : secondary.ram,
+          disk: (primary.disk && primary.disk !== "-") ? primary.disk : secondary.disk,
+          ip: (primary.ip && primary.ip !== "-") ? primary.ip : secondary.ip,
+          lastSeen: primary.lastSeenTimestamp > secondary.lastSeenTimestamp ? primary.lastSeen : secondary.lastSeen,
+          lastSeenTimestamp: Math.max(primary.lastSeenTimestamp, secondary.lastSeenTimestamp)
         };
 
-        mergedMap.set(key, merged);
+        // Tüm anahtarları güncelleyelim
+        const allKeys = new Set([...keys, existing.hostname.toUpperCase()]);
+        if (!isExistingNumeric) allKeys.add(existing.id.toUpperCase());
+        
+        allKeys.forEach(k => mergedMap.set(k, merged));
       }
     });
 
-    const devices = Array.from(mergedMap.values());
+    const devices = Array.from(new Set(mergedMap.values()));
 
     cachedDevices = devices;
     lastFetchTime = now_ms;

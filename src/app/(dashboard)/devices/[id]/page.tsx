@@ -23,26 +23,32 @@ export default function DeviceDetailsPage() {
   const [actionStatus, setActionStatus] = useState<Record<string, CommandStatus>>({});
   const terminalRef = useRef<HTMLDivElement>(null);
 
+  const [connSettings, setConnSettings] = useState({ host: "", serverKey: "", defaultPassword: "" });
+
   useEffect(() => {
     setMounted(true);
     fetchDevices();
+    fetch("/api/rustdesk/settings")
+      .then(r => r.json())
+      .then(d => setConnSettings({ 
+        host: d.idServer || d.host || "", 
+        serverKey: d.serverKey || "", 
+        defaultPassword: d.defaultPassword || "" 
+      }))
+      .catch(() => {});
   }, [fetchDevices]);
 
   const device = devices.find(d => d.id === params.id);
 
-  useEffect(() => {
-    if (terminalRef.current) {
-      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
-    }
-  }, [terminalHistory]);
-
   const handleConnect = () => {
     if (!device) return;
     const cleanId = String(device.id).replace(/\s+/g, "");
-    const host = "192.168.0.184";
-    const key = "5XE+DKQ46fl1EgSLWqKV9qkV+nGT4VLBrhJKYUrFbD0=";
-    const password = "Ban41kam5";
-    const url = `rustdesk://${cleanId}?password=${password}&host=${host}&key=${encodeURIComponent(key)}`;
+    const { host, serverKey, defaultPassword } = connSettings;
+    
+    const url = serverKey
+      ? `rustdesk://${cleanId}?password=${defaultPassword}&host=${host}&key=${encodeURIComponent(serverKey)}`
+      : `rustdesk://${cleanId}?password=${defaultPassword}&host=${host}`;
+    
     window.open(url, "_self");
   };
 
