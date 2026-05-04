@@ -4,14 +4,37 @@ import { NextResponse } from "next/server";
  * GET /api/rustdesk/builder/uninstall
  * RustDesk ve RMM ajanını sistemden tamamen kaldıran bir PowerShell scripti döner.
  */
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const host = req.headers.get("host");
+    const protocol = req.headers.get("x-forwarded-proto") || "http";
+    const baseUrl = `${protocol}://${host}`;
+
     const psScript = `# --- RUSTDESK RMM UNINSTALLER ---
-# Bu script RustDesk ve RMM ajanını sistemden temizler.
+# Bu script RustDesk ve RMM ajanını sistemden temizler ve panelden siler.
 
 $ErrorActionPreference = "SilentlyContinue"
 
-Write-Host "--- RustDesk RMM Kaldırma Islemi Baslatiliyor ---" -ForegroundColor Yellow
+Write-Host "--- RustDesk RMM Kaldirma Islemi Baslatiliyor ---" -ForegroundColor Yellow
+
+# 0. Panelden Silme İsteği Gönder
+Write-Host ">> Panelden silme istegi gonderiliyor..." -ForegroundColor Cyan
+$rdExe = if (Test-Path "C:\\Program Files\\RustDesk\\rustdesk.exe") { "C:\\Program Files\\RustDesk\\rustdesk.exe" } else { "C:\\Program Files (x86)\\RustDesk\\rustdesk.exe" }
+$id = ""
+if (Test-Path $rdExe) {
+    $id = & $rdExe --get-id
+}
+if (!$id) {
+    $id = $env:COMPUTERNAME
+}
+
+try {
+    $body = @{ id = "$id" } | ConvertTo-Json
+    Invoke-RestMethod -Uri "${baseUrl}/api/rustdesk/devices" -Method DELETE -Body $body -ContentType "application/json" -UseBasicParsing
+    Write-Host ">> Cihaz panel listesinden kaldirildi." -ForegroundColor Green
+} catch {
+    Write-Host ">> Panel baglantisi kurulamadi, manuel silmeniz gerekebilir." -ForegroundColor Red
+}
 
 # 1. RMM Ajanını Durdur ve Sil
 Write-Host ">> RMM Ajani durduruluyor..." -ForegroundColor Cyan
@@ -26,7 +49,6 @@ if (Test-Path $rmmDir) {
 
 # 2. RustDesk Uygulamasını Kaldır
 Write-Host ">> RustDesk kaldiriliyor..." -ForegroundColor Cyan
-$rdExe = "C:\\Program Files\\RustDesk\\rustdesk.exe"
 if (Test-Path $rdExe) {
     # Uninstall komutunu sessiz modda calistirmaya calis
     Start-Process $rdExe -ArgumentList "--uninstall" -Wait -WindowStyle Hidden
@@ -37,7 +59,7 @@ Stop-Service "rustdesk" 2>$null
 sc.exe delete "rustdesk" 2>$null
 
 # 3. Yapılandırma ve Veri Dosyalarını Tamamen Temizle
-Write-Host ">> Yapılandırma ve AppData dosyalari temizleniyor..." -ForegroundColor Cyan
+Write-Host ">> Yapilandirma ve AppData dosyalari temizleniyor..." -ForegroundColor Cyan
 
 $configPaths = @(
     "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk",
@@ -69,7 +91,7 @@ foreach ($path in $configPaths) {
 
 Write-Host "------------------------------------------------" -ForegroundColor Yellow
 Write-Host "ISLEM TAMAMLANDI: RustDesk ve RMM Ajani Tamamen Silindi! ✅" -ForegroundColor Green
-Write-Host "BİTTİ" -ForegroundColor White -BackgroundColor Green
+Write-Host "BITTI" -ForegroundColor White -BackgroundColor Green
 `;
 
     return new Response(psScript, {
