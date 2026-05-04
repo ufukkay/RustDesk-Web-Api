@@ -11,15 +11,11 @@ export async function POST(req: Request) {
 
     let finalCommand = "";
     switch (action) {
-      case "restart": finalCommand = "shutdown /r /t 0 /f"; break;
-      case "shutdown": finalCommand = "shutdown /s /t 0 /f"; break;
-      case "lock": finalCommand = "rundll32.exe user32.dll,LockWorkStation"; break; 
-      case "refresh": finalCommand = "refresh_info"; break;
-      case "fix_config": 
-        finalCommand = "Stop-Service rustdesk -ErrorAction SilentlyContinue; $p1 = 'C:\\ProgramData\\RustDesk\\config\\RustDesk2.toml'; $p2 = 'C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk\\config\\RustDesk2.toml'; function Fix-Config($p) { if(!(Test-Path $p)) { return }; $c = Get-Content $p -Raw; $settings = @{ 'remote-user-confirmation' = \"'N'\"; 'approve-mode' = \"'password'\"; 'enable-remote-desktop' = \"'Y'\"; 'stop-service-on-user-logout' = \"'N'\"; 'verification-method' = \"'use-permanent-password'\"; 'allow-logon-screen-password' = \"'Y'\"; 'enable-remote-restart' = \"'Y'\"; 'allow-hostname-as-id' = \"'Y'\"; 'hide-tray' = \"'Y'\"; 'hide-stop-service' = \"'Y'\"; 'hide-network-settings' = \"'Y'\"; 'hide-security-settings' = \"'Y'\"; 'remove-preset-password-warning' = \"'Y'\"; 'disable-change-permanent-password' = \"'Y'\" }; $lines = @(); foreach($k in $settings.Keys) { $c = $c -replace \"(?m)^$k\\s*=\\s*.*`r?`n?\", \"\"; $lines += \"$k = $($settings[$k])\" }; $newContent = ($lines -join \"`r`n\") + \"`r`n\" + $c; [System.IO.File]::WriteAllText($p, $newContent, (New-Object System.Text.UTF8Encoding($false))) }; Fix-Config $p1; Fix-Config $p2; $rd = if (Test-Path 'C:\\Program Files\\RustDesk\\rustdesk.exe') { 'C:\\Program Files\\RustDesk\\rustdesk.exe' } else { 'C:\\Program Files (x86)\\RustDesk\\rustdesk.exe' }; if (Test-Path $rd) { & $rd --config remote-user-confirmation=N,approve-mode=password; & $rd --password 'Ban41kam5'; & $rd --set-password 'Ban41kam5' }; Start-Service rustdesk; 'Servis Yapılandırıldı. Terminali tazelemek için ajan yeniden başlatılıyor...'; Start-Sleep -s 2; Get-Process RustDeskRMM -ErrorAction SilentlyContinue | Stop-Process -Force"; 
-        break;
+      case "restart":  finalCommand = "shutdown /r /t 5 /f"; break;
+      case "shutdown": finalCommand = "shutdown /s /t 5 /f"; break;
+      case "lock":     finalCommand = "lock"; break; 
+      case "refresh":  finalCommand = "refresh_info"; break;
       case "terminal": finalCommand = command || ""; break;
-    }
 
     if (!finalCommand) return NextResponse.json({ success: false, message: "Komut bulunamadı." });
 
