@@ -161,12 +161,7 @@ export default function DeviceDetailsPage() {
       color: "bg-brand-yellow text-brand-ink hover:bg-brand-yellow/90", 
       onClick: () => {
         const cleanId = String(device.id).replace(/\s+/g, "");
-        const link = document.createElement("a");
-        link.href = `rdrmm://${cleanId}`;
-        link.target = "_self";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        window.location.href = `rdrmm://${cleanId}`;
       },
       needsConfirm: false
     },
