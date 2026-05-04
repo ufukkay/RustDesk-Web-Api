@@ -159,7 +159,15 @@ export default function DeviceDetailsPage() {
     { 
       id: "connect", label: "Uzaktan Bağlan", icon: Play, 
       color: "bg-brand-yellow text-brand-ink hover:bg-brand-yellow/90", 
-      onClick: () => window.open(`rdrmm://${device.id}`, "_self"),
+      onClick: () => {
+        const cleanId = String(device.id).replace(/\s+/g, "");
+        const link = document.createElement("a");
+        link.href = `rdrmm://${cleanId}`;
+        link.target = "_self";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      },
       needsConfirm: false
     },
     { 

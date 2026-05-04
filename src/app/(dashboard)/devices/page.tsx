@@ -22,7 +22,22 @@ export default function DevicesPage() {
   }, [fetchDevices]);
 
   const handleConnect = (id: string) => {
-    window.location.href = `rdrmm://${id}`;
+    // ID temizleme (boşlukları sil)
+    const cleanId = String(id).replace(/\s+/g, "");
+    if (!cleanId) return;
+
+    // Özel protokolü tetikle
+    const url = `rdrmm://${cleanId}`;
+    
+    // window.location.href bazen bazı tarayıcılarda (Chrome) 
+    // güvenlik nedeniyle bu tür yönlendirmeleri engelleyebiliyor.
+    // Görünmez bir link oluşturup tıklatmak daha garantidir.
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = "_self";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const filteredDevices = useMemo(() => {

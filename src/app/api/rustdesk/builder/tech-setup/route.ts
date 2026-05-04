@@ -16,18 +16,34 @@ $dir = "C:\\ProgramData\\RustDeskRMM"
 New-Item -ItemType Directory -Force -Path $dir | Out-Null
 
 # Baglanti handler VBScript (gorunmez pencere, dogrudan RustDesk'i acar)
-$connectVbs = @'
+$connectVbs = @"
 Set args = WScript.Arguments
 Dim id
 id = args(0)
-id = Replace(id, "rdrmm://", "")
-Dim rdExe
-rdExe = "C:\Program Files\RustDesk\rustdesk.exe"
-If Not CreateObject("Scripting.FileSystemObject").FileExists(rdExe) Then
-    rdExe = "C:\Program Files (x86)\RustDesk\rustdesk.exe"
+
+' URI temizleme (rdrmm://123 veya rdrmm:123 formatlarını destekler)
+If InStr(id, "://") > 0 Then
+    id = Mid(id, InStr(id, "://") + 3)
+ElseIf InStr(id, ":") > 0 Then
+    id = Mid(id, InStr(id, ":") + 1)
 End If
-CreateObject("WScript.Shell").Run """" & rdExe & """ --connect " & id & " Ban41kam5", 0, False
-'@
+
+' Sondaki slash varsa temizle
+If Right(id, 1) = "/" Then id = Left(id, Len(id) - 1)
+
+Dim rdExe
+rdExe = "C:\\Program Files\\RustDesk\\rustdesk.exe"
+If Not CreateObject("Scripting.FileSystemObject").FileExists(rdExe) Then
+    rdExe = "C:\\Program Files (x86)\\RustDesk\\rustdesk.exe"
+End If
+
+Dim oShell
+Set oShell = CreateObject("WScript.Shell")
+
+' RustDesk'i direkt baglanti komutuyla ac (Sifre parametresiyle)
+' Not: Sifre teknisyen kurulumunda sabit olarak 'Ban41kam5' varsayildi.
+oShell.Run """" & rdExe & """ --connect " & id & " Ban41kam5", 1, False
+"@
 [System.IO.File]::WriteAllText("$dir\\connect.vbs", $connectVbs, (New-Object System.Text.UTF8Encoding($false)))
 
 # rdrmm:// URI scheme kaydet (HKCU - admin gerektirmez)

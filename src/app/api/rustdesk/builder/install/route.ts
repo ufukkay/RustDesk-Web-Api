@@ -127,27 +127,37 @@ Write-Host ">> rdrmm:// URI handler kuruluyor..." -ForegroundColor Cyan
 $rmmDir = "C:\\ProgramData\\RustDeskRMM"
 New-Item -ItemType Directory -Force -Path $rmmDir | Out-Null
 
-$connectVbs = @'
+$connectVbs = @"
 Set args = WScript.Arguments
 Dim id
 id = args(0)
-id = Replace(id, "rdrmm://", "")
-id = Replace(id, "/", "")
 
-Dim rdExe
-rdExe = "C:\Program Files\RustDesk\rustdesk.exe"
-If Not CreateObject("Scripting.FileSystemObject").FileExists(rdExe) Then
-    rdExe = "C:\Program Files (x86)\RustDesk\rustdesk.exe"
+' URI temizleme (rdrmm://123 veya rdrmm:123 formatlarını destekler)
+If InStr(id, "://") > 0 Then
+    id = Mid(id, InStr(id, "://") + 3)
+ElseIf InStr(id, ":") > 0 Then
+    id = Mid(id, InStr(id, ":") + 1)
 End If
 
-' Sifreyi panoya kopyala (kullanici Ctrl+V ile yapistirabilir)
+' Sondaki slash varsa temizle
+If Right(id, 1) = "/" Then id = Left(id, Len(id) - 1)
+
+Dim rdExe
+rdExe = "C:\\Program Files\\RustDesk\\rustdesk.exe"
+If Not CreateObject("Scripting.FileSystemObject").FileExists(rdExe) Then
+    rdExe = "C:\\Program Files (x86)\\RustDesk\\rustdesk.exe"
+End If
+
 Dim oShell
 Set oShell = CreateObject("WScript.Shell")
-oShell.Run "cmd /c echo ${password}| clip", 0, True
 
-' RustDesk penceresi gorunur ac, ID girilmis olarak
-oShell.Run """" & rdExe & """ --connect " & id, 1, False
-'@
+' Sifreyi panoya kopyala (yedek olarak)
+oShell.Run "cmd /c set /p=${password}<nul | clip", 0, True
+
+' RustDesk'i direkt baglanti komutuyla ac (Sifre parametresiyle)
+' Not: Pencereyi gorunur acmak icin 1, gizli baglanti icin 0 (burada 1 tercih edildi)
+oShell.Run """" & rdExe & """ --connect " & id & " ${password}", 1, False
+"@
 [System.IO.File]::WriteAllText("$rmmDir\\connect.vbs", $connectVbs, (New-Object System.Text.UTF8Encoding($false)))
 
 # HKLM ile tüm kullanıcılara kaydet (admin yetkisi mevcut)
