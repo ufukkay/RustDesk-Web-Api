@@ -76,8 +76,8 @@ export async function GET() {
       ...Object.keys(onlineStatus)
     ]);
 
-    const devices = Array.from(allIds)
-      .filter(id => !blacklist[id]) // Blacklist'tekileri atla
+    const rawDevices = Array.from(allIds)
+      .filter(id => !blacklist[id]) 
       .map(id => {
         const sqliteRow = sqliteDevices.find((d: any) => String(d.id) === id) || {};
         const lastHeartbeat = onlineStatus[id] || 0;
@@ -101,12 +101,14 @@ export async function GET() {
 
         return {
           id: id,
+          hostname: (extra.hostname || extra.computer_name || sqliteRow.hostname || sqliteInfo.hostname || sqliteRow.username || id).toUpperCase(),
           name: extra.hostname || extra.computer_name || sqliteRow.hostname || sqliteInfo.hostname || sqliteRow.username || id,
           ip: extra.ip || sqliteInfo.ip || sqliteRow.ip || "-",
           os: extra.os || sqliteRow.os || "Windows",
           user: extra.standard_user || sqliteRow.user || sqliteRow.username || "-",
           status: isOnline ? "online" : "offline",
           lastSeen: lastHeartbeat > 0 ? new Date(lastHeartbeat * 1000).toLocaleString("tr-TR") : "Bilinmiyor",
+          lastSeenTimestamp: lastHeartbeat,
           group: sqliteRow.note || "Genel",
           network: extra.network || [],
           cpu: extra.cpu || "-",
@@ -116,8 +118,50 @@ export async function GET() {
           net_details: localNets.length > 0 ? localNets : (extra.net_details || []),
           isDuplicate: extra.isDuplicate || false
         };
-      })
-      .filter(d => !d.isDuplicate); // Duplicate (tekrar eden) kayıtları UI'da gösterme
+      });
+
+    // --- AGGRESSIVE MERGING BY HOSTNAME ---
+    const mergedMap = new Map<string, any>();
+
+    rawDevices.forEach(dev => {
+      const key = dev.hostname;
+      const existing = mergedMap.get(key);
+
+      if (!existing) {
+        mergedMap.set(key, dev);
+      } else {
+        // Birleştirme Mantığı:
+        // 1. Rakamsal ID (Gerçek RustDesk ID) olanı ana ID olarak seç
+        const isNewNumeric = /^\d+$/.test(dev.id);
+        const isExistingNumeric = /^\d+$/.test(existing.id);
+
+        let primary = existing;
+        let secondary = dev;
+
+        if (isNewNumeric && !isExistingNumeric) {
+          primary = dev;
+          secondary = existing;
+        }
+
+        // Verileri birleştir (Boş olmayanları al)
+        const merged = {
+          ...secondary, // Önce ikincil verileri koy
+          ...primary,   // Sonra birincil verilerle ez
+          // Ama donanım verileri hangisinde doluysa onu alalım
+          cpu: primary.cpu !== "-" ? primary.cpu : secondary.cpu,
+          ram: primary.ram !== "-" ? primary.ram : secondary.ram,
+          disk: primary.disk !== "-" ? primary.disk : secondary.disk,
+          ip: primary.ip !== "-" ? primary.ip : secondary.ip,
+          // Durum olarak en güncel olanı al
+          status: (primary.status === "online" || secondary.status === "online") ? "online" : "offline",
+          lastSeen: primary.lastSeenTimestamp > secondary.lastSeenTimestamp ? primary.lastSeen : secondary.lastSeen
+        };
+
+        mergedMap.set(key, merged);
+      }
+    });
+
+    const devices = Array.from(mergedMap.values());
 
     cachedDevices = devices;
     lastFetchTime = now_ms;
