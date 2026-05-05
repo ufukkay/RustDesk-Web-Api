@@ -10,11 +10,22 @@ export async function GET(req: Request) {
     
     // Header'lardan baz URL'i al (HTTPS uyumu için)
     const hostHeader = req.headers.get("host");
+    const currentHost = hostHeader?.split(":")[0] || "rmm.talay.com";
     const protocol = req.headers.get("x-forwarded-proto") || "http";
-    const baseUrl = settings.apiServer || `${protocol}://${hostHeader}`;
+    
+    // Eğer ayarlardaki apiServer eski yerel IP ise onu yok sayalım
+    let baseUrl = settings.apiServer;
+    if (!baseUrl || (baseUrl.includes("192.168.0.184") && !currentHost.startsWith("192.168."))) {
+      baseUrl = `${protocol}://${hostHeader}`;
+    }
 
-    const idServer    = searchParams.get("host") || settings.idServer || settings.host || hostHeader?.split(":")[0] || "rmm.talay.com";
-    const relayServer = settings.relayServer || idServer;
+    let idServer = searchParams.get("host") || settings.idServer || settings.host || currentHost;
+    // Eski varsayılan IP'yi canlı ortamda rmm.talay.com ile değiştirelim
+    if (idServer === "192.168.0.184" && !currentHost.startsWith("192.168.")) {
+      idServer = currentHost;
+    }
+
+    const relayServer = settings.relayServer && settings.relayServer !== "192.168.0.184" ? settings.relayServer : idServer;
     const apiPort     = searchParams.get("port") || settings.port || "3000";
     const apiServer   = baseUrl;
     const password    = settings.defaultPassword || "Ban41kam5";
