@@ -9,26 +9,34 @@ import { useAppStore } from "@/lib/store";
 
 export default function BuilderPage() {
   const { serverConfig } = useAppStore();
-  const [host, setHost] = useState(serverConfig.host);
-  const [port, setPort] = useState(serverConfig.apiPort);
+  const [host, setHost] = useState("");
+  const [port, setPort] = useState("");
   const [copied, setCopied] = useState(false);
   const [serverKey, setServerKey] = useState("Yükleniyor...");
   const [baseUrl, setBaseUrl] = useState("");
 
   useEffect(() => {
+    // İlk değerleri window.location'dan alalım (canlı ortam uyumu için)
+    if (typeof window !== "undefined") {
+      setHost(window.location.hostname);
+      setPort(window.location.port || (window.location.protocol === "https:" ? "443" : "3000"));
+      setBaseUrl(window.location.origin);
+    }
+
     fetch("/api/rustdesk/server-key")
       .then(res => res.json())
       .then(data => setServerKey(data.key))
       .catch(() => setServerKey("Okunamadı"));
+      
     fetch("/api/rustdesk/settings")
       .then(res => res.json())
       .then(data => {
         if (data.idServer || data.host) setHost(data.idServer || data.host);
         if (data.port) setPort(data.port);
-        // apiServer ayarlıysa onu kullan (https://rmm.talay.com), yoksa mevcut sayfanın origin'i
-        setBaseUrl(data.apiServer || window.location.origin);
+        // apiServer ayarlıysa onu kullan, yoksa mevcut sayfanın origin'i
+        if (data.apiServer) setBaseUrl(data.apiServer);
       })
-      .catch(() => setBaseUrl(window.location.origin));
+      .catch(() => {});
   }, []);
   const installCommand = `irm "${baseUrl}/api/rustdesk/builder/install?host=${host}&port=${port}" | iex`;
 
