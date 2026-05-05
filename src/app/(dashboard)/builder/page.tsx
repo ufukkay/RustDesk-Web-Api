@@ -13,10 +13,9 @@ export default function BuilderPage() {
   const [port, setPort] = useState(serverConfig.apiPort);
   const [copied, setCopied] = useState(false);
   const [serverKey, setServerKey] = useState("Yükleniyor...");
-  const [origin, setOrigin] = useState("");
+  const [baseUrl, setBaseUrl] = useState("");
 
   useEffect(() => {
-    setOrigin(window.location.origin);
     fetch("/api/rustdesk/server-key")
       .then(res => res.json())
       .then(data => setServerKey(data.key))
@@ -26,11 +25,11 @@ export default function BuilderPage() {
       .then(data => {
         if (data.idServer || data.host) setHost(data.idServer || data.host);
         if (data.port) setPort(data.port);
+        // apiServer ayarlıysa onu kullan (https://rmm.talay.com), yoksa mevcut sayfanın origin'i
+        setBaseUrl(data.apiServer || window.location.origin);
       })
-      .catch(() => {});
+      .catch(() => setBaseUrl(window.location.origin));
   }, []);
-
-  const baseUrl = origin || `http://${host}:${port}`;
   const installCommand = `irm "${baseUrl}/api/rustdesk/builder/install?host=${host}&port=${port}" | iex`;
 
   const copyToClipboard = () => {
