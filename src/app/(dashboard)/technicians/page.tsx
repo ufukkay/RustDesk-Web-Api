@@ -8,7 +8,14 @@ export default function TechniciansPage() {
   const { technicians, addTechnician, deleteTechnician, fetchTechnicians } = useAppStore();
   const [isOpen, setIsOpen] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
-  const [newTech, setNewTech] = useState({ id: "", name: "", username: "", email: "", role: "Teknisyen" as const, password: "" });
+  const [newTech, setNewTech] = useState({ 
+    id: "", 
+    name: "", 
+    username: "", 
+    email: "", 
+    role: "Teknisyen" as "Admin" | "Teknisyen", 
+    password: "" 
+  });
 
   useEffect(() => {
     fetchTechnicians();
