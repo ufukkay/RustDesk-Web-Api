@@ -13,15 +13,25 @@ export default function BuilderPage() {
   const [port, setPort] = useState(serverConfig.apiPort);
   const [copied, setCopied] = useState(false);
   const [serverKey, setServerKey] = useState("Yükleniyor...");
+  const [origin, setOrigin] = useState("");
 
   useEffect(() => {
+    setOrigin(window.location.origin);
     fetch("/api/rustdesk/server-key")
       .then(res => res.json())
       .then(data => setServerKey(data.key))
       .catch(() => setServerKey("Okunamadı"));
+    fetch("/api/rustdesk/settings")
+      .then(res => res.json())
+      .then(data => {
+        if (data.idServer || data.host) setHost(data.idServer || data.host);
+        if (data.port) setPort(data.port);
+      })
+      .catch(() => {});
   }, []);
 
-  const installCommand = `irm "http://${host}:${port}/api/rustdesk/builder/install?host=${host}&port=${port}" | iex`;
+  const baseUrl = origin || `http://${host}:${port}`;
+  const installCommand = `irm "${baseUrl}/api/rustdesk/builder/install?host=${host}&port=${port}" | iex`;
 
   const copyToClipboard = () => {
     if (navigator.clipboard && window.isSecureContext) {
@@ -136,7 +146,7 @@ export default function BuilderPage() {
               <div className="rd2-ps-cmd" style={{ background: "rgba(255,255,255,.04)" }}>
                 <span style={{ color: "rgba(255,255,255,.25)", marginRight: 6 }}>$</span>
                 <span className="rd2-mono" style={{ color: "#fca5a5", fontSize: 11, flex: 1 }}>
-                  {`irm "http://${host}:${port}/api/rustdesk/builder/uninstall" | iex`}
+                  {`irm "${baseUrl}/api/rustdesk/builder/uninstall" | iex`}
                 </span>
               </div>
             </div>

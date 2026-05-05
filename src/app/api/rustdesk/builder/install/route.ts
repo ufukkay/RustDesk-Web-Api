@@ -8,10 +8,10 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const settings = getSettings();
 
-    const idServer  = searchParams.get("host") || settings.host;
-    const apiPort   = searchParams.get("port") || settings.port || "3000";
-    const relayServer = idServer;
-    const apiServer   = `http://${idServer}:${apiPort}`;
+    const idServer    = searchParams.get("host") || settings.idServer || settings.host;
+    const relayServer = settings.relayServer || idServer;
+    const apiPort     = searchParams.get("port") || settings.port || "3000";
+    const apiServer   = settings.apiServer || `http://${idServer}:${apiPort}`;
     const password    = settings.defaultPassword || "";
 
     // Sunucu anahtarını dosya sisteminden oku, yoksa settings'den al
