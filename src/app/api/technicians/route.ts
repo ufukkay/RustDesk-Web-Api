@@ -28,7 +28,13 @@ export async function POST(req: Request) {
     // Eğer ID varsa güncelle, yoksa ekle
     const index = technicians.findIndex((t: any) => t.id === tech.id);
     if (index > -1) {
-      technicians[index] = tech;
+      // Mevcut şifreyi koru (eğer yeni şifre gelmediyse)
+      const oldPassword = technicians[index].password;
+      technicians[index] = { 
+        ...technicians[index], 
+        ...tech,
+        password: tech.password || oldPassword 
+      };
     } else {
       technicians.push(tech);
     }

@@ -7,23 +7,51 @@ import { useState, useEffect } from "react";
 export default function TechniciansPage() {
   const { technicians, addTechnician, deleteTechnician, fetchTechnicians } = useAppStore();
   const [isOpen, setIsOpen] = useState(false);
-  const [newTech, setNewTech] = useState({ name: "", username: "", email: "", role: "Teknisyen" as const, password: "" });
+  const [isEdit, setIsEdit] = useState(false);
+  const [newTech, setNewTech] = useState({ id: "", name: "", username: "", email: "", role: "Teknisyen" as const, password: "" });
 
   useEffect(() => {
     fetchTechnicians();
   }, [fetchTechnicians]);
 
-  const handleAdd = () => {
-    addTechnician({
-      id: Math.random().toString(36).substr(2, 9),
-      ...newTech,
-      status: "Çevrimiçi",
-      lastLogin: "Şimdi"
-    });
-    setIsOpen(false);
-    setNewTech({ name: "", username: "", email: "", role: "Teknisyen", password: "" });
+  const handleOpenAdd = () => {
+    setIsEdit(false);
+    setNewTech({ id: "", name: "", username: "", email: "", role: "Teknisyen", password: "" });
+    setIsOpen(true);
   };
 
+  const handleOpenEdit = (tech: Technician) => {
+    setIsEdit(true);
+    setNewTech({ 
+      id: tech.id, 
+      name: tech.name, 
+      username: tech.username, 
+      email: tech.email, 
+      role: tech.role, 
+      password: "" // Güvenlik için boş bırakıyoruz, sadece değişecekse girilecek
+    });
+    setIsOpen(true);
+  };
+
+  const handleSubmit = async () => {
+    const techData: Technician = {
+      id: isEdit ? newTech.id : Math.random().toString(36).substr(2, 9),
+      name: newTech.name,
+      username: newTech.username,
+      email: newTech.email,
+      role: newTech.role,
+      status: isEdit ? (technicians.find(t => t.id === newTech.id)?.status || "Aktif") : "Aktif",
+      lastLogin: isEdit ? (technicians.find(t => t.id === newTech.id)?.lastLogin || "Hiç") : "Hiç",
+    };
+
+    // Eğer şifre girildiyse ekleyelim
+    if (newTech.password) {
+      techData.password = newTech.password;
+    }
+
+    await addTechnician(techData);
+    setIsOpen(false);
+  };
 
   return (
     <div className="rd2-page">
@@ -51,7 +79,7 @@ export default function TechniciansPage() {
         <button className="rd2-btn rd2-btn-ghost">
           <Mail width="15" height="15" /> Toplu Davet Gönder
         </button>
-        <button className="rd2-btn rd2-btn-primary" style={{ background: "#FFCC00", color: "#0E1116" }} onClick={() => setIsOpen(true)}>
+        <button className="rd2-btn rd2-btn-primary" style={{ background: "#FFCC00", color: "#0E1116" }} onClick={handleOpenAdd}>
           <Plus width="15" height="15" /> Yeni Teknisyen
         </button>
       </div>
@@ -99,14 +127,18 @@ export default function TechniciansPage() {
                   </td>
                   <td>
                     <span className="rd2-pill rd2-pill-on">
-                      <span className="rd2-dot rd2-dot-green" />{t.status}
+                      <span className="rd2-dot rd2-dot-green" />{t.status || "Aktif"}
                     </span>
                   </td>
-                  <td className="rd2-cell-muted">{t.lastLogin}</td>
+                  <td className="rd2-cell-muted">{t.lastLogin || "Hiç"}</td>
                   <td className="rd2-tr">
                     <div className="rd2-row-actions">
-                      <button className="rd2-icon-btn rd2-icon-btn-sm"><Edit2 width="13" height="13" /></button>
-                      <button className="rd2-icon-btn rd2-icon-btn-sm rd2-danger" onClick={() => deleteTechnician(t.id)}><Trash2 width="13" height="13" /></button>
+                      <button className="rd2-icon-btn rd2-icon-btn-sm" onClick={() => handleOpenEdit(t)}>
+                        <Edit2 width="13" height="13" />
+                      </button>
+                      <button className="rd2-icon-btn rd2-icon-btn-sm rd2-danger" onClick={() => deleteTechnician(t.id)}>
+                        <Trash2 width="13" height="13" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -120,7 +152,9 @@ export default function TechniciansPage() {
       {isOpen && (
         <div className="rd2-overlay" onClick={() => setIsOpen(false)}>
           <div className="rd2-modal" onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ margin: "0 0 20px", fontSize: 15, fontWeight: 800 }}>Yeni Teknisyen Hesabı</h3>
+            <h3 style={{ margin: "0 0 20px", fontSize: 15, fontWeight: 800 }}>
+              {isEdit ? "Teknisyen Hesabını Düzenle" : "Yeni Teknisyen Hesabı"}
+            </h3>
             <div className="rd2-form">
               <div className="rd2-field-group">
                 <label>Ad Soyad</label>
@@ -141,7 +175,7 @@ export default function TechniciansPage() {
                 </div>
               </div>
               <div className="rd2-field-group">
-                <label>Şifre</label>
+                <label>{isEdit ? "Yeni Şifre (Boş bırakılırsa değişmez)" : "Şifre"}</label>
                 <div className="rd2-field">
                   <input type="password" value={newTech.password} onChange={e => setNewTech({ ...newTech, password: e.target.value })} placeholder="••••••••" />
                 </div>
@@ -158,7 +192,9 @@ export default function TechniciansPage() {
             </div>
             <div className="rd2-modal-foot">
               <button className="rd2-btn rd2-btn-ghost" onClick={() => setIsOpen(false)}>İptal</button>
-              <button className="rd2-btn rd2-btn-primary" style={{ background: "#FFCC00", color: "#0E1116" }} onClick={handleAdd}>Oluştur</button>
+              <button className="rd2-btn rd2-btn-primary" style={{ background: "#FFCC00", color: "#0E1116" }} onClick={handleSubmit}>
+                {isEdit ? "Güncelle" : "Oluştur"}
+              </button>
             </div>
           </div>
         </div>
