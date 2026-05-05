@@ -1,11 +1,19 @@
 import { NextResponse } from "next/server";
 import { execSync } from "child_process";
+import fs from "fs";
+import path from "path";
 
 export async function GET() {
   try {
     // Mevcut versiyonu al (package.json'dan)
-    const packageJson = require("../../../../../package.json");
-    const currentVersion = packageJson.version || "1.0.0";
+    let currentVersion = "1.0.0";
+    try {
+      const packagePath = path.join(process.cwd(), "package.json");
+      const packageData = JSON.parse(fs.readFileSync(packagePath, "utf-8"));
+      currentVersion = packageData.version || "1.0.0";
+    } catch (e) {
+      console.log("Could not read package.json version");
+    }
 
     // Uzak depodan (GitHub) son commit bilgisini kontrol edebiliriz
     // Şimdilik simülasyon yapalım veya basit bir git fetch deneyelim

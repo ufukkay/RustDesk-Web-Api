@@ -27,10 +27,13 @@ export default function SettingsPage() {
   const checkUpdates = async () => {
     try {
       const res = await fetch("/api/updates");
+      if (!res.ok) throw new Error("API error");
       const data = await res.json();
-      setUpdateInfo(data);
+      if (data && data.currentVersion) {
+        setUpdateInfo(data);
+      }
     } catch (e) {
-      console.error("Update check failed");
+      console.error("Update check failed", e);
     }
   };
 
