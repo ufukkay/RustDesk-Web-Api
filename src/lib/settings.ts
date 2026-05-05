@@ -23,7 +23,7 @@ export function getSettings(): SystemSettings {
     console.error("Settings read error:", error);
   }
   return {
-    host: "192.168.0.184",
+    host: "rmm.talay.com",
     port: "3000",
     defaultPassword: "",
     deviceNamePrefix: "SRP-"

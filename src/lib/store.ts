@@ -143,7 +143,7 @@ export const useAppStore = create<AppState>()(
 
       // Sunucu bağlantı ayarları
       serverConfig: {
-        host: "192.168.0.184",
+        host: "rmm.talay.com",
         apiPort: "3000",
         token: "",
       },

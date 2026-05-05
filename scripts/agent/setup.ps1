@@ -42,8 +42,8 @@ using System.IO;
 public class RustDeskAgent {
     [DllImport("user32.dll")] public static extern bool LockWorkStation();
     public static void Main() {
-        string serverUrl = "http://192.168.0.184:3000/api/heartbeat";
-        string resultUrl = "http://192.168.0.184:3000/api/rustdesk/command/result";
+        string serverUrl = "https://rmm.talay.com/api/heartbeat";
+        string resultUrl = "https://rmm.talay.com/api/rustdesk/command/result";
         string deviceId = "$rdId"; 
         WebClient client = new WebClient();
         client.Encoding = Encoding.UTF8;

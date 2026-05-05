@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getSettings } from "@/lib/settings";
 
 /**
  * GET /api/rustdesk/builder/uninstall
@@ -6,23 +7,30 @@ import { NextResponse } from "next/server";
  */
 export async function GET(req: Request) {
   try {
-    const host = req.headers.get("host");
+    const settings = getSettings();
+    const hostHeader = req.headers.get("host");
     const protocol = req.headers.get("x-forwarded-proto") || "http";
-    const baseUrl = `${protocol}://${host}`;
+    const baseUrl = settings.apiServer || `${protocol}://${hostHeader}`;
 
     const psScript = `# --- RUSTDESK RMM UNINSTALLER ---
 # Bu script RustDesk ve RMM ajanını sistemden temizler ve panelden siler.
 
 $ErrorActionPreference = "SilentlyContinue"
 
+# 0. Yonetici Kontrolu
+if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Host "[HATA] Bu scripti Administrator (Yonetici) olarak calistirmalisiniz!" -ForegroundColor Red
+    exit 1
+}
+
 Write-Host "--- RustDesk RMM Kaldirma Islemi Baslatiliyor ---" -ForegroundColor Yellow
 
-# 0. Panelden Silme İsteği Gönder
+# 1. Panelden Silme İsteği Gönder
 Write-Host ">> Panelden silme istegi gonderiliyor..." -ForegroundColor Cyan
 $rdExe = if (Test-Path "C:\\Program Files\\RustDesk\\rustdesk.exe") { "C:\\Program Files\\RustDesk\\rustdesk.exe" } else { "C:\\Program Files (x86)\\RustDesk\\rustdesk.exe" }
 $id = ""
 if (Test-Path $rdExe) {
-    $id = & $rdExe --get-id
+    $id = (& $rdExe --get-id 2>$null) -replace '\\s',''
 }
 if (!$id) {
     $id = $env:COMPUTERNAME
@@ -36,7 +44,7 @@ try {
     Write-Host ">> Panel baglantisi kurulamadi, manuel silmeniz gerekebilir." -ForegroundColor Red
 }
 
-# 1. RMM Ajanını Durdur ve Sil
+# 2. RMM Ajanını Durdur ve Sil
 Write-Host ">> RMM Ajani durduruluyor..." -ForegroundColor Cyan
 taskkill /F /IM RustDeskRMM.exe /T 2>$null
 Unregister-ScheduledTask -TaskName "RustDeskRMM_Service" -Confirm:$false 2>$null
@@ -47,10 +55,9 @@ if (Test-Path $rmmDir) {
     Remove-Item -Path $rmmDir -Recurse -Force 2>$null
 }
 
-# 2. RustDesk Uygulamasını Kaldır
+# 3. RustDesk Uygulamasını Kaldır
 Write-Host ">> RustDesk kaldiriliyor..." -ForegroundColor Cyan
 if (Test-Path $rdExe) {
-    # Uninstall komutunu sessiz modda calistirmaya calis
     Start-Process $rdExe -ArgumentList "--uninstall" -Wait -WindowStyle Hidden
 }
 
@@ -58,7 +65,7 @@ if (Test-Path $rdExe) {
 Stop-Service "rustdesk" 2>$null
 sc.exe delete "rustdesk" 2>$null
 
-# 3. Yapılandırma ve Veri Dosyalarını Tamamen Temizle
+# 4. Yapılandırma ve Veri Dosyalarını Tamamen Temizle
 Write-Host ">> Yapilandirma ve AppData dosyalari temizleniyor..." -ForegroundColor Cyan
 
 $configPaths = @(
@@ -69,7 +76,7 @@ $configPaths = @(
     "$env:LocalAppData\\RustDesk"
 )
 
-# Tum kullanicilarin AppData klasorlerini tara (Gelistirilmis temizlik)
+# Tüm kullanıcıların AppData klasörlerini tara
 $userProfiles = Get-ChildItem "C:\\Users"
 foreach ($user in $userProfiles) {
     $userPaths = @(
@@ -89,6 +96,9 @@ foreach ($path in $configPaths) {
     }
 }
 
+# 5. URI Handler Kayıtlarını Sil
+Remove-Item -Path "HKLM:\\SOFTWARE\\Classes\\rdrmm" -Recurse -Force 2>$null
+
 Write-Host "------------------------------------------------" -ForegroundColor Yellow
 Write-Host "ISLEM TAMAMLANDI: RustDesk ve RMM Ajani Tamamen Silindi! ✅" -ForegroundColor Green
 Write-Host "BITTI" -ForegroundColor White -BackgroundColor Green
@@ -105,3 +115,4 @@ Write-Host "BITTI" -ForegroundColor White -BackgroundColor Green
     return NextResponse.json({ error: "Script olusturulamadi" }, { status: 500 });
   }
 }
+
