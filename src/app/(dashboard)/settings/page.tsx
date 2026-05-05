@@ -21,7 +21,35 @@ export default function SettingsPage() {
     deviceNamePrefix: "SRP-"
   });
 
+  const [updateInfo, setUpdateInfo] = useState({ currentVersion: "1.0.0", latestVersion: "...", updateAvailable: false });
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const checkUpdates = async () => {
+    try {
+      const res = await fetch("/api/updates");
+      const data = await res.json();
+      setUpdateInfo(data);
+    } catch (e) {
+      console.error("Update check failed");
+    }
+  };
+
+  const handleRunUpdate = async () => {
+    if (!confirm("Sunucu üzerinde 'git pull' işlemi yapılacak. Emin misiniz?")) return;
+    setIsUpdating(true);
+    try {
+      const res = await fetch("/api/updates", { method: "POST" });
+      const data = await res.json();
+      alert(data.message);
+      checkUpdates();
+    } catch (e) {
+      alert("Güncelleme sırasında hata oluştu.");
+    }
+    setIsUpdating(false);
+  };
+
   useEffect(() => {
+    // Sunucu ayarlarını yükle
     fetch("/api/rustdesk/settings")
       .then(res => res.json())
       .then(data => {
@@ -37,6 +65,9 @@ export default function SettingsPage() {
         });
       })
       .catch(err => console.error("Settings load error:", err));
+    
+    // Güncellemeleri de denetle
+    checkUpdates();
   }, []);
 
   const handleSave = async () => {
@@ -44,6 +75,7 @@ export default function SettingsPage() {
     try {
       const res = await fetch("/api/rustdesk/settings", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(settings)
       });
       if (res.ok) alert("Ayarlar başarıyla kaydedildi.");
@@ -254,22 +286,50 @@ export default function SettingsPage() {
 
       {activeTab === "updates" && (
         <section className="rd2-card">
-          <div className="rd2-card-head"><h3>Güncellemeler</h3></div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div className="rd2-update-row">
-              <div>
-                <div style={{ fontWeight: 700 }}>RustDesk Portal</div>
-                <div className="rd2-muted-sm">Mevcut: v1.0.0</div>
-              </div>
-              <span className="rd2-pill rd2-pill-on"><Check width="11" height="11" /> Güncel</span>
+          <div className="rd2-card-head">
+            <div>
+              <h3>Sistem Güncellemeleri</h3>
+              <p className="rd2-muted-sm">Portal ve Core bileşenleri kontrol edilir</p>
             </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             <div className="rd2-update-row">
-              <div>
-                <div style={{ fontWeight: 700 }}>RustDesk Core</div>
-                <div className="rd2-muted-sm">Mevcut: v1.4.6 · Yeni: v1.4.7</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div className="rd2-avatar" style={{ background: "#F1F2F4", color: "#5C6573" }}>RD</div>
+                <div>
+                  <div style={{ fontWeight: 700 }}>RustDesk Portal</div>
+                  <div className="rd2-muted-sm">Mevcut: {updateInfo.currentVersion} {updateInfo.updateAvailable && <span style={{ color: "#C0392B" }}>(Yeni: {updateInfo.latestVersion})</span>}</div>
+                </div>
               </div>
-              <button className="rd2-btn rd2-btn-sm" style={{ background: "#FFCC00", color: "#0E1116" }}>
-                <MailCheck width="13" height="13" /> Güncelle
+              {updateInfo.updateAvailable ? (
+                <button 
+                  className="rd2-btn rd2-btn-sm" 
+                  style={{ background: "#FFCC00", color: "#0E1116" }}
+                  onClick={handleRunUpdate}
+                  disabled={isUpdating}
+                >
+                  <MailCheck width="13" height="13" /> {isUpdating ? "Güncelleniyor..." : "Şimdi Güncelle"}
+                </button>
+              ) : (
+                <span className="rd2-pill rd2-pill-on"><Check width="11" height="11" /> Güncel</span>
+              )}
+            </div>
+
+            <div style={{ padding: "16px", background: "#F1F2F4", borderRadius: "10px", fontSize: "12.5px" }}>
+              <div style={{ fontWeight: 800, marginBottom: "6px" }}>Otomatik Güncelleme Hakkında</div>
+              <p className="rd2-cell-muted" style={{ lineHeight: 1.5 }}>
+                "Şimdi Güncelle" butonu sunucu üzerinde <code>git pull</code> komutunu çalıştırır. 
+                Değişikliklerin aktif olması için sunucuda projenin yeniden derlenmesi (build) gerekebilir.
+              </p>
+            </div>
+
+            <div className="rd2-form-actions" style={{ marginTop: 0, paddingTop: 0, border: 0 }}>
+              <button 
+                className="rd2-btn rd2-btn-ghost rd2-btn-sm" 
+                onClick={checkUpdates}
+                disabled={isUpdating}
+              >
+                <History width="13" height="13" /> Şimdi Denetle
               </button>
             </div>
           </div>
