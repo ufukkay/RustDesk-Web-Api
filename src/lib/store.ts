@@ -44,7 +44,7 @@ interface AppState {
   // Kimlik doğrulama işlemleri
   isAuthenticated: boolean;
   user: { name: string; email: string; role: string } | null;
-  login: (username: string) => void;
+  login: (user: { name: string; email: string; role: string }) => void;
   logout: () => void;
 
   // Cihaz yönetimi
