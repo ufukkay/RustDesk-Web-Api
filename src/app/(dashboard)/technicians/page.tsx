@@ -21,6 +21,7 @@ export default function TechniciansPage() {
   };
 
   const handleOpenEdit = (tech: Technician) => {
+    console.log("Editing technician:", tech);
     setIsEdit(true);
     setNewTech({ 
       id: tech.id, 
@@ -28,7 +29,7 @@ export default function TechniciansPage() {
       username: tech.username, 
       email: tech.email, 
       role: tech.role, 
-      password: "" // Güvenlik için boş bırakıyoruz, sadece değişecekse girilecek
+      password: "" 
     });
     setIsOpen(true);
   };
@@ -133,10 +134,28 @@ export default function TechniciansPage() {
                   <td className="rd2-cell-muted">{t.lastLogin || "Hiç"}</td>
                   <td className="rd2-tr">
                     <div className="rd2-row-actions">
-                      <button className="rd2-icon-btn rd2-icon-btn-sm" onClick={() => handleOpenEdit(t)}>
+                      <button 
+                        className="rd2-icon-btn rd2-icon-btn-sm" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleOpenEdit(t);
+                        }}
+                        title="Düzenle"
+                      >
                         <Edit2 width="13" height="13" />
                       </button>
-                      <button className="rd2-icon-btn rd2-icon-btn-sm rd2-danger" onClick={() => deleteTechnician(t.id)}>
+                      <button 
+                        className="rd2-icon-btn rd2-icon-btn-sm rd2-danger" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (confirm(`${t.name} isimli teknisyeni silmek istediğinize emin misiniz?`)) {
+                            deleteTechnician(t.id);
+                          }
+                        }}
+                        title="Sil"
+                      >
                         <Trash2 width="13" height="13" />
                       </button>
                     </div>
