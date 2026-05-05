@@ -79,10 +79,10 @@ export const useAppStore = create<AppState>()(
       isAuthenticated: false,
       user: null,
       
-      // Kullanıcı girişi simülasyonu
-      login: (email) => set({
+      // Kullanıcı girişi
+      login: (userData) => set({
         isAuthenticated: true,
-        user: { name: email.split("@")[0], email: email, role: "Admin" },
+        user: userData,
       }),
       
       // Çıkış yap ve verileri sıfırla

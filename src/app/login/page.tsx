@@ -9,16 +9,35 @@ export default function LoginPage() {
   const [email, setEmail] = useState("admin@rustdesk.local");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const router = useRouter();
   const login = useAppStore((state) => state.login);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      login(email);
-      router.push("/dashboard");
-    }, 800);
+    setError("");
+
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        login(data.user);
+        router.push("/dashboard");
+      } else {
+        setError(data.message || "Giriş başarısız.");
+      }
+    } catch (err) {
+      setError("Sunucuya bağlanılamadı.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -58,6 +77,12 @@ export default function LoginPage() {
             <h3>Hoş geldiniz</h3>
             <p>Hesabınıza giriş yapın.</p>
           </div>
+
+          {error && (
+            <div style={{ background: "#FCEAEA", color: "#C0392B", padding: "10px", borderRadius: "8px", fontSize: "12px", fontWeight: "700", textAlign: "center", border: "1px solid rgba(192, 57, 43, 0.1)" }}>
+              {error}
+            </div>
+          )}
           
           <div className="rd2-field-group">
             <label>E-posta Adresi</label>
