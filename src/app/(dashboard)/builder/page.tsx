@@ -31,10 +31,22 @@ export default function BuilderPage() {
     fetch("/api/rustdesk/settings")
       .then(res => res.json())
       .then(data => {
-        if (data.idServer || data.host) setHost(data.idServer || data.host);
+        // Eğer gelen host eski varsayılan IP ise ve biz şu an bir domain üzerindeysek, güncel hostname'i koruyalım
+        const isOldDefault = data.host === "192.168.0.184";
+        const isOnPublicDomain = window.location.hostname !== "localhost" && !window.location.hostname.startsWith("192.168.");
+
+        if (data.idServer || data.host) {
+          if (!(isOldDefault && isOnPublicDomain)) {
+            setHost(data.idServer || data.host);
+          }
+        }
+        
         if (data.port) setPort(data.port);
-        // apiServer ayarlıysa onu kullan, yoksa mevcut sayfanın origin'i
-        if (data.apiServer) setBaseUrl(data.apiServer);
+
+        // apiServer ayarlıysa ve eski varsayılan değilse onu kullan
+        if (data.apiServer && !(data.apiServer.includes("192.168.0.184") && isOnPublicDomain)) {
+          setBaseUrl(data.apiServer);
+        }
       })
       .catch(() => {});
   }, []);
