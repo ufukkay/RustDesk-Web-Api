@@ -18,7 +18,11 @@ export default function SettingsPage() {
     apiServer: "",
     serverKey: "",
     defaultPassword: "",
-    deviceNamePrefix: "SRP-"
+    deviceNamePrefix: "SRP-",
+    smtpHost: "",
+    smtpPort: "",
+    smtpEmail: "",
+    smtpPassword: ""
   });
 
   const [updateInfo, setUpdateInfo] = useState({ currentVersion: "1.0.0", latestVersion: "...", updateAvailable: false });
@@ -64,7 +68,11 @@ export default function SettingsPage() {
           apiServer: data.apiServer || `http://${data.host}:${data.port}`,
           serverKey: data.serverKey || "",
           defaultPassword: data.defaultPassword || "",
-          deviceNamePrefix: data.deviceNamePrefix || "SRP-"
+          deviceNamePrefix: data.deviceNamePrefix || "SRP-",
+          smtpHost: data.smtpHost || "smtp.rustdesk.local",
+          smtpPort: data.smtpPort || "587",
+          smtpEmail: data.smtpEmail || "no-reply@rustdesk.local",
+          smtpPassword: data.smtpPassword || ""
         });
       })
       .catch(err => console.error("Settings load error:", err));
@@ -86,6 +94,26 @@ export default function SettingsPage() {
       alert("Hata oluştu.");
     }
     setIsSaving(false);
+  };
+  const handleTestMail = async () => {
+    console.log("handleTestMail triggered", settings);
+    try {
+      const res = await fetch("/api/mail/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings)
+      });
+      console.log("Test mail response status:", res.status);
+      const data = await res.json();
+      if (res.ok) {
+        alert("Test maili başarıyla gönderildi.");
+      } else {
+        alert("Hata: " + (data.error || "Mail gönderilemedi"));
+      }
+    } catch (err) {
+      console.error("handleTestMail error:", err);
+      alert("Bağlantı hatası oluştu.");
+    }
   };
 
   const tabs: { key: Tab; label: string; icon: any }[] = [
@@ -231,24 +259,65 @@ export default function SettingsPage() {
             <div className="rd2-form-row">
               <div className="rd2-field-group">
                 <label>SMTP Host</label>
-                <div className="rd2-field"><input defaultValue="smtp.rustdesk.local" /></div>
+                <div className="rd2-field">
+                  <input 
+                    value={settings.smtpHost} 
+                    onChange={e => setSettings({...settings, smtpHost: e.target.value})}
+                    placeholder="smtp.gmail.com"
+                  />
+                </div>
               </div>
               <div className="rd2-field-group">
                 <label>Port</label>
-                <div className="rd2-field"><input defaultValue="587" /></div>
+                <div className="rd2-field">
+                  <input 
+                    value={settings.smtpPort} 
+                    onChange={e => setSettings({...settings, smtpPort: e.target.value})}
+                    placeholder="587"
+                  />
+                </div>
               </div>
             </div>
             <div className="rd2-field-group">
               <label>E-posta</label>
-              <div className="rd2-field"><Mail width="14" height="14" /><input defaultValue="no-reply@rustdesk.local" /></div>
+              <div className="rd2-field">
+                <Mail width="14" height="14" />
+                <input 
+                  value={settings.smtpEmail} 
+                  onChange={e => setSettings({...settings, smtpEmail: e.target.value})}
+                  placeholder="admin@example.com"
+                />
+              </div>
             </div>
             <div className="rd2-field-group">
               <label>Şifre / App Password</label>
-              <div className="rd2-field"><Key width="14" height="14" /><input type="password" defaultValue="apppassword" /></div>
+              <div className="rd2-field">
+                <Key width="14" height="14" />
+                <input 
+                  type="password" 
+                  value={settings.smtpPassword} 
+                  onChange={e => setSettings({...settings, smtpPassword: e.target.value})}
+                  placeholder="••••••••"
+                />
+              </div>
             </div>
             <div className="rd2-form-actions">
-              <button className="rd2-btn rd2-btn-ghost"><Mail width="13" height="13" /> Test Maili</button>
-              <button className="rd2-btn rd2-btn-primary" style={{ background: "#FFCC00", color: "#0E1116" }}><Check width="14" height="14" /> Kaydet</button>
+              <button 
+                type="button"
+                className="rd2-btn rd2-btn-ghost"
+                onClick={handleTestMail}
+              >
+                <Mail width="13" height="13" /> Test Maili
+              </button>
+              <button 
+                type="button"
+                className="rd2-btn rd2-btn-primary" 
+                style={{ background: "#FFCC00", color: "#0E1116" }}
+                onClick={handleSave}
+                disabled={isSaving}
+              >
+                <Check width="14" height="14" /> {isSaving ? "Kaydediliyor..." : "Kaydet"}
+              </button>
             </div>
           </div>
         </section>
