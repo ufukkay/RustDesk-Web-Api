@@ -41,6 +41,8 @@ export default function DeviceDetailsPage() {
       .catch(() => {});
   }, [fetchDevices]);
 
+  const device = devices.find(d => d.id === params.id);
+
   useEffect(() => {
     if (!device?.id) return;
 
@@ -75,8 +77,6 @@ export default function DeviceDetailsPage() {
     setSocket(s);
     return () => { s.disconnect(); };
   }, [device?.id]);
-
-  const device = devices.find(d => d.id === params.id);
 
   useEffect(() => {
     if (terminalRef.current) {
