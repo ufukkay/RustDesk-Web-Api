@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Server, Save, ShieldCheck, Globe, Key, Eye, EyeOff, Mail, History, MailCheck, Check } from "lucide-react";
+import { toast } from "sonner";
 
 type Tab = "server" | "smtp" | "logs" | "updates";
 
@@ -47,10 +48,14 @@ export default function SettingsPage() {
     try {
       const res = await fetch("/api/updates", { method: "POST" });
       const data = await res.json();
-      alert(data.message);
+      if (data.success) {
+        toast.success(data.message);
+      } else {
+        toast.error(data.message || "Güncelleme başarısız.");
+      }
       checkUpdates();
     } catch (e) {
-      alert("Güncelleme sırasında hata oluştu.");
+      toast.error("Güncelleme sırasında hata oluştu.");
     }
     setIsUpdating(false);
   };
@@ -89,9 +94,13 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(settings)
       });
-      if (res.ok) alert("Ayarlar başarıyla kaydedildi.");
+      if (res.ok) {
+        toast.success("Ayarlar başarıyla kaydedildi.");
+      } else {
+        toast.error("Ayarlar kaydedilemedi.");
+      }
     } catch (err) {
-      alert("Hata oluştu.");
+      toast.error("Hata oluştu.");
     }
     setIsSaving(false);
   };
@@ -106,13 +115,13 @@ export default function SettingsPage() {
       console.log("Test mail response status:", res.status);
       const data = await res.json();
       if (res.ok) {
-        alert("Test maili başarıyla gönderildi.");
+        toast.success("Test maili başarıyla gönderildi.");
       } else {
-        alert("Hata: " + (data.error || "Mail gönderilemedi"));
+        toast.error("Hata: " + (data.error || "Mail gönderilemedi"));
       }
     } catch (err) {
       console.error("handleTestMail error:", err);
-      alert("Bağlantı hatası oluştu.");
+      toast.error("Bağlantı hatası oluştu.");
     }
   };
 
