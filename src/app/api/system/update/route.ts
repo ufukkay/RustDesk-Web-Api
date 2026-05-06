@@ -13,10 +13,12 @@ export async function POST() {
 
     // Komutları birleştir (Ubuntu/Linux uyumlu)
     // git fetch ve reset kullanarak yerel çakışmaları önlüyoruz.
+    // npm run build, pm2 restart'tan ÖNCE çalışmalı; yoksa app ayağa kalkmaz.
     const updateCommand = `
-      git fetch --all && 
-      git reset --hard origin/main && 
-      npm install && 
+      git fetch --all &&
+      git reset --hard origin/main &&
+      npm install &&
+      npm run build &&
       (pm2 restart all || pm2 restart rustdesk-portal || echo "PM2 restart failed, but files updated")
     `.replace(/\n/g, " ");
 
