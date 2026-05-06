@@ -6,16 +6,33 @@ import { useState, useEffect } from "react";
 
 export default function TechniciansPage() {
   const { technicians, addTechnician, deleteTechnician, fetchTechnicians } = useAppStore();
-  const [isOpen, setIsOpen] = useState(false);
-  const [isEdit, setIsEdit] = useState(false);
-  const [newTech, setNewTech] = useState({ 
-    id: "", 
-    name: "", 
-    username: "", 
-    email: "", 
-    role: "Teknisyen" as "Admin" | "Teknisyen", 
-    password: "" 
-  });
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<"Admin" | "Teknisyen">("Teknisyen");
+  const [isInviting, setIsInviting] = useState(false);
+
+  const handleInvite = async () => {
+    if (!inviteEmail) return;
+    setIsInviting(true);
+    try {
+      const res = await fetch("/api/technicians/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: inviteEmail, role: inviteRole })
+      });
+      if (res.ok) {
+        toast.success("Davet başarıyla gönderildi.");
+        setIsInviteOpen(false);
+        setInviteEmail("");
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Davet gönderilemedi.");
+      }
+    } catch (err) {
+      toast.error("Bağlantı hatası.");
+    }
+    setIsInviting(false);
+  };
 
   useEffect(() => {
     fetchTechnicians();
@@ -84,8 +101,8 @@ export default function TechniciansPage() {
           <input placeholder="Teknisyen ara..." />
         </div>
         <div style={{ flex: 1 }} />
-        <button className="rd2-btn rd2-btn-ghost">
-          <Mail width="15" height="15" /> Toplu Davet Gönder
+        <button className="rd2-btn rd2-btn-ghost" onClick={() => setIsInviteOpen(true)}>
+          <Mail width="15" height="15" /> Davet Oluştur
         </button>
         <button className="rd2-btn rd2-btn-primary" style={{ background: "#FFCC00", color: "#0E1116" }} onClick={handleOpenAdd}>
           <Plus width="15" height="15" /> Yeni Teknisyen
@@ -220,6 +237,53 @@ export default function TechniciansPage() {
               <button className="rd2-btn rd2-btn-ghost" onClick={() => setIsOpen(false)}>İptal</button>
               <button className="rd2-btn rd2-btn-primary" style={{ background: "#FFCC00", color: "#0E1116" }} onClick={handleSubmit}>
                 {isEdit ? "Güncelle" : "Oluştur"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Invitation Modal */}
+      {isInviteOpen && (
+        <div className="rd2-overlay" onClick={() => setIsInviteOpen(false)}>
+          <div className="rd2-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ margin: "0 0 20px", fontSize: 15, fontWeight: 800 }}>
+              Teknisyen Davet Et
+            </h3>
+            <div className="rd2-form">
+              <div className="rd2-field-group">
+                <label>Davet Edilecek E-posta</label>
+                <div className="rd2-field">
+                  <Mail width="14" height="14" />
+                  <input 
+                    type="email" 
+                    value={inviteEmail} 
+                    onChange={e => setInviteEmail(e.target.value)} 
+                    placeholder="ornek@alanadi.com" 
+                  />
+                </div>
+              </div>
+              <div className="rd2-field-group">
+                <label>Rol</label>
+                <div className="rd2-field">
+                  <select value={inviteRole} onChange={e => setInviteRole(e.target.value as any)}>
+                    <option value="Teknisyen">Teknisyen (Sınırlı)</option>
+                    <option value="Admin">Admin (Tam Yetki)</option>
+                  </select>
+                </div>
+              </div>
+              <p style={{ fontSize: 12, color: "#666", marginTop: 10 }}>
+                Kişiye bir kurulum linki gönderilecek. Linki kullanarak kendi hesabını oluşturabilecek.
+              </p>
+            </div>
+            <div className="rd2-modal-foot">
+              <button className="rd2-btn rd2-btn-ghost" onClick={() => setIsInviteOpen(false)}>İptal</button>
+              <button 
+                className="rd2-btn rd2-btn-primary" 
+                style={{ background: "#FFCC00", color: "#0E1116" }} 
+                onClick={handleInvite}
+                disabled={isInviting}
+              >
+                {isInviting ? "Gönderiliyor..." : "Davet Gönder"}
               </button>
             </div>
           </div>
