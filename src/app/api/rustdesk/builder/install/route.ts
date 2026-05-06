@@ -180,6 +180,11 @@ $wsUrl = "${apiServer}".Replace("http://", "ws://").Replace("https://", "wss://"
 
 $agentScript = @"
 \`$ErrorActionPreference = "SilentlyContinue"
+
+# SSL/TLS Sertifika Hatalarini Görmezden Gel (Önemli!)
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+[Net.ServicePointManager]::ServerCertificateValidationCallback = { \`$true }
+
 \`$deviceId = "$rdId"
 \`$hostname = "$env:COMPUTERNAME"
 \`$wsUrl = "$wsUrl/agent-socket?deviceId=\`$deviceId&type=agent&hostname=\`$hostname"

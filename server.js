@@ -27,11 +27,19 @@ app.prepare().then(() => {
   const wss = new WebSocketServer({ noServer: true });
 
   httpServer.on("upgrade", (request, socket, head) => {
-    const { pathname } = parse(request.url);
+    const parsedUrl = parse(request.url, true);
+    const pathname = parsedUrl.pathname;
+
     if (pathname === "/agent-socket") {
+      console.log(`[WS-UPGRADE] Agent trying to connect...`);
       wss.handleUpgrade(request, socket, head, (ws) => {
         wss.emit("connection", ws, request);
       });
+    } else if (pathname.startsWith("/socket.io/")) {
+      // Socket.io handles its own upgrade
+    } else {
+      console.log(`[WS-UPGRADE] Unknown path: ${pathname}`);
+      socket.destroy();
     }
   });
 
@@ -39,33 +47,34 @@ app.prepare().then(() => {
   const agents = new Map();
 
   wss.on("connection", (ws, request) => {
-    const url = new URL(request.url, `http://${hostname}`);
-    const deviceId = url.searchParams.get("deviceId");
-    const agentHostname = url.searchParams.get("hostname");
+    const parsedUrl = parse(request.url, true);
+    const deviceId = parsedUrl.query.deviceId;
+    const agentHostname = parsedUrl.query.hostname;
     
     if (deviceId) {
-      console.log(`Agent connected: ${deviceId} (${agentHostname || "no-host"})`);
+      console.log(`[AGENT] Connected: ${deviceId} (${agentHostname || "no-host"})`);
       agents.set(deviceId, ws);
-      if (agentHostname) agents.set(agentHostname, ws); // Fallback mapping
+      if (agentHostname) agents.set(agentHostname, ws);
       
       ws.on("message", (data) => {
         try {
           const msg = JSON.parse(data.toString());
-          console.log(`Msg from Agent ${deviceId}:`, msg.type);
-          // Relay to Dashboard via Socket.io
-          // Both rooms (ID and Hostname) get the update
+          console.log(`[AGENT-MSG] from ${deviceId}:`, msg.type);
           io.to(`device_${deviceId}`).emit(msg.type || "result", msg);
           if (agentHostname) io.to(`device_${agentHostname}`).emit(msg.type || "result", msg);
         } catch (e) {
-          console.log("Error parsing agent message", e);
+          console.log("[AGENT-ERROR] Parsing message failed", e);
         }
       });
 
       ws.on("close", () => {
-        console.log(`Agent disconnected: ${deviceId}`);
+        console.log(`[AGENT] Disconnected: ${deviceId}`);
         agents.delete(deviceId);
         if (agentHostname) agents.delete(agentHostname);
       });
+    } else {
+      console.log("[AGENT] Connection attempt without deviceId");
+      ws.close();
     }
   });
 
