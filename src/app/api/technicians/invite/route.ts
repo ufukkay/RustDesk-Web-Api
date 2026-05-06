@@ -30,8 +30,9 @@ export async function POST(req: Request) {
         }
       });
 
-      const domain = settings.host || "rmm.talay.com";
-      const inviteLink = `https://${domain}/invite?token=${invite.token}`;
+      const protocol = req.headers.get("x-forwarded-proto") || "https";
+      const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || settings.host || "rmm.talay.com";
+      const inviteLink = `${protocol}://${host}/invite?token=${invite.token}`;
 
       await transporter.sendMail({
         from: `"RustDesk RMM" <${settings.smtpEmail}>`,
