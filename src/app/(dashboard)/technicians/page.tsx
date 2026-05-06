@@ -3,6 +3,7 @@
 import { useAppStore, Technician } from "@/lib/store";
 import { Search, Plus, Mail, Shield, Edit2, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 
 export default function TechniciansPage() {
   const { technicians, addTechnician, deleteTechnician, fetchTechnicians } = useAppStore();
@@ -10,6 +11,18 @@ export default function TechniciansPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<"Admin" | "Teknisyen">("Teknisyen");
   const [isInviting, setIsInviting] = useState(false);
+
+  // Mevcut teknisyen düzenleme/ekleme stateleri
+  const [isOpen, setIsOpen] = useState(false);
+  const [isEdit, setIsEdit] = useState(false);
+  const [newTech, setNewTech] = useState({ 
+    id: "", 
+    name: "", 
+    username: "", 
+    email: "", 
+    role: "Teknisyen" as "Admin" | "Teknisyen", 
+    password: "" 
+  });
 
   const handleInvite = async () => {
     if (!inviteEmail) return;
