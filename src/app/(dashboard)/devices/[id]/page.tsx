@@ -10,6 +10,7 @@ import {
   FolderUp, AlertTriangle, CheckCircle2, Loader2, ChevronLeft
 } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
+import { io, Socket } from "socket.io-client";
 
 type CommandStatus = "idle" | "running" | "success" | "error";
 
@@ -25,6 +26,8 @@ export default function DeviceDetailsPage() {
 
   const [connSettings, setConnSettings] = useState({ host: "", serverKey: "", defaultPassword: "" });
 
+  const [socket, setSocket] = useState<Socket | null>(null);
+
   useEffect(() => {
     setMounted(true);
     fetchDevices();
@@ -37,6 +40,41 @@ export default function DeviceDetailsPage() {
       }))
       .catch(() => {});
   }, [fetchDevices]);
+
+  useEffect(() => {
+    if (!device?.id) return;
+
+    const s = io({
+      query: { deviceId: device.id, type: "dashboard" }
+    });
+
+    s.on("connect", () => console.log("Connected to command socket"));
+    
+    s.on("result", (data: any) => {
+      if (data.action === "terminal") {
+        setTerminalHistory(prev => {
+          // Eğer bu komut için bir placeholder varsa onu güncelle
+          const newHistory = [...prev];
+          for (let i = newHistory.length - 1; i >= 0; i--) {
+            if (newHistory[i].cmd === data.command && newHistory[i].status === "idle") {
+              const output = data.isBase64 ? atob(data.output) : data.output;
+              newHistory[i] = { ...newHistory[i], output, status: "success" };
+              break;
+            }
+          }
+          return newHistory;
+        });
+      }
+    });
+
+    s.on("telemetry_update", (data: any) => {
+      // Donanım verilerini canlı güncelle (Opsiyonel: store'u da güncelleyebiliriz)
+      console.log("Telemetry received:", data);
+    });
+
+    setSocket(s);
+    return () => { s.disconnect(); };
+  }, [device?.id]);
 
   const device = devices.find(d => d.id === params.id);
 
@@ -58,23 +96,23 @@ export default function DeviceDetailsPage() {
   };
 
   const runAction = async (action: string, command?: string) => {
-    if (!device) return;
+    if (!device || !socket) return;
     setActionStatus(prev => ({ ...prev, [action]: "running" }));
 
     try {
-      const res = await fetch("/api/rustdesk/command", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ deviceId: device.id, action, command: command || "" })
+      socket.emit("send_command", { 
+        deviceId: device.id, 
+        action, 
+        command: command || "" 
       });
-      const data = await res.json();
       
       if (action === "terminal" && command) {
         setTerminalHistory(prev => [...prev, { cmd: command, output: "Yanıt bekleniyor...", status: "idle" }]);
       }
       
-      setActionStatus(prev => ({ ...prev, [action]: data.success ? "success" : "error" }));
-      setTimeout(() => setActionStatus(prev => ({ ...prev, [action]: "idle" })), 3000);
+      // Socket üzerinden gönderildiği için başarılı varsayıyoruz, 
+      // asıl sonucu 'result' event'i ile alacağız.
+      setTimeout(() => setActionStatus(prev => ({ ...prev, [action]: "idle" })), 2000);
     } catch (error) {
       setActionStatus(prev => ({ ...prev, [action]: "error" }));
     }

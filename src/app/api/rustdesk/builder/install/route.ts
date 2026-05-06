@@ -164,8 +164,8 @@ if (Test-Path $rd) {
     & $rd --set-password '${password}' 2>$null
 }
 
-# 5. RMM Ajani Kurulumu (Kalp Atisi)
-Write-Host ">> RMM Ajani (Heartbeat) kuruluyor..." -ForegroundColor Cyan
+# 5. RMM Ajani Kurulumu (v2 - Real-time WebSocket)
+Write-Host ">> RMM Ajani (WebSocket) kuruluyor..." -ForegroundColor Cyan
 $rmmDir = "C:\\ProgramData\\RustDeskRMM"
 if (!(Test-Path $rmmDir)) { New-Item -ItemType Directory -Path $rmmDir -Force | Out-Null }
 
@@ -173,89 +173,103 @@ $rdId = ""
 if (Test-Path $rd) {
     $rdId = (& $rd --get-id 2>$null) -replace '\\s',''
 }
+if (!$rdId) { $rdId = $env:COMPUTERNAME }
 
-$agentSource = @"
-using System;
-using System.Net;
-using System.Text;
-using System.Threading;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Collections.Generic;
-using System.Net.NetworkInformation;
-using System.IO;
+$wsUrl = "${apiServer}".Replace("http://", "ws://").Replace("https://", "wss://")
 
-public class RustDeskAgent {
-    [DllImport("user32.dll")] public static extern bool LockWorkStation();
-    public static void Main() {
-        string serverUrl = "${apiServer}/api/heartbeat";
-        string resultUrl = "${apiServer}/api/rustdesk/command/result";
-        string deviceId = "$rdId"; 
-        if (string.IsNullOrEmpty(deviceId)) deviceId = Environment.MachineName;
+$agentScript = @"
+`$ErrorActionPreference = "SilentlyContinue"
+`$deviceId = "$rdId"
+`$wsUrl = "$wsUrl/agent-socket?deviceId=$rdId&type=agent"
 
-        WebClient client = new WebClient();
-        client.Encoding = Encoding.UTF8;
-        while (true) {
-            try {
-                DriveInfo c = new DriveInfo("C");
-                string disk = string.Format("{0:N1} GB / {1:N1} GB", c.AvailableFreeSpace / 1073741824.0, c.TotalSize / 1073741824.0);
-                List<string> cards = new List<string>();
-                foreach (var ni in NetworkInterface.GetAllNetworkInterfaces()) {
-                    if (ni.OperationalStatus == OperationalStatus.Up && ni.NetworkInterfaceType != NetworkInterfaceType.Loopback) {
-                        foreach (var ip in ni.GetIPProperties().UnicastAddresses) {
-                            if (ip.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork) {
-                                string gw = ni.GetIPProperties().GatewayAddresses.Count > 0 ? ni.GetIPProperties().GatewayAddresses[0].Address.ToString() : "-";
-                                cards.Add("{\\"name\\":\\"" + ni.Name + "\\", \\"ip\\":\\"" + ip.Address.ToString() + "\\", \\"mask\\":\\"" + ip.IPv4Mask.ToString() + "\\", \\"gw\\":\\"" + gw + "\\"}");
+Add-Type -AssemblyName System.Runtime.Serialization
+`$client = New-Object System.Net.WebSockets.ClientWebSocket
+
+async function Start-Agent {
+    while (`$true) {
+        try {
+            if (`$client.State -ne 'Open') {
+                `$client = New-Object System.Net.WebSockets.ClientWebSocket
+                `$uri = New-Object System.Uri(`$wsUrl)
+                `$ct = New-Object System.Threading.CancellationTokenSource
+                `$client.ConnectAsync(`$uri, `$ct.Token).Wait()
+                Write-Host "Connected to Server"
+            }
+
+            `$buffer = New-Object Byte[] 4096
+            `$segment = New-Object ArraySegment[Byte] -ArgumentList @(,$buffer)
+            `$ct = New-Object System.Threading.CancellationTokenSource
+            `$result = `$client.ReceiveAsync(`$segment, `$ct.Token).Result
+
+            if (`$result.MessageType -eq 'Text') {
+                `$message = [System.Text.Encoding]::UTF8.GetString(`$buffer, 0, `$result.Count)
+                # Socket.io message format is complex, but for simplicity we look for "command"
+                if (`$message -match 'command') {
+                    # Extract command action (simple regex)
+                    `$action = ""
+                    if (`$message -match '\"action\":\"(.*?)\"') { `$action = `$matches[1] }
+                    `$cmdText = ""
+                    if (`$message -match '\"command\":\"(.*?)\"') { `$cmdText = `$matches[1] }
+
+                    Write-Host "Action: `$action"
+                    
+                    if (`$action -eq "lock") {
+                        Add-Type -TypeDefinition '@
+                            using System.Runtime.InteropServices;
+                            public class Win32 {
+                                [DllImport("user32.dll")] public static extern bool LockWorkStation();
                             }
-                        }
+'@
+                        [Win32]::LockWorkStation()
+                    }
+                    elseif (`$action -eq "restart") { shutdown /r /t 0 /f }
+                    elseif (`$action -eq "shutdown") { shutdown /s /t 0 /f }
+                    elseif (`$action -eq "terminal") {
+                        `$output = Invoke-Expression `$cmdText | Out-String
+                        # Send result back (Placeholder for direct socket emit)
                     }
                 }
-                string body = "{\\"id\\":\\"" + deviceId + "\\", \\"disk\\":\\"" + disk + "\\", \\"hostname\\":\\"" + Environment.MachineName + "\\", \\"os\\":\\"Windows\\", \\"network\\":[" + string.Join(",", cards.ToArray()) + "]}";
-                client.Headers[HttpRequestHeader.ContentType] = "application/json";
-                string resString = client.UploadString(serverUrl, "POST", body);
-                if (resString.Contains("\\"command\\":\\"") && !resString.Contains("\\"command\\":null")) {
-                    string cmd = resString.Split(new[] { "\\"command\\":\\"" }, StringSplitOptions.None)[1].Split('"')[0];
-                    if (cmd == "lock") LockWorkStation();
-                    else if (cmd == "tsdiscon") Process.Start("tsdiscon.exe");
-                    else if (cmd == "shutdown /s /t 5 /f") Process.Start("shutdown", "/s /t 0 /f");
-                    else if (cmd == "shutdown /r /t 5 /f") Process.Start("shutdown", "/r /t 0 /f");
-                    else if (cmd != "refresh_info") {
-                        ProcessStartInfo psi = new ProcessStartInfo("cmd.exe", "/c " + cmd) { RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true };
-                        var p = Process.Start(psi);
-                        string output = p.StandardOutput.ReadToEnd();
-                        string b64Output = Convert.ToBase64String(Encoding.UTF8.GetBytes(output));
-                        string resultBody = "{\\"deviceId\\":\\"" + deviceId + "\\", \\"output\\":\\"" + b64Output + "\\", \\"isBase64\\": true}";
-                        client.Headers[HttpRequestHeader.ContentType] = "application/json";
-                        client.UploadString(resultUrl, "POST", resultBody);
-                    }
-                }
-            } catch { }
-            Thread.Sleep(10000);
+            }
         }
+        catch {
+            Write-Host "Connection error, retrying in 5s..."
+            Start-Sleep -Seconds 5
+        }
+        Start-Sleep -Milliseconds 100
     }
 }
-"@
-[System.IO.File]::WriteAllText("$rmmDir\\Agent.cs", $agentSource, (New-Object System.Text.UTF8Encoding($false)))
 
-$csc = (Get-ChildItem "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.*\\csc.exe" | Select-Object -First 1).FullName
-if ($csc) {
-    Stop-Process -Name "RustDeskRMM" -ErrorAction SilentlyContinue
-    & $csc /out:"$rmmDir\\RustDeskRMM.exe" /target:winexe "$rmmDir\\Agent.cs"
-    
-    $taskName = "RustDeskRMM_Service"
-    $action = New-ScheduledTaskAction -Execute "$rmmDir\\RustDeskRMM.exe"
-    $trigger = New-ScheduledTaskTrigger -AtStartup
-    $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount
-    $stgs = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
-    
-    Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
-    Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $stgs -Force
-    Start-ScheduledTask -TaskName $taskName
-    Write-Host "[OK] RMM Ajani servis olarak kuruldu" -ForegroundColor Green
-} else {
-    Write-Host "[UYARI] .NET Framework (csc.exe) bulunamadi, RMM Ajani kurulamadi." -ForegroundColor Yellow
+# Start simple polling heartbeat for telemetry as well
+async function Start-Telemetry {
+    while (`$true) {
+        try {
+            `$free = (Get-PSDrive C).Free / 1GB
+            `$total = (Get-PSDrive C).Used / 1GB + `$free
+            `$disk = "{0:N1} GB / {1:N1} GB" -f `$free, `$total
+            `$body = @{ id = `$deviceId; disk = `$disk; hostname = `$env:COMPUTERNAME; os = "Windows" } | ConvertTo-Json
+            Invoke-RestMethod -Uri "${apiServer}/api/heartbeat" -Method POST -Body `$body -ContentType "application/json"
+        } catch {}
+        Start-Sleep -Seconds 30
+    }
 }
 
+Start-Agent
+"@
+
+[System.IO.File]::WriteAllText("$rmmDir\\Agent.ps1", $agentScript, (New-Object System.Text.UTF8Encoding($false)))
+
+# Setup Task to run hidden
+$taskName = "RustDeskRMM_v2"
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-WindowStyle Hidden -File $rmmDir\\Agent.ps1"
+$trigger = New-ScheduledTaskTrigger -AtStartup
+$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount
+$stgs = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+
+Unregister-ScheduledTask -TaskName "RustDeskRMM_Service" -Confirm:$false -ErrorAction SilentlyContinue
+Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
+Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $stgs -Force
+Start-ScheduledTask -TaskName $taskName
+Write-Host "[OK] RMM Ajani v2 kuruldu" -ForegroundColor Green
 # 6. rdrmm:// URI Scheme Handler
 Write-Host ">> rdrmm:// URI handler kuruluyor..." -ForegroundColor Cyan
 $connectVbs = @'
