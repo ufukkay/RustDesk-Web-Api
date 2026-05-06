@@ -178,42 +178,42 @@ if (!$rdId) { $rdId = $env:COMPUTERNAME }
 $wsUrl = "${apiServer}".Replace("http://", "ws://").Replace("https://", "wss://")
 
 $agentScript = @"
-`$ErrorActionPreference = "SilentlyContinue"
-`$deviceId = "$rdId"
-`$wsUrl = "$wsUrl/agent-socket?deviceId=$rdId&type=agent"
+\`$ErrorActionPreference = "SilentlyContinue"
+\`$deviceId = "$rdId"
+\`$wsUrl = "$wsUrl/agent-socket?deviceId=$rdId&type=agent"
 
 Add-Type -AssemblyName System.Runtime.Serialization
-`$client = New-Object System.Net.WebSockets.ClientWebSocket
+\`$client = New-Object System.Net.WebSockets.ClientWebSocket
 
 async function Start-Agent {
-    while (`$true) {
+    while (\`$true) {
         try {
-            if (`$client.State -ne 'Open') {
-                `$client = New-Object System.Net.WebSockets.ClientWebSocket
-                `$uri = New-Object System.Uri(`$wsUrl)
-                `$ct = New-Object System.Threading.CancellationTokenSource
-                `$client.ConnectAsync(`$uri, `$ct.Token).Wait()
+            if (\`$client.State -ne 'Open') {
+                \`$client = New-Object System.Net.WebSockets.ClientWebSocket
+                \`$uri = New-Object System.Uri(\`$wsUrl)
+                \`$ct = New-Object System.Threading.CancellationTokenSource
+                \`$client.ConnectAsync(\`$uri, \`$ct.Token).Wait()
                 Write-Host "Connected to Server"
             }
 
-            `$buffer = New-Object Byte[] 4096
-            `$segment = New-Object ArraySegment[Byte] -ArgumentList @(,$buffer)
-            `$ct = New-Object System.Threading.CancellationTokenSource
-            `$result = `$client.ReceiveAsync(`$segment, `$ct.Token).Result
+            \`$buffer = New-Object Byte[] 4096
+            \`$segment = New-Object ArraySegment[Byte] -ArgumentList @(,\`$buffer)
+            \`$ct = New-Object System.Threading.CancellationTokenSource
+            \`$result = \`$client.ReceiveAsync(\`$segment, \`$ct.Token).Result
 
-            if (`$result.MessageType -eq 'Text') {
-                `$message = [System.Text.Encoding]::UTF8.GetString(`$buffer, 0, `$result.Count)
+            if (\`$result.MessageType -eq 'Text') {
+                \`$message = [System.Text.Encoding]::UTF8.GetString(\`$buffer, 0, \`$result.Count)
                 # Socket.io message format is complex, but for simplicity we look for "command"
-                if (`$message -match 'command') {
+                if (\`$message -match 'command') {
                     # Extract command action (simple regex)
-                    `$action = ""
-                    if (`$message -match '\"action\":\"(.*?)\"') { `$action = `$matches[1] }
-                    `$cmdText = ""
-                    if (`$message -match '\"command\":\"(.*?)\"') { `$cmdText = `$matches[1] }
+                    \`$action = ""
+                    if (\`$message -match '\\"action\\":\\"(.*?)\\"') { \`$action = \`$matches[1] }
+                    \`$cmdText = ""
+                    if (\`$message -match '\\"command\\":\\"(.*?)\\"') { \`$cmdText = \`$matches[1] }
 
-                    Write-Host "Action: `$action"
+                    Write-Host "Action: \`$action"
                     
-                    if (`$action -eq "lock") {
+                    if (\`$action -eq "lock") {
                         Add-Type -TypeDefinition '@
                             using System.Runtime.InteropServices;
                             public class Win32 {
@@ -222,10 +222,10 @@ async function Start-Agent {
 '@
                         [Win32]::LockWorkStation()
                     }
-                    elseif (`$action -eq "restart") { shutdown /r /t 0 /f }
-                    elseif (`$action -eq "shutdown") { shutdown /s /t 0 /f }
-                    elseif (`$action -eq "terminal") {
-                        `$output = Invoke-Expression `$cmdText | Out-String
+                    elseif (\`$action -eq "restart") { shutdown /r /t 0 /f }
+                    elseif (\`$action -eq "shutdown") { shutdown /s /t 0 /f }
+                    elseif (\`$action -eq "terminal") {
+                        \`$output = Invoke-Expression \`$cmdText | Out-String
                         # Send result back (Placeholder for direct socket emit)
                     }
                 }
@@ -241,13 +241,13 @@ async function Start-Agent {
 
 # Start simple polling heartbeat for telemetry as well
 async function Start-Telemetry {
-    while (`$true) {
+    while (\`$true) {
         try {
-            `$free = (Get-PSDrive C).Free / 1GB
-            `$total = (Get-PSDrive C).Used / 1GB + `$free
-            `$disk = "{0:N1} GB / {1:N1} GB" -f `$free, `$total
-            `$body = @{ id = `$deviceId; disk = `$disk; hostname = `$env:COMPUTERNAME; os = "Windows" } | ConvertTo-Json
-            Invoke-RestMethod -Uri "${apiServer}/api/heartbeat" -Method POST -Body `$body -ContentType "application/json"
+            \`$free = (Get-PSDrive C).Free / 1GB
+            \`$total = (Get-PSDrive C).Used / 1GB + \`$free
+            \`$disk = "{0:N1} GB / {1:N1} GB" -f \`$free, \`$total
+            \`$body = @{ id = \`$deviceId; disk = \`$disk; hostname = \`$env:COMPUTERNAME; os = "Windows" } | ConvertTo-Json
+            Invoke-RestMethod -Uri "${apiServer}/api/heartbeat" -Method POST -Body \`$body -ContentType "application/json"
         } catch {}
         Start-Sleep -Seconds 30
     }
@@ -256,7 +256,7 @@ async function Start-Telemetry {
 Start-Agent
 "@
 
-[System.IO.File]::WriteAllText("$rmmDir\\Agent.ps1", $agentScript, (New-Object System.Text.UTF8Encoding($false)))
+[System.IO.File]::WriteAllText("\$rmmDir\\Agent.ps1", \$agentScript, (New-Object System.Text.UTF8Encoding(\$false)))
 
 # Setup Task to run hidden
 $taskName = "RustDeskRMM_v2"
