@@ -51,17 +51,15 @@ export async function POST() {
     // DİKKAT: Bu işlem sunucuda git pull ve npm install çalıştırır.
     // Bu işlem uzun sürebilir ve sunucu kaynaklarını tüketebilir.
     
-    console.log("Güncelleme başlatılıyor...");
+    console.log("Güncelleme başlatılıyor (fix-all.sh)...");
     
-    // Komutları sırayla çalıştır
-    // 1. Git pull
-    // 2. npm install (Yeni paketler için)
-    // 3. npm run build (Değişiklikleri derlemek için)
-    const command = "git pull origin main && npm install && npm run build";
+    // Kullanıcının önerdiği fix-all.sh scriptini çalıştır
+    // ~/fix-all.sh genellikle /home/kullanıcı/fix-all.sh demektir.
+    const command = "~/fix-all.sh";
     
     const output = execSync(command, { 
       encoding: "utf-8",
-      maxBuffer: 1024 * 1024 * 10 // 10MB çıktı kapasitesi
+      maxBuffer: 1024 * 1024 * 10 
     });
     
     console.log("Güncelleme çıktısı:", output);
