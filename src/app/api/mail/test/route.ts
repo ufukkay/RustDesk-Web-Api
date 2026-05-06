@@ -15,6 +15,7 @@ export async function POST(req: Request) {
       host: smtpHost,
       port: parseInt(smtpPort),
       secure: smtpPort === "465",
+      requireTLS: smtpPort === "587",
       auth: {
         user: smtpEmail,
         pass: smtpPassword,
