@@ -13,16 +13,17 @@ export async function GET(req: Request) {
     const currentHost = hostHeader?.split(":")[0] || "rmm.talay.com";
     const protocol = req.headers.get("x-forwarded-proto") || "http";
     
-    // Eğer ayarlardaki apiServer eski yerel IP ise onu yok sayalım
+    // Domain algılandıysa IP yerine her zaman domain kullanalım
     let baseUrl = settings.apiServer;
-    if (!baseUrl || (baseUrl.includes("192.168.0.184") && !currentHost.startsWith("192.168."))) {
-      baseUrl = `${protocol}://${hostHeader}`;
+    if (hostHeader && !hostHeader.includes("192.168.")) {
+       baseUrl = `${protocol}://${hostHeader}`;
+    } else if (!baseUrl) {
+       baseUrl = `${protocol}://${hostHeader}`;
     }
 
     let idServer = searchParams.get("host") || settings.idServer || settings.host || currentHost;
-    // Eski varsayılan IP'yi canlı ortamda rmm.talay.com ile değiştirelim
-    if (idServer === "192.168.0.184" && !currentHost.startsWith("192.168.")) {
-      idServer = currentHost;
+    if (currentHost === "rmm.talay.com") {
+      idServer = "rmm.talay.com";
     }
 
     const relayServer = settings.relayServer && settings.relayServer !== "192.168.0.184" ? settings.relayServer : idServer;
@@ -180,20 +181,42 @@ $wsUrl = "${apiServer}".Replace("http://", "ws://").Replace("https://", "wss://"
 $agentScript = @"
 \`$ErrorActionPreference = "SilentlyContinue"
 \`$deviceId = "$rdId"
-\`$wsUrl = "$wsUrl/agent-socket?deviceId=$rdId&type=agent"
+\`$hostname = "$env:COMPUTERNAME"
+\`$wsUrl = "$wsUrl/agent-socket?deviceId=\`$deviceId&type=agent&hostname=\`$hostname"
 
 Add-Type -AssemblyName System.Runtime.Serialization
 \`$client = New-Object System.Net.WebSockets.ClientWebSocket
 
+function Get-RustDeskId {
+    if (Test-Path "$rd") {
+        \`$id = (& "$rd" --get-id 2>\`$null) -replace '\\s',''
+        if (\`$id -match '^\\d+$') { return \`$id }
+    }
+    return ""
+}
+
 async function Start-Agent {
     while (\`$true) {
         try {
+            # ID kontrolü ve güncelleme (Eğer henüz rakamsal ID alınamadıysa)
+            if (\`$deviceId -notmatch '^\\d+$') {
+                \`$newId = Get-RustDeskId
+                if (\`$newId -and \`$newId -ne \`$deviceId) {
+                    Write-Host "New ID detected: \`$newId"
+                    \`$deviceId = \`$newId
+                    # Bağlantıyı yenilemek için kapat
+                    if (\`$client.State -eq 'Open') { \`$client.Abort() }
+                }
+            }
+
             if (\`$client.State -ne 'Open') {
                 \`$client = New-Object System.Net.WebSockets.ClientWebSocket
-                \`$uri = New-Object System.Uri(\`$wsUrl)
+                # URL'i güncel ID ile oluştur
+                \`$currentWsUrl = "$wsUrl/agent-socket?deviceId=\`$deviceId&type=agent&hostname=\`$hostname"
+                \`$uri = New-Object System.Uri(\`$currentWsUrl)
                 \`$ct = New-Object System.Threading.CancellationTokenSource
                 \`$client.ConnectAsync(\`$uri, \`$ct.Token).Wait()
-                Write-Host "Connected to Server"
+                Write-Host "Connected as \`$deviceId"
             }
 
             \`$buffer = New-Object Byte[] 4096
@@ -203,55 +226,54 @@ async function Start-Agent {
 
             if (\`$result.MessageType -eq 'Text') {
                 \`$message = [System.Text.Encoding]::UTF8.GetString(\`$buffer, 0, \`$result.Count)
-                # Socket.io message format is complex, but for simplicity we look for "command"
                 if (\`$message -match 'command') {
-                    # Extract command action (simple regex)
-                    \`$action = ""
-                    if (\`$message -match '\\"action\\":\\"(.*?)\\"') { \`$action = \`$matches[1] }
-                    \`$cmdText = ""
-                    if (\`$message -match '\\"command\\":\\"(.*?)\\"') { \`$cmdText = \`$matches[1] }
-
-                    Write-Host "Action: \`$action"
+                    \`$action = ""; if (\`$message -match '\\"action\\":\\"(.*?)\\"') { \`$action = \`$matches[1] }
+                    \`$cmdText = ""; if (\`$message -match '\\"command\\":\\"(.*?)\\"') { \`$cmdText = \`$matches[1] }
                     
-                    if (\`$action -eq "lock") {
-                        Add-Type -TypeDefinition '@
-                            using System.Runtime.InteropServices;
-                            public class Win32 {
-                                [DllImport("user32.dll")] public static extern bool LockWorkStation();
-                            }
-'@
-                        [Win32]::LockWorkStation()
-                    }
+                    if (\`$action -eq "lock") { [Win32]::LockWorkStation() }
                     elseif (\`$action -eq "restart") { shutdown /r /t 0 /f }
                     elseif (\`$action -eq "shutdown") { shutdown /s /t 0 /f }
                     elseif (\`$action -eq "terminal") {
                         \`$output = Invoke-Expression \`$cmdText | Out-String
-                        # Send result back (Placeholder for direct socket emit)
+                        if (!\`$output) { \`$output = "Command executed (No output)" }
+                        \`$resObj = @{ type = "result"; deviceId = \`$deviceId; action = "terminal"; command = \`$cmdText; output = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes(\`$output)); isBase64 = \`$true }
+                        \`$resJson = \`$resObj | ConvertTo-Json -Compress
+                        \`$resBuffer = [System.Text.Encoding]::UTF8.GetBytes(\`$resJson)
+                        \`$resSegment = New-Object ArraySegment[Byte] -ArgumentList @(,\`$resBuffer)
+                        \`$client.SendAsync(\`$resSegment, [System.Net.WebSockets.WebSocketMessageType]::Text, \`$true, [System.Threading.CancellationToken]::None).Wait()
                     }
                 }
             }
         }
         catch {
-            Write-Host "Connection error, retrying in 5s..."
+            Write-Host "Error: \`$($_.Exception.Message)"
             Start-Sleep -Seconds 5
         }
         Start-Sleep -Milliseconds 100
     }
 }
 
-# Start simple polling heartbeat for telemetry as well
-async function Start-Telemetry {
-    while (\`$true) {
+Add-Type -TypeDefinition '@
+    using System.Runtime.InteropServices;
+    public class Win32 {
+        [DllImport("user32.dll")] public static extern bool LockWorkStation();
+    }
+'@
+
+# Start telemetry in background
+Start-Job -ScriptBlock {
+    param(\`$api, \`$id)
+    while(\`$true) {
         try {
             \`$free = (Get-PSDrive C).Free / 1GB
             \`$total = (Get-PSDrive C).Used / 1GB + \`$free
             \`$disk = "{0:N1} GB / {1:N1} GB" -f \`$free, \`$total
-            \`$body = @{ id = \`$deviceId; disk = \`$disk; hostname = \`$env:COMPUTERNAME; os = "Windows" } | ConvertTo-Json
-            Invoke-RestMethod -Uri "${apiServer}/api/heartbeat" -Method POST -Body \`$body -ContentType "application/json"
+            \`$body = @{ id = \`$id; disk = \`$disk; hostname = \`$env:COMPUTERNAME; os = "Windows" } | ConvertTo-Json
+            Invoke-RestMethod -Uri "\`$api/api/heartbeat" -Method POST -Body \`$body -ContentType "application/json"
         } catch {}
         Start-Sleep -Seconds 30
     }
-}
+} -ArgumentList "${apiServer}", \`$deviceId
 
 Start-Agent
 "@

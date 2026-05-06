@@ -41,17 +41,21 @@ app.prepare().then(() => {
   wss.on("connection", (ws, request) => {
     const url = new URL(request.url, `http://${hostname}`);
     const deviceId = url.searchParams.get("deviceId");
+    const agentHostname = url.searchParams.get("hostname");
     
     if (deviceId) {
-      console.log(`Agent connected via Raw WS: ${deviceId}`);
+      console.log(`Agent connected: ${deviceId} (${agentHostname || "no-host"})`);
       agents.set(deviceId, ws);
+      if (agentHostname) agents.set(agentHostname, ws); // Fallback mapping
       
       ws.on("message", (data) => {
         try {
           const msg = JSON.parse(data.toString());
           console.log(`Msg from Agent ${deviceId}:`, msg.type);
           // Relay to Dashboard via Socket.io
+          // Both rooms (ID and Hostname) get the update
           io.to(`device_${deviceId}`).emit(msg.type || "result", msg);
+          if (agentHostname) io.to(`device_${agentHostname}`).emit(msg.type || "result", msg);
         } catch (e) {
           console.log("Error parsing agent message", e);
         }
@@ -60,6 +64,7 @@ app.prepare().then(() => {
       ws.on("close", () => {
         console.log(`Agent disconnected: ${deviceId}`);
         agents.delete(deviceId);
+        if (agentHostname) agents.delete(agentHostname);
       });
     }
   });
@@ -76,10 +81,14 @@ app.prepare().then(() => {
     socket.on("send_command", (data) => {
       // data: { deviceId, action, command }
       console.log(`Command to ${data.deviceId}: ${data.action}`);
-      const agentWs = agents.get(data.deviceId);
+      
+      // Try to find agent by ID or Hostname
+      const agentWs = agents.get(String(data.deviceId)) || agents.get(String(data.deviceId).toUpperCase());
+      
       if (agentWs && agentWs.readyState === 1) {
         agentWs.send(JSON.stringify(data));
       } else {
+        console.log(`Agent ${data.deviceId} not found in active connections`);
         socket.emit("error", { message: "Agent is not connected" });
       }
     });
