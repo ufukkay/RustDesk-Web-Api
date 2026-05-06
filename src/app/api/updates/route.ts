@@ -49,18 +49,35 @@ export async function GET() {
 export async function POST() {
   try {
     // DİKKAT: Bu işlem sunucuda git pull ve npm install çalıştırır.
-    // Çok kritik ve riskli bir işlemdir.
+    // Bu işlem uzun sürebilir ve sunucu kaynaklarını tüketebilir.
     
-    // execSync("git pull origin main && npm install && npm run build", { stdio: "inherit" });
+    console.log("Güncelleme başlatılıyor...");
     
-    // Şimdilik sadece başarılı mesajı dönelim, kullanıcı manuel yapsın veya 
-    // risk alarak komutu açabiliriz.
+    // Komutları sırayla çalıştır
+    // 1. Git pull
+    // 2. npm install (Yeni paketler için)
+    // 3. npm run build (Değişiklikleri derlemek için)
+    const command = "git pull origin main && npm install && npm run build";
     
+    const output = execSync(command, { 
+      encoding: "utf-8",
+      maxBuffer: 1024 * 1024 * 10 // 10MB çıktı kapasitesi
+    });
+    
+    console.log("Güncelleme çıktısı:", output);
+
     return NextResponse.json({ 
       success: true, 
-      message: "Güncelleme komutu sunucuya iletildi. Lütfen sunucu konsolunu takip edin." 
+      message: "Sistem başarıyla güncellendi ve yeniden derlendi. Değişikliklerin tam olarak yansıması için servisin restart edilmesi gerekebilir.",
+      output: output.substring(0, 500) + "..." 
     });
-  } catch (error) {
-    return NextResponse.json({ success: false, message: "Güncelleme başlatılamadı." }, { status: 500 });
+  } catch (error: any) {
+    console.error("Güncelleme hatası:", error);
+    return NextResponse.json({ 
+      success: false, 
+      message: "Güncelleme sırasında hata oluştu.",
+      error: error.message,
+      stderr: error.stderr?.toString()
+    }, { status: 500 });
   }
 }
