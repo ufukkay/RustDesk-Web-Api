@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { execSync } from "child_process";
+import { execSync, exec } from "child_process";
 import fs from "fs";
 import path from "path";
 
@@ -48,34 +48,24 @@ export async function GET() {
 
 export async function POST() {
   try {
-    // DİKKAT: Bu işlem sunucuda git pull ve npm install çalıştırır.
-    // Bu işlem uzun sürebilir ve sunucu kaynaklarını tüketebilir.
+    console.log("Güncelleme arka planda başlatılıyor (fix-all.sh)...");
     
-    console.log("Güncelleme başlatılıyor (fix-all.sh)...");
+    // Arka planda çalıştır (nohup ve & ile)
+    // Bu sayede uygulama kapanmadan önce yanıt dönebiliriz.
+    const command = "nohup ~/fix-all.sh > /dev/null 2>&1 &";
     
-    // Kullanıcının önerdiği fix-all.sh scriptini çalıştır
-    // ~/fix-all.sh genellikle /home/kullanıcı/fix-all.sh demektir.
-    const command = "~/fix-all.sh";
-    
-    const output = execSync(command, { 
-      encoding: "utf-8",
-      maxBuffer: 1024 * 1024 * 10 
-    });
-    
-    console.log("Güncelleme çıktısı:", output);
+    exec(command);
 
     return NextResponse.json({ 
       success: true, 
-      message: "Sistem başarıyla güncellendi ve yeniden derlendi. Değişikliklerin tam olarak yansıması için servisin restart edilmesi gerekebilir.",
-      output: output.substring(0, 500) + "..." 
+      message: "Güncelleme arka planda başlatıldı. Sunucu birkaç dakika içinde yenilenmiş ve yeniden başlatılmış olacaktır. Lütfen 1-2 dakika sonra sayfayı yenileyin." 
     });
   } catch (error: any) {
-    console.error("Güncelleme hatası:", error);
+    console.error("Güncelleme başlatma hatası:", error);
     return NextResponse.json({ 
       success: false, 
-      message: "Güncelleme sırasında hata oluştu.",
-      error: error.message,
-      stderr: error.stderr?.toString()
+      message: "Güncelleme başlatılamadı.",
+      error: error.message
     }, { status: 500 });
   }
 }
