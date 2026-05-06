@@ -17,7 +17,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!mounted) return;
 
-    if (!isAuthenticated && pathname !== "/login") {
+    if (!isAuthenticated && pathname !== "/login" && pathname !== "/invite") {
       router.push("/login");
     } else if (isAuthenticated && pathname === "/login") {
       router.push("/dashboard");
@@ -28,8 +28,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return <div className="min-h-screen bg-black flex items-center justify-center">Yükleniyor...</div>;
   }
 
-  // Giriş yapmamışsa ve sayfa login değilse hiçbir şey gösterme (zaten yönlenecek)
-  if (!isAuthenticated && pathname !== "/login") {
+  // Giriş yapmamışsa ve sayfa login veya davet değilse hiçbir şey gösterme (zaten yönlenecek)
+  if (!isAuthenticated && pathname !== "/login" && pathname !== "/invite") {
     return null; 
   }
 
