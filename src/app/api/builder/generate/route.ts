@@ -36,6 +36,7 @@ if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]:
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
+Write-Host ">> Sunucu: ${installUrl}" -ForegroundColor Gray
 try {
     irm "${installUrl}" | iex
 } catch {
