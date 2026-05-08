@@ -11,7 +11,6 @@ import { useAppStore } from "@/lib/store";
 export default function BuilderPage() {
   const { serverConfig } = useAppStore();
   const [host, setHost] = useState("");
-  const [port, setPort] = useState("");
   const [copied, setCopied] = useState(false);
   const [serverKey, setServerKey] = useState("Yükleniyor...");
   const [baseUrl, setBaseUrl] = useState("");
@@ -21,10 +20,8 @@ export default function BuilderPage() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   useEffect(() => {
-    // İlk değerleri window.location'dan alalım (canlı ortam uyumu için)
     if (typeof window !== "undefined") {
       setHost(window.location.hostname);
-      setPort(window.location.port || (window.location.protocol === "https:" ? "443" : "3000"));
       setBaseUrl(window.location.origin);
     }
 
@@ -32,11 +29,10 @@ export default function BuilderPage() {
       .then(res => res.json())
       .then(data => setServerKey(data.key))
       .catch(() => setServerKey("Okunamadı"));
-      
+
     fetch("/api/rustdesk/settings")
       .then(res => res.json())
       .then(data => {
-        // Eğer gelen host eski varsayılan IP ise ve biz şu an bir domain üzerindeysek, güncel hostname'i koruyalım
         const isOldDefault = data.host === "192.168.0.184";
         const isOnPublicDomain = window.location.hostname !== "localhost" && !window.location.hostname.startsWith("192.168.");
 
@@ -45,17 +41,15 @@ export default function BuilderPage() {
             setHost(data.idServer || data.host);
           }
         }
-        
-        if (data.port) setPort(data.port);
 
-        // apiServer ayarlıysa ve eski varsayılan değilse onu kullan
         if (data.apiServer && !(data.apiServer.includes("192.168.0.184") && isOnPublicDomain)) {
           setBaseUrl(data.apiServer);
         }
       })
       .catch(() => {});
   }, []);
-  const installCommand = `irm "${baseUrl}/api/rustdesk/builder/install?host=${host}&port=${port}" | iex`;
+
+  const installCommand = `irm "${baseUrl}/api/rustdesk/builder/install?host=${host}&port=443" | iex`;
 
   const copyToClipboard = () => {
     if (navigator.clipboard && window.isSecureContext) {
@@ -63,7 +57,6 @@ export default function BuilderPage() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } else {
-      // Fallback for non-secure contexts (HTTP via IP)
       const textArea = document.createElement("textarea");
       textArea.value = installCommand;
       document.body.appendChild(textArea);
@@ -95,9 +88,8 @@ export default function BuilderPage() {
       const formData = {
         companyName,
         host,
-        port,
         serverKey,
-        logo: logoPreview // Send base64 logo if exists
+        logo: logoPreview
       };
 
       const response = await fetch("/api/builder/generate", {
@@ -105,12 +97,12 @@ export default function BuilderPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData)
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.details || "Üretim hatası");
       }
-      
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -131,7 +123,7 @@ export default function BuilderPage() {
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 1024 * 1024) { // 1MB limit
+      if (file.size > 1024 * 1024) {
         toast.error("Logo boyutu 1MB'dan küçük olmalıdır.");
         return;
       }
@@ -154,31 +146,19 @@ export default function BuilderPage() {
             <div className="rd2-card-head">
               <div>
                 <h3>Dağıtım Yapılandırması</h3>
-                <p className="rd2-muted-sm">Sunucu adresi ve port</p>
+                <p className="rd2-muted-sm">Sunucu adresi</p>
               </div>
             </div>
             <div className="rd2-form">
-              <div className="rd2-form-row">
-                <div className="rd2-field-group">
-                  <label>Sunucu Host (IP/Domain)</label>
-                  <div className="rd2-field">
-                    <Globe width="14" height="14" />
-                    <input 
-                      value={host} 
-                      onChange={e => setHost(e.target.value)}
-                      placeholder="192.168.x.x"
-                    />
-                  </div>
-                </div>
-                <div className="rd2-field-group">
-                  <label>API Port</label>
-                  <div className="rd2-field">
-                    <input 
-                      value={port} 
-                      onChange={e => setPort(e.target.value)}
-                      placeholder="3000"
-                    />
-                  </div>
+              <div className="rd2-field-group">
+                <label>Sunucu Host (IP/Domain)</label>
+                <div className="rd2-field">
+                  <Globe width="14" height="14" />
+                  <input
+                    value={host}
+                    onChange={e => setHost(e.target.value)}
+                    placeholder="192.168.x.x"
+                  />
                 </div>
               </div>
               <div className="rd2-field-group">
@@ -262,8 +242,8 @@ export default function BuilderPage() {
                     {pkg.type} dosyası
                   </div>
                 </div>
-                <button 
-                  className="rd2-btn rd2-btn-sm" 
+                <button
+                  className="rd2-btn rd2-btn-sm"
                   style={{ background: "#F1F2F4", color: "#0E1116" }}
                   onClick={() => window.open(`https://github.com/rustdesk/rustdesk/releases/download/1.4.6/${pkg.file}`, '_blank')}
                 >
@@ -293,14 +273,14 @@ export default function BuilderPage() {
               </div>
             </div>
           </div>
-          
+
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
             <div className="rd2-form">
               <div className="rd2-field-group">
                 <label>Şirket / Kurum Adı</label>
                 <div className="rd2-field">
-                  <input 
-                    value={companyName} 
+                  <input
+                    value={companyName}
                     onChange={e => setCompanyName(e.target.value)}
                     placeholder="Örn: Talay Teknoloji"
                   />
@@ -310,24 +290,24 @@ export default function BuilderPage() {
 
               <div className="rd2-field-group">
                 <label>Şirket Logosu (.ico / .png)</label>
-                <div 
-                  className="rd2-field" 
-                  style={{ 
-                    background: "rgba(0,0,0,0.02)", 
-                    borderStyle: "dashed", 
-                    justifyContent: "center", 
+                <div
+                  className="rd2-field"
+                  style={{
+                    background: "rgba(0,0,0,0.02)",
+                    borderStyle: "dashed",
+                    justifyContent: "center",
                     padding: logoPreview ? "12px" : "24px 0",
                     cursor: "pointer",
                     position: "relative"
                   }}
                   onClick={() => document.getElementById("logo-upload")?.click()}
                 >
-                  <input 
+                  <input
                     id="logo-upload"
-                    type="file" 
-                    accept=".ico,.png,.jpg" 
+                    type="file"
+                    accept=".ico,.png,.jpg"
                     onChange={handleLogoChange}
-                    style={{ display: "none" }} 
+                    style={{ display: "none" }}
                   />
                   {logoPreview ? (
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -366,10 +346,10 @@ export default function BuilderPage() {
                 </ul>
               </div>
 
-              <button 
+              <button
                 onClick={handleGenerateCustomClient}
                 disabled={isGenerating}
-                className="rd2-btn" 
+                className="rd2-btn"
                 style={{ background: "#0E1116", color: "#fff", width: "100%", marginTop: 24, display: "flex", justifyContent: "center", gap: 8 }}
               >
                 {isGenerating ? (

@@ -7,7 +7,7 @@ export async function POST(req: Request) {
   const tmpDir = path.join("/tmp", `builder_${Date.now()}`);
 
   try {
-    const { companyName, host, port } = await req.json();
+    const { companyName, host } = await req.json();
 
     if (!companyName) {
       return NextResponse.json({ error: "Şirket adı zorunludur." }, { status: 400 });
@@ -20,8 +20,7 @@ export async function POST(req: Request) {
 
     if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 
-    const protocol = port === "443" ? "https" : "http";
-    const installUrl = `${protocol}://${host}:${port}/api/rustdesk/builder/install?host=${host}&port=${port}`;
+    const installUrl = `https://${host}/api/rustdesk/builder/install?host=${host}&port=443`;
 
     // EXE sadece sunucudaki calistigindan emin olunan install API'sini cagirir
     const customScript = `
