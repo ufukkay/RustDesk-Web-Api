@@ -81,11 +81,9 @@ Start-Sleep -Seconds 3
     
     const sfxPath = path.join(binDir, "7z.sfx");
     
-    // SFX modülü yoksa indir (GitHub'dan güvenli bir 7z SFX stub)
+    // SFX modülü yoksa hata fırlat (Kullanıcının doğru modülü indirmesi gerekiyor)
     if (!fs.existsSync(sfxPath)) {
-      console.log("SFX stub indiriliyor...");
-      execSync(`curl -L -o "${sfxPath}" https://github.com/upx/upx/releases/download/v3.96/upx-3.96-win64.zip`); // Bu sadece örnek, gerçek bir sfx stub lazım
-      // Gerçekten çalışan bir 7z.sfx lazım. Şimdilik zip olarak dönelim eğer sfx yoksa.
+      throw new Error("Sunucuda SFX modülü (7z.sfx) bulunamadı. Lütfen kurulum adımlarını tamamlayın.");
     }
 
     // SFX Ayar dosyası (config.txt)
@@ -100,27 +98,10 @@ RunProgram="powershell.exe -ExecutionPolicy Bypass -File setup.ps1"
     const archivePath = path.join(tmpDir, "app.7z");
     execSync(`7z a -t7z "${archivePath}" "${ps1Path}"`);
 
-    // EXE oluştur (Stub + Config + Archive)
-    // NOT: Linux'ta sfx stub yoksa bu aşama sadece 7z olarak kalır. 
-    // Şimdilik garantici olup ZIP veya 7z dönmek yerine EXE deneyeceğiz.
     const exePath = path.join(tmpDir, `${asciiCompanyName}_Kurulum.exe`);
     
-    // Eğer sfx modülü varsa birleştir, yoksa hata ver
-    if (fs.existsSync(sfxPath)) {
-        execSync(`cat "${sfxPath}" "${configPath}" "${archivePath}" > "${exePath}"`);
-    } else {
-        // SFX yoksa direkt 7z olarak verelim
-        const finalPath = path.join(tmpDir, `${asciiCompanyName}_Kurulum.7z`);
-        fs.renameSync(archivePath, finalPath);
-        const fileBuffer = fs.readFileSync(finalPath);
-        cleanup(tmpDir);
-        return new Response(fileBuffer, {
-            headers: {
-                "Content-Type": "application/x-7z-compressed",
-                "Content-Disposition": `attachment; filename="${asciiCompanyName}_Kurulum.7z"`
-            }
-        });
-    }
+    // Birleştirme (cat komutu ikili modda sorunsuz çalışır)
+    execSync(`cat "${sfxPath}" "${configPath}" "${archivePath}" > "${exePath}"`);
 
     const exeBuffer = fs.readFileSync(exePath);
     cleanup(tmpDir);
