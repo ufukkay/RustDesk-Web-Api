@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Package, Download, Terminal, Copy, Check, Shield, Globe, Cpu, Info, ExternalLink, Zap } from "lucide-react";
+import { Package, Download, Terminal, Copy, Check, Shield, Globe, Cpu, Info, ExternalLink, Zap, Settings2, Image as ImageIcon, FileArchive, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +15,8 @@ export default function BuilderPage() {
   const [copied, setCopied] = useState(false);
   const [serverKey, setServerKey] = useState("Yükleniyor...");
   const [baseUrl, setBaseUrl] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     // İlk değerleri window.location'dan alalım (canlı ortam uyumu için)
@@ -79,6 +82,38 @@ export default function BuilderPage() {
     { name: "Linux (Debian)", file: "rustdesk-1.4.6-x86_64.deb", type: "DEB" },
     { name: "macOS (Intel/M1)", file: "rustdesk-1.4.6-x86_64.dmg", type: "DMG" },
   ];
+
+  const handleGenerateCustomClient = async () => {
+    if (!companyName.trim()) {
+      toast.error("Lütfen bir şirket/kurum adı giriniz.");
+      return;
+    }
+    setIsGenerating(true);
+    try {
+      const response = await fetch("/api/builder/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ companyName, host, port, serverKey })
+      });
+      
+      if (!response.ok) throw new Error("Üretim hatası");
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${companyName.replace(/\\s+/g, '_')}_Destek.ps1`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      toast.success("Özel istemci başarıyla üretildi ve indiriliyor.");
+    } catch (error) {
+      console.error(error);
+      toast.error("İstemci üretilirken sunucuda bir hata oluştu.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   return (
     <div className="rd2-page">
@@ -211,6 +246,88 @@ export default function BuilderPage() {
           <div className="rd2-pkg-note">
             <Info width="13" height="13" />
             <span>Windows için .exe dosyasının adını değiştirmeyin — otomatik konfigürasyon için gerekli.</span>
+          </div>
+        </section>
+      </div>
+
+      {/* Custom Client Builder Section */}
+      <div style={{ marginTop: 24 }}>
+        <section className="rd2-card">
+          <div className="rd2-card-head" style={{ borderBottom: "1px solid rgba(0,0,0,0.05)", paddingBottom: 16, marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ background: "#FFCC00", color: "#0E1116", padding: 8, borderRadius: 8 }}>
+                <Settings2 width="20" height="20" />
+              </div>
+              <div>
+                <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0, color: "#0E1116" }}>Özel İstemci Oluşturucu (White-label)</h3>
+                <p className="rd2-muted-sm" style={{ margin: "4px 0 0" }}>Şirket kimliğinize özel RustDesk paketi oluşturun</p>
+              </div>
+            </div>
+          </div>
+          
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+            <div className="rd2-form">
+              <div className="rd2-field-group">
+                <label>Şirket / Kurum Adı</label>
+                <div className="rd2-field">
+                  <input 
+                    value={companyName} 
+                    onChange={e => setCompanyName(e.target.value)}
+                    placeholder="Örn: Talay Teknoloji"
+                  />
+                </div>
+                <p style={{ fontSize: 11, color: "#8B92A0", marginTop: 6 }}>Bu isim kurulan serviste ve masaüstü kısayolunda görünecektir.</p>
+              </div>
+
+              <div className="rd2-field-group">
+                <label>Şirket Logosu (.ico)</label>
+                <div className="rd2-field" style={{ background: "rgba(0,0,0,0.02)", borderStyle: "dashed", justifyContent: "center", padding: "24px 0" }}>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, color: "#8B92A0" }}>
+                    <ImageIcon width="24" height="24" />
+                    <span style={{ fontSize: 12, fontWeight: 600 }}>Logo yükleme özelliği yakında</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ background: "#F8F9FA", borderRadius: 12, padding: 20, border: "1px solid rgba(0,0,0,0.05)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+              <div>
+                <h4 style={{ fontSize: 13, fontWeight: 700, margin: "0 0 12px", color: "#0E1116" }}>Paket İçeriği</h4>
+                <ul style={{ padding: 0, margin: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
+                  <li style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#4A5568", fontWeight: 600 }}>
+                    <Check width="14" height="14" style={{ color: "#10B981" }} /> Önceden yapılandırılmış ID ve Relay Sunucusu
+                  </li>
+                  <li style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#4A5568", fontWeight: 600 }}>
+                    <Check width="14" height="14" style={{ color: "#10B981" }} /> Otomatik API entegrasyonu
+                  </li>
+                  <li style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#4A5568", fontWeight: 600 }}>
+                    <Check width="14" height="14" style={{ color: "#10B981" }} /> Arka planda sessiz kurulum (RMM Agent)
+                  </li>
+                  <li style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#4A5568", fontWeight: 600 }}>
+                    <Check width="14" height="14" style={{ color: "#10B981" }} /> Şirket adınızla özelleştirilmiş PowerShell Scripti
+                  </li>
+                </ul>
+              </div>
+
+              <button 
+                onClick={handleGenerateCustomClient}
+                disabled={isGenerating}
+                className="rd2-btn" 
+                style={{ background: "#0E1116", color: "#fff", width: "100%", marginTop: 24, display: "flex", justifyContent: "center", gap: 8 }}
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 width="16" height="16" className="animate-spin" />
+                    Paket Oluşturuluyor...
+                  </>
+                ) : (
+                  <>
+                    <FileArchive width="16" height="16" />
+                    Özel Paketi Üret ve İndir (.ps1)
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </section>
       </div>
