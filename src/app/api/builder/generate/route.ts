@@ -116,8 +116,11 @@ RunProgram="powershell.exe -ExecutionPolicy Bypass -File setup.ps1"
 
   } catch (error: any) {
     console.error("Builder API Error:", error);
-    cleanup(tmpDir);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    if (typeof tmpDir !== 'undefined') cleanup(tmpDir);
+    return new Response(JSON.stringify({ details: error.message || "Bilinmeyen bir hata oluştu" }), { 
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
   }
 }
 
