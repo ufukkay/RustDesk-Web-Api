@@ -104,29 +104,11 @@ Stop-Service -Name "rustdesk" -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 2
 Get-Process "rustdesk" -ErrorAction SilentlyContinue | Stop-Process -Force
 
-$toml = @"
-rendezvous-server = '${idServer}'
-relay-server = '${relayServer}'
-api-server = '${apiServer}'
-key = '${serverKey}'
-verification-method = 'use-permanent-password'
-permanent-password = '${password}'
-approve-mode = 'password'
-remote-user-confirmation = 'N'
-allow-logon-screen-password = 'Y'
-enable-remote-desktop = 'Y'
-stop-service-on-user-logout = 'N'
-permissions = 'all'
-enable-uac = 'Y'
-enable-remote-restart = 'Y'
-allow-hostname-as-id = 'Y'
-hide-tray = 'Y'
-hide-stop-service = 'Y'
-hide-network-settings = 'Y'
-hide-security-settings = 'Y'
-disable-change-permanent-password = 'Y'
-remove-preset-password-warning = 'Y'
+$toml1 = @"
+rendezvous_server = '${idServer}'
+"@
 
+$toml2 = @"
 [options]
 custom-rendezvous-server = '${idServer}'
 relay-server = '${relayServer}'
@@ -151,19 +133,19 @@ disable-change-permanent-password = 'Y'
 remove-preset-password-warning = 'Y'
 "@
 
-$configPaths = @(
-    "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk\\config\\RustDesk2.toml",
-    "C:\\Windows\\System32\\config\\systemprofile\\AppData\\Roaming\\RustDesk\\config\\RustDesk2.toml",
-    "$env:ProgramData\\RustDesk\\config\\RustDesk2.toml",
-    "$env:USERPROFILE\\AppData\\Roaming\\RustDesk\\config\\RustDesk2.toml"
+$profileDirs = @(
+    "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk\\config",
+    "C:\\Windows\\System32\\config\\systemprofile\\AppData\\Roaming\\RustDesk\\config",
+    "$env:ProgramData\\RustDesk\\config",
+    "$env:USERPROFILE\\AppData\\Roaming\\RustDesk\\config"
 )
 Get-ChildItem "C:\\Users" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-    $configPaths += "$($_.FullName)\\AppData\\Roaming\\RustDesk\\config\\RustDesk2.toml"
+    $profileDirs += "$($_.FullName)\\AppData\\Roaming\\RustDesk\\config"
 }
-foreach ($cfgPath in $configPaths) {
-    $dir = Split-Path $cfgPath
+foreach ($dir in $profileDirs) {
     if (!(Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
-    [System.IO.File]::WriteAllText($cfgPath, $toml, (New-Object System.Text.UTF8Encoding($false)))
+    [System.IO.File]::WriteAllText("$dir\\RustDesk.toml",  $toml1, (New-Object System.Text.UTF8Encoding($false)))
+    [System.IO.File]::WriteAllText("$dir\\RustDesk2.toml", $toml2, (New-Object System.Text.UTF8Encoding($false)))
 }
 Write-Host "[OK] Config yazildi" -ForegroundColor Green
 
