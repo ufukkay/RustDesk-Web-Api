@@ -40,13 +40,28 @@ if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]:
     exit
 }
 
+# TLS 1.2 zorla (GitHub ve diger modern sunucular icin gerekli)
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
 $rdUrl = "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe"
 $rdPath = "$env:TEMP\\rustdesk_installer.exe"
 Write-Host "=> [1/4] Program indiriliyor..." -ForegroundColor Yellow
-Invoke-WebRequest -Uri $rdUrl -OutFile $rdPath
+try {
+    Invoke-WebRequest -Uri $rdUrl -OutFile $rdPath -UseBasicParsing
+} catch {
+    Write-Host "HATA: Indirme basarisiz - $($_.Exception.Message)" -ForegroundColor Red
+    Start-Sleep -Seconds 8
+    exit 1
+}
 
 Write-Host "=> [2/4] Kurulum yapiliyor..." -ForegroundColor Yellow
-Start-Process -FilePath $rdPath -ArgumentList "--silent-install" -Wait -WindowStyle Hidden
+try {
+    Start-Process -FilePath $rdPath -ArgumentList "--silent-install" -Wait -WindowStyle Hidden
+} catch {
+    Write-Host "HATA: Kurulum basarisiz - $($_.Exception.Message)" -ForegroundColor Red
+    Start-Sleep -Seconds 8
+    exit 1
+}
 
 Write-Host "=> [3/4] Yapilandiriliyor..." -ForegroundColor Yellow
 $configDir = "$env:ProgramData\\RustDesk\\config"
@@ -67,7 +82,7 @@ Restart-Service -Name "RustDesk" -ErrorAction SilentlyContinue
 Write-Host "=> [4/4] RMM servisi baslatiliyor..." -ForegroundColor Yellow
 ${agentScript}
 Write-Host "KURULUM TAMAMLANDI!" -ForegroundColor Green
-Start-Sleep -Seconds 3
+Start-Sleep -Seconds 5
 `;
 
     const ps1Path = path.join(tmpDir, "setup.ps1");
@@ -79,15 +94,26 @@ Start-Sleep -Seconds 3
     const exePath = path.join(tmpDir, `${asciiCompanyName}_Kurulum.exe`);
 
     const nsiContent = `Unicode true
+!include "MUI2.nsh"
+
 Name "${safeCompanyName} Kurulumu"
 OutFile "${exePath}"
 RequestExecutionLevel admin
-SilentInstall silent
+ShowInstDetails show
 
-Section
+!insertmacro MUI_PAGE_INSTFILES
+!insertmacro MUI_LANGUAGE "English"
+
+Section "Kurulum"
   SetOutPath "$PLUGINSDIR"
   File "${ps1Path}"
-  ExecWait 'powershell.exe -ExecutionPolicy Bypass -WindowStyle Normal -File "$PLUGINSDIR\\setup.ps1"'
+  DetailPrint "Kurulum baslatiliyor..."
+  nsExec::ExecToLog 'powershell.exe -ExecutionPolicy Bypass -NonInteractive -File "$PLUGINSDIR\\setup.ps1"'
+  Pop $0
+  IntCmp $0 0 done
+    DetailPrint "HATA: Kurulum basarisiz oldu (kod: $0)"
+  done:
+  DetailPrint "Islem tamamlandi."
 SectionEnd
 `;
 
