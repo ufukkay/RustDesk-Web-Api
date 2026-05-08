@@ -5,7 +5,7 @@ import { execSync } from "child_process";
 
 export async function POST(req: Request) {
   const tmpDir = path.join("/tmp", `builder_${Date.now()}`);
-  
+
   try {
     const { companyName, host, port, serverKey } = await req.json();
 
@@ -13,16 +13,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Şirket adı zorunludur." }, { status: 400 });
     }
 
-    // Dosya adında soruna yol açmayacak güvenli isim
     const safeCompanyName = companyName.replace(/[^a-zA-Z0-9 ğüşöçİĞÜŞÖÇ]/g, "");
     const asciiCompanyName = safeCompanyName
       .replace(/[ığüşöçİĞÜŞÖÇ]/g, (m: string) => (({'ı':'i','ğ':'g','ü':'u','ş':'s','ö':'o','ç':'c','İ':'I','Ğ':'G','Ü':'U','Ş':'S','Ö':'O','Ç':'C'} as any)[m] || m))
       .replace(/\s+/g, '_');
 
-    // Çalışma dizini oluştur
     if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 
-    // 1. Orijinal agent scriptini oku ve özelleştir
+    // 1. Agent scriptini oku ve özelleştir
     const agentScriptPath = path.join(process.cwd(), "scripts", "agent", "setup.ps1");
     let agentScript = "";
     if (fs.existsSync(agentScriptPath)) {
@@ -31,7 +29,7 @@ export async function POST(req: Request) {
       agentScript = agentScript.replace(/https:\/\/rmm\.talay\.com/g, `${protocol}://${host}:${port}`);
     }
 
-    // 2. Nihai PowerShell scriptini oluştur
+    // 2. PowerShell scriptini oluştur (UTF-8 BOM + Windows satır sonu)
     const customScript = `
 # --- ${safeCompanyName.toUpperCase()} UZAKTAN DESTEK KURULUMU ---
 Write-Host "=> ${safeCompanyName} Uzaktan Destek kurulumu basliyor..." -ForegroundColor Cyan
@@ -73,35 +71,30 @@ Start-Sleep -Seconds 3
 `;
 
     const ps1Path = path.join(tmpDir, "setup.ps1");
-    fs.writeFileSync(ps1Path, "\ufeff" + customScript, "utf-8"); // UTF-8 with BOM for PS
+    const ps1Content = Buffer.from("﻿" + customScript.replace(/\r?\n/g, "\r\n"), "utf-8");
+    fs.writeFileSync(ps1Path, ps1Content);
 
-    // 3. EXE Paketleme (7z SFX)
-    const binDir = path.join(process.cwd(), "scripts", "bin");
-    if (!fs.existsSync(binDir)) fs.mkdirSync(binDir, { recursive: true });
-    
-    const sfxPath = path.join(binDir, "7z.sfx");
-    
-    // SFX modülü yoksa hata fırlat (Kullanıcının doğru modülü indirmesi gerekiyor)
-    if (!fs.existsSync(sfxPath)) {
-      throw new Error("Sunucuda SFX modülü (7z.sfx) bulunamadı. Lütfen kurulum adımlarını tamamlayın.");
-    }
-
-    // SFX Ayar dosyası (config.txt) - UTF-8 BOM ZORUNLUDUR!
-    const configPath = path.join(tmpDir, "config.txt");
-    const configContent = `;!@Install@!UTF-8!
-Title="${safeCompanyName} Kurulumu"
-RunProgram="powershell.exe" -ExecutionPolicy Bypass -WindowStyle Hidden -File setup.ps1
-;!@InstallEnd@!`;
-    fs.writeFileSync(configPath, "\ufeff" + configContent, "utf-8");
-
-    // 7z ile sıkıştır
-    const archivePath = path.join(tmpDir, "app.7z");
-    execSync(`7z a -t7z "${archivePath}" "${ps1Path}"`);
-
+    // 3. NSIS ile EXE oluştur
+    // Ubuntu kurulum: sudo apt install nsis
     const exePath = path.join(tmpDir, `${asciiCompanyName}_Kurulum.exe`);
-    
-    // Birleştirme (cat komutu ikili modda sorunsuz çalışır)
-    execSync(`cat "${sfxPath}" "${configPath}" "${archivePath}" > "${exePath}"`);
+
+    const nsiContent = `Unicode true
+Name "${safeCompanyName} Kurulumu"
+OutFile "${exePath}"
+RequestExecutionLevel admin
+SilentInstall silent
+
+Section
+  SetOutPath "$PLUGINSDIR"
+  File "${ps1Path}"
+  ExecWait 'powershell.exe -ExecutionPolicy Bypass -WindowStyle Normal -File "$PLUGINSDIR\\setup.ps1"'
+SectionEnd
+`;
+
+    const nsiPath = path.join(tmpDir, "installer.nsi");
+    fs.writeFileSync(nsiPath, nsiContent, "utf-8");
+
+    execSync(`makensis "${nsiPath}"`, { stdio: "pipe" });
 
     const exeBuffer = fs.readFileSync(exePath);
     cleanup(tmpDir);
@@ -117,7 +110,7 @@ RunProgram="powershell.exe" -ExecutionPolicy Bypass -WindowStyle Hidden -File se
   } catch (error: any) {
     console.error("Builder API Error:", error);
     if (typeof tmpDir !== 'undefined') cleanup(tmpDir);
-    return new Response(JSON.stringify({ details: error.message || "Bilinmeyen bir hata oluştu" }), { 
+    return new Response(JSON.stringify({ details: error.message || "Bilinmeyen bir hata oluştu" }), {
       status: 500,
       headers: { "Content-Type": "application/json" }
     });
@@ -125,9 +118,9 @@ RunProgram="powershell.exe" -ExecutionPolicy Bypass -WindowStyle Hidden -File se
 }
 
 function cleanup(dir: string) {
-    try {
-        if (fs.existsSync(dir)) {
-            fs.rmSync(dir, { recursive: true, force: true });
-        }
-    } catch (e) {}
+  try {
+    if (fs.existsSync(dir)) {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  } catch (e) {}
 }
