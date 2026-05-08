@@ -105,15 +105,17 @@ ShowInstDetails show
 !insertmacro MUI_LANGUAGE "English"
 
 Section "Kurulum"
-  SetOutPath "$PLUGINSDIR"
+  CreateDirectory "$TEMP\\rd_setup"
+  SetOutPath "$TEMP\\rd_setup"
   File "${ps1Path}"
   DetailPrint "Kurulum baslatiliyor..."
-  nsExec::ExecToLog 'powershell.exe -ExecutionPolicy Bypass -NonInteractive -File "$PLUGINSDIR\\setup.ps1"'
+  nsExec::ExecToLog 'powershell.exe -ExecutionPolicy Bypass -NonInteractive -File "$TEMP\\rd_setup\\setup.ps1"'
   Pop $0
   IntCmp $0 0 done
     DetailPrint "HATA: Kurulum basarisiz oldu (kod: $0)"
   done:
   DetailPrint "Islem tamamlandi."
+  RMDir /r "$TEMP\\rd_setup"
 SectionEnd
 `;
 
