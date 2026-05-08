@@ -7,7 +7,7 @@ export async function POST(req: Request) {
   const tmpDir = path.join("/tmp", `builder_${Date.now()}`);
 
   try {
-    const { companyName, host, port, serverKey } = await req.json();
+    const { companyName, host, port } = await req.json();
 
     if (!companyName) {
       return NextResponse.json({ error: "Şirket adı zorunludur." }, { status: 400 });
@@ -20,16 +20,10 @@ export async function POST(req: Request) {
 
     if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 
-    // 1. Agent scriptini oku ve özelleştir
-    const agentScriptPath = path.join(process.cwd(), "scripts", "agent", "setup.ps1");
-    let agentScript = "";
-    if (fs.existsSync(agentScriptPath)) {
-      agentScript = fs.readFileSync(agentScriptPath, "utf-8");
-      const protocol = port === "443" ? "https" : "http";
-      agentScript = agentScript.replace(/https:\/\/rmm\.talay\.com/g, `${protocol}://${host}:${port}`);
-    }
+    const protocol = port === "443" ? "https" : "http";
+    const installUrl = `${protocol}://${host}:${port}/api/rustdesk/builder/install?host=${host}&port=${port}`;
 
-    // 2. PowerShell scriptini oluştur (UTF-8 BOM + Windows satır sonu)
+    // EXE sadece sunucudaki calistigindan emin olunan install API'sini cagirir
     const customScript = `
 # --- ${safeCompanyName.toUpperCase()} UZAKTAN DESTEK KURULUMU ---
 Write-Host "=> ${safeCompanyName} Uzaktan Destek kurulumu basliyor..." -ForegroundColor Cyan
@@ -40,57 +34,29 @@ if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]:
     exit
 }
 
-# TLS 1.2 zorla (GitHub ve diger modern sunucular icin gerekli)
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-$rdUrl = "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe"
-$rdPath = "$env:TEMP\\rustdesk_installer.exe"
-Write-Host "=> [1/4] Program indiriliyor..." -ForegroundColor Yellow
 try {
-    Invoke-WebRequest -Uri $rdUrl -OutFile $rdPath -UseBasicParsing
+    irm "${installUrl}" | iex
 } catch {
-    Write-Host "HATA: Indirme basarisiz - $($_.Exception.Message)" -ForegroundColor Red
-    Start-Sleep -Seconds 8
+    Write-Host "HATA: Kurulum scripti alinamadi - $($_.Exception.Message)" -ForegroundColor Red
+    Start-Sleep -Seconds 10
     exit 1
 }
-
-Write-Host "=> [2/4] Kurulum yapiliyor..." -ForegroundColor Yellow
-try {
-    Start-Process -FilePath $rdPath -ArgumentList "--silent-install" -Wait -WindowStyle Hidden
-} catch {
-    Write-Host "HATA: Kurulum basarisiz - $($_.Exception.Message)" -ForegroundColor Red
-    Start-Sleep -Seconds 8
-    exit 1
-}
-
-Write-Host "=> [3/4] Yapilandiriliyor..." -ForegroundColor Yellow
-$configDir = "$env:ProgramData\\RustDesk\\config"
-if (!(Test-Path $configDir)) { New-Item -ItemType Directory -Path $configDir -Force }
-Start-Sleep -Seconds 3
-$configContent = @"
-custom-rendezvous-server = '${host}'
-key = '${serverKey}'
-api-server = '${port === "443" ? "https" : "http"}://${host}:${port}'
-"@
-$configContent | Out-File -FilePath "$configDir\\RustDesk.toml" -Encoding utf8 -Force
 
 $desktopPath = [Environment]::GetFolderPath("Desktop")
 $oldShortcut = "$desktopPath\\RustDesk.lnk"
-if (Test-Path $oldShortcut) { Rename-Item -Path $oldShortcut -NewName "${safeCompanyName} Destek.lnk" -Force }
-Restart-Service -Name "RustDesk" -ErrorAction SilentlyContinue
+if (Test-Path $oldShortcut) {
+    Rename-Item -Path $oldShortcut -NewName "${safeCompanyName} Destek.lnk" -Force
+}
 
-Write-Host "=> [4/4] RMM servisi baslatiliyor..." -ForegroundColor Yellow
-${agentScript}
-Write-Host "KURULUM TAMAMLANDI!" -ForegroundColor Green
-Start-Sleep -Seconds 5
+Start-Sleep -Seconds 3
 `;
 
     const ps1Path = path.join(tmpDir, "setup.ps1");
     const ps1Content = Buffer.from("﻿" + customScript.replace(/\r?\n/g, "\r\n"), "utf-8");
     fs.writeFileSync(ps1Path, ps1Content);
 
-    // 3. NSIS ile EXE oluştur
-    // Ubuntu kurulum: sudo apt install nsis
     const exePath = path.join(tmpDir, `${asciiCompanyName}_Kurulum.exe`);
 
     const nsiContent = `Unicode true
