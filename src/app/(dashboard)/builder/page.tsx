@@ -17,6 +17,8 @@ export default function BuilderPage() {
   const [baseUrl, setBaseUrl] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [selectedLogo, setSelectedLogo] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   useEffect(() => {
     // İlk değerleri window.location'dan alalım (canlı ortam uyumu için)
@@ -90,13 +92,24 @@ export default function BuilderPage() {
     }
     setIsGenerating(true);
     try {
+      const formData = {
+        companyName,
+        host,
+        port,
+        serverKey,
+        logo: logoPreview // Send base64 logo if exists
+      };
+
       const response = await fetch("/api/builder/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ companyName, host, port, serverKey })
+        body: JSON.stringify(formData)
       });
       
-      if (!response.ok) throw new Error("Üretim hatası");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.details || "Üretim hatası");
+      }
       
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -107,11 +120,27 @@ export default function BuilderPage() {
       a.click();
       window.URL.revokeObjectURL(url);
       toast.success("Özel istemci başarıyla üretildi ve indiriliyor.");
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error("İstemci üretilirken sunucuda bir hata oluştu.");
+      toast.error(`İstemci üretilirken bir hata oluştu: ${error.message}`);
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 1024 * 1024) { // 1MB limit
+        toast.error("Logo boyutu 1MB'dan küçük olmalıdır.");
+        return;
+      }
+      setSelectedLogo(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -280,12 +309,40 @@ export default function BuilderPage() {
               </div>
 
               <div className="rd2-field-group">
-                <label>Şirket Logosu (.ico)</label>
-                <div className="rd2-field" style={{ background: "rgba(0,0,0,0.02)", borderStyle: "dashed", justifyContent: "center", padding: "24px 0" }}>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, color: "#8B92A0" }}>
-                    <ImageIcon width="24" height="24" />
-                    <span style={{ fontSize: 12, fontWeight: 600 }}>Logo yükleme özelliği yakında</span>
-                  </div>
+                <label>Şirket Logosu (.ico / .png)</label>
+                <div 
+                  className="rd2-field" 
+                  style={{ 
+                    background: "rgba(0,0,0,0.02)", 
+                    borderStyle: "dashed", 
+                    justifyContent: "center", 
+                    padding: logoPreview ? "12px" : "24px 0",
+                    cursor: "pointer",
+                    position: "relative"
+                  }}
+                  onClick={() => document.getElementById("logo-upload")?.click()}
+                >
+                  <input 
+                    id="logo-upload"
+                    type="file" 
+                    accept=".ico,.png,.jpg" 
+                    onChange={handleLogoChange}
+                    style={{ display: "none" }} 
+                  />
+                  {logoPreview ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <img src={logoPreview} alt="Logo Preview" style={{ width: 40, height: 40, objectFit: "contain", borderRadius: 4 }} />
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#0E1116" }}>
+                        {selectedLogo?.name}
+                        <div style={{ color: "#8B92A0", fontWeight: 500, fontSize: 10 }}>Değiştirmek için tıklayın</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, color: "#8B92A0" }}>
+                      <ImageIcon width="24" height="24" />
+                      <span style={{ fontSize: 12, fontWeight: 600 }}>Logoyu seçmek için tıklayın</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

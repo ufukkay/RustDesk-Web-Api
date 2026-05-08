@@ -98,12 +98,19 @@ Start-Sleep -Seconds 5
       status: 200,
       headers: {
         "Content-Type": "application/octet-stream",
-        "Content-Disposition": `attachment; filename="${safeCompanyName.replace(/\\s+/g, '_')}_Destek.ps1"`
+        "Content-Disposition": `attachment; filename="${safeCompanyName.replace(/\s+/g, '_')}_Destek.ps1"`
       }
     });
 
   } catch (error: any) {
-    console.error("Builder API Error:", error);
-    return NextResponse.json({ error: "Paket uretilirken hata olustu" }, { status: 500 });
+    console.error("Builder API Error Details:", error);
+    return new Response(JSON.stringify({ 
+      error: "Paket uretilirken hata olustu", 
+      details: error.message,
+      stack: error.stack 
+    }), { 
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
   }
 }
