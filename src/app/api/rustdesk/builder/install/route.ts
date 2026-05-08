@@ -55,13 +55,20 @@ if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]:
 
 Write-Host "--- RustDesk Kurumsal Kurulum Baslatiliyor ---" -ForegroundColor Yellow
 
-# TLS 1.2 zorla
+# TLS 1.2 zorla + SSL bypass
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+[Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
 
 # 1. RustDesk Indir ve Kur
 Write-Host ">> RustDesk yukleniyor..." -ForegroundColor Cyan
 $setupPath = Join-Path $env:TEMP "rustdesk_setup.exe"
-Invoke-WebRequest -Uri "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe" -OutFile $setupPath -UseBasicParsing
+$rdUrl = "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe"
+$curlExe = "$env:SystemRoot\System32\curl.exe"
+if (Test-Path $curlExe) {
+    & $curlExe -L -s -o $setupPath $rdUrl
+} else {
+    Invoke-WebRequest -Uri $rdUrl -OutFile $setupPath -UseBasicParsing
+}
 
 $fileSize = (Get-Item $setupPath -ErrorAction SilentlyContinue).Length
 if (-not $fileSize -or $fileSize -lt 5000000) {
