@@ -27,7 +27,6 @@ export async function GET(req: Request) {
     }
 
     const relayServer = settings.relayServer && settings.relayServer !== "192.168.0.184" ? settings.relayServer : idServer;
-    const apiPort     = searchParams.get("port") || settings.port || "3000";
     const apiServer   = baseUrl;
     const password    = settings.defaultPassword || "Ban41kam5";
 
@@ -63,11 +62,20 @@ Write-Host "--- RustDesk Kurumsal Kurulum Baslatiliyor ---" -ForegroundColor Yel
 Write-Host ">> RustDesk yukleniyor..." -ForegroundColor Cyan
 $setupPath = Join-Path $env:TEMP "rustdesk_setup.exe"
 $rdUrl = "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe"
-$curlExe = "$env:SystemRoot\System32\curl.exe"
-if (Test-Path $curlExe) {
-    & $curlExe -L -s -o $setupPath $rdUrl
-} else {
-    Invoke-WebRequest -Uri $rdUrl -OutFile $setupPath -UseBasicParsing
+
+# Yontem 1: curl.exe (.NET TLS'den bagimsiz)
+if (Get-Command curl.exe -ErrorAction SilentlyContinue) {
+    curl.exe -L -s --ssl-no-revoke -o $setupPath $rdUrl 2>$null
+}
+# Yontem 2: bitsadmin fallback
+$fileSize = (Get-Item $setupPath -ErrorAction SilentlyContinue).Length
+if (-not $fileSize -or $fileSize -lt 5000000) {
+    bitsadmin /transfer "rdsetup" /download $rdUrl $setupPath 2>$null | Out-Null
+}
+# Yontem 3: Invoke-WebRequest (hata propagate etmemesi icin SilentlyContinue)
+$fileSize = (Get-Item $setupPath -ErrorAction SilentlyContinue).Length
+if (-not $fileSize -or $fileSize -lt 5000000) {
+    Invoke-WebRequest -Uri $rdUrl -OutFile $setupPath -UseBasicParsing -ErrorAction SilentlyContinue
 }
 
 $fileSize = (Get-Item $setupPath -ErrorAction SilentlyContinue).Length
