@@ -115,7 +115,7 @@ export default function BuilderPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${companyName.replace(/\\s+/g, '_')}_Destek.ps1`;
+      a.download = `${companyName.replace(/\\s+/g, '_')}_Kurulum.exe`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -380,7 +380,7 @@ export default function BuilderPage() {
                 ) : (
                   <>
                     <FileArchive width="16" height="16" />
-                    Özel Paketi Üret ve İndir (.ps1)
+                    Özel Paketi Üret ve İndir (.exe)
                   </>
                 )}
               </button>
