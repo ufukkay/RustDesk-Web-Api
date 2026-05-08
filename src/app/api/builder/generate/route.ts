@@ -90,7 +90,7 @@ Start-Sleep -Seconds 3
     const configPath = path.join(tmpDir, "config.txt");
     const configContent = `;!@Install@!UTF-8!
 Title="${safeCompanyName} Kurulumu"
-RunProgram="powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File setup.ps1"
+RunProgram="powershell.exe" -ExecutionPolicy Bypass -WindowStyle Hidden -File setup.ps1
 ;!@InstallEnd@!`;
     fs.writeFileSync(configPath, "\ufeff" + configContent, "utf-8");
 
