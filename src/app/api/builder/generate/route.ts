@@ -95,7 +95,7 @@ Start-Sleep -Seconds 5
 
     // Header'da Türkçe karakter sorununu önlemek için sadece ASCII karakterli bir dosya adı üret
     const downloadFileName = safeCompanyName
-      .replace(/[ığüşöçİĞÜŞÖÇ]/g, (m) => ({'ı':'i','ğ':'g','ü':'u','ş':'s','ö':'o','ç':'c','İ':'I','Ğ':'G','Ü':'U','Ş':'S','Ö':'O','Ç':'C'}[m] || m))
+      .replace(/[ığüşöçİĞÜŞÖÇ]/g, (m: string) => (({'ı':'i','ğ':'g','ü':'u','ş':'s','ö':'o','ç':'c','İ':'I','Ğ':'G','Ü':'U','Ş':'S','Ö':'O','Ç':'C'} as any)[m] || m))
       .replace(/\s+/g, '_') + "_Destek.ps1";
 
     return new Response(customScript, {
