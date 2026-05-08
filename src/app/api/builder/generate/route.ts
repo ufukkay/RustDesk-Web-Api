@@ -86,13 +86,13 @@ Start-Sleep -Seconds 3
       throw new Error("Sunucuda SFX modülü (7z.sfx) bulunamadı. Lütfen kurulum adımlarını tamamlayın.");
     }
 
-    // SFX Ayar dosyası (config.txt)
+    // SFX Ayar dosyası (config.txt) - UTF-8 BOM ZORUNLUDUR!
     const configPath = path.join(tmpDir, "config.txt");
     const configContent = `;!@Install@!UTF-8!
 Title="${safeCompanyName} Kurulumu"
-RunProgram="powershell.exe -ExecutionPolicy Bypass -File setup.ps1"
+RunProgram="powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File setup.ps1"
 ;!@InstallEnd@!`;
-    fs.writeFileSync(configPath, configContent, "utf-8");
+    fs.writeFileSync(configPath, "\ufeff" + configContent, "utf-8");
 
     // 7z ile sıkıştır
     const archivePath = path.join(tmpDir, "app.7z");
