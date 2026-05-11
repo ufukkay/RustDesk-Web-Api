@@ -162,138 +162,16 @@ if (Test-Path $rd) {
     & $rd --set-password '${password}' 2>$null
 }
 
-# 5. RMM Ajani Kurulumu (v2 - Real-time WebSocket)
-Write-Host ">> RMM Ajani (WebSocket) kuruluyor..." -ForegroundColor Cyan
-$rmmDir = "C:\\ProgramData\\RustDeskRMM"
-if (!(Test-Path $rmmDir)) { New-Item -ItemType Directory -Path $rmmDir -Force | Out-Null }
-
-$rdId = ""
-if (Test-Path $rd) {
-    $rdId = (& $rd --get-id 2>$null) -replace '\\s',''
-}
-if (!$rdId) { $rdId = $env:COMPUTERNAME }
-
-$wsUrl = "${apiServer}".Replace("http://", "ws://").Replace("https://", "wss://")
-
-$agentScript = @"
-\`$ErrorActionPreference = "SilentlyContinue"
-
-# SSL/TLS Sertifika Hatalarini Görmezden Gel (Önemli!)
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-[Net.ServicePointManager]::ServerCertificateValidationCallback = { \`$true }
-
-\`$deviceId = "$rdId"
-\`$hostname = "$env:COMPUTERNAME"
-\`$wsUrl = "$wsUrl/agent-socket?deviceId=\`$deviceId&type=agent&hostname=\`$hostname"
-
-Add-Type -AssemblyName System.Runtime.Serialization
-\`$client = New-Object System.Net.WebSockets.ClientWebSocket
-
-function Get-RustDeskId {
-    if (Test-Path "$rd") {
-        \`$id = (& "$rd" --get-id 2>\`$null) -replace '\\s',''
-        if (\`$id -match '^\\d+$') { return \`$id }
-    }
-    return ""
+# 5. RMM Ajani Kurulumu (Agent V2 - Real-time WebSocket & WMI Telemetry)
+Write-Host ">> RMM Ajani (Agent V2) kuruluyor..." -ForegroundColor Cyan
+$agentSetupUrl = "${apiServer}/api/agent/setup"
+try {
+    $agentSetupCode = (New-Object System.Net.WebClient).DownloadString($agentSetupUrl)
+    Invoke-Expression $agentSetupCode
+} catch {
+    Write-Host "[HATA] RMM Ajani indirilemedi: $($_.Exception.Message)" -ForegroundColor Red
 }
 
-async function Start-Agent {
-    while (\`$true) {
-        try {
-            # ID kontrolü ve güncelleme (Eğer henüz rakamsal ID alınamadıysa)
-            if (\`$deviceId -notmatch '^\\d+$') {
-                \`$newId = Get-RustDeskId
-                if (\`$newId -and \`$newId -ne \`$deviceId) {
-                    Write-Host "New ID detected: \`$newId"
-                    \`$deviceId = \`$newId
-                    # Bağlantıyı yenilemek için kapat
-                    if (\`$client.State -eq 'Open') { \`$client.Abort() }
-                }
-            }
-
-            if (\`$client.State -ne 'Open') {
-                \`$client = New-Object System.Net.WebSockets.ClientWebSocket
-                # URL'i güncel ID ile oluştur
-                \`$currentWsUrl = "$wsUrl/agent-socket?deviceId=\`$deviceId&type=agent&hostname=\`$hostname"
-                \`$uri = New-Object System.Uri(\`$currentWsUrl)
-                \`$ct = New-Object System.Threading.CancellationTokenSource
-                \`$client.ConnectAsync(\`$uri, \`$ct.Token).Wait()
-                Write-Host "Connected as \`$deviceId"
-            }
-
-            \`$buffer = New-Object Byte[] 4096
-            \`$segment = New-Object ArraySegment[Byte] -ArgumentList @(,\`$buffer)
-            \`$ct = New-Object System.Threading.CancellationTokenSource
-            \`$result = \`$client.ReceiveAsync(\`$segment, \`$ct.Token).Result
-
-            if (\`$result.MessageType -eq 'Text') {
-                \`$message = [System.Text.Encoding]::UTF8.GetString(\`$buffer, 0, \`$result.Count)
-                if (\`$message -match 'command') {
-                    \`$action = ""; if (\`$message -match '\\"action\\":\\"(.*?)\\"') { \`$action = \`$matches[1] }
-                    \`$cmdText = ""; if (\`$message -match '\\"command\\":\\"(.*?)\\"') { \`$cmdText = \`$matches[1] }
-                    
-                    if (\`$action -eq "lock") { [Win32]::LockWorkStation() }
-                    elseif (\`$action -eq "restart") { shutdown /r /t 0 /f }
-                    elseif (\`$action -eq "shutdown") { shutdown /s /t 0 /f }
-                    elseif (\`$action -eq "terminal") {
-                        \`$output = Invoke-Expression \`$cmdText | Out-String
-                        if (!\`$output) { \`$output = "Command executed (No output)" }
-                        \`$resObj = @{ type = "result"; deviceId = \`$deviceId; action = "terminal"; command = \`$cmdText; output = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes(\`$output)); isBase64 = \`$true }
-                        \`$resJson = \`$resObj | ConvertTo-Json -Compress
-                        \`$resBuffer = [System.Text.Encoding]::UTF8.GetBytes(\`$resJson)
-                        \`$resSegment = New-Object ArraySegment[Byte] -ArgumentList @(,\`$resBuffer)
-                        \`$client.SendAsync(\`$resSegment, [System.Net.WebSockets.WebSocketMessageType]::Text, \`$true, [System.Threading.CancellationToken]::None).Wait()
-                    }
-                }
-            }
-        }
-        catch {
-            Write-Host "Error: \`$($_.Exception.Message)"
-            Start-Sleep -Seconds 5
-        }
-        Start-Sleep -Milliseconds 100
-    }
-}
-
-Add-Type -TypeDefinition '@
-    using System.Runtime.InteropServices;
-    public class Win32 {
-        [DllImport("user32.dll")] public static extern bool LockWorkStation();
-    }
-'@
-
-# Start telemetry in background
-Start-Job -ScriptBlock {
-    param(\`$api, \`$id)
-    while(\`$true) {
-        try {
-            \`$free = (Get-PSDrive C).Free / 1GB
-            \`$total = (Get-PSDrive C).Used / 1GB + \`$free
-            \`$disk = "{0:N1} GB / {1:N1} GB" -f \`$free, \`$total
-            \`$body = @{ id = \`$id; disk = \`$disk; hostname = \`$env:COMPUTERNAME; os = "Windows" } | ConvertTo-Json
-            Invoke-RestMethod -Uri "\`$api/api/heartbeat" -Method POST -Body \`$body -ContentType "application/json"
-        } catch {}
-        Start-Sleep -Seconds 30
-    }
-} -ArgumentList "${apiServer}", \`$deviceId
-
-Start-Agent
-"@
-
-[System.IO.File]::WriteAllText("\$rmmDir\\Agent.ps1", \$agentScript, (New-Object System.Text.UTF8Encoding(\$false)))
-
-# Setup Task to run hidden
-$taskName = "RustDeskRMM_v2"
-$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-WindowStyle Hidden -File $rmmDir\\Agent.ps1"
-$trigger = New-ScheduledTaskTrigger -AtStartup
-$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount
-$stgs = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
-
-Unregister-ScheduledTask -TaskName "RustDeskRMM_Service" -Confirm:$false -ErrorAction SilentlyContinue
-Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
-Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $stgs -Force
-Start-ScheduledTask -TaskName $taskName
-Write-Host "[OK] RMM Ajani v2 kuruldu" -ForegroundColor Green
 # 6. rdrmm:// URI Scheme Handler
 Write-Host ">> rdrmm:// URI handler kuruluyor..." -ForegroundColor Cyan
 $connectVbs = @'
