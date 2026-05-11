@@ -21,6 +21,16 @@ export interface Device {
   dns?: string;
   net_details?: any[];
   isDuplicate?: boolean;
+  osName?: string;
+  osBuild?: string;
+  processor?: string;
+  serialNumber?: string;
+  manufacturer?: string;
+  model?: string;
+  bootTime?: string;
+  adDomain?: string;
+  formFactor?: string;
+  agentVersion?: string;
 }
 
 /**

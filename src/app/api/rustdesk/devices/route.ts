@@ -122,7 +122,17 @@ export async function GET() {
           gateway: extra.gateway || "-",
           dns: extra.dns || "-",
           net_details: localNets.length > 0 ? localNets : (extra.net_details || []),
-          isDuplicate: extra.isDuplicate || false
+          isDuplicate: extra.isDuplicate || false,
+          osName: extra.osName || "-",
+          osBuild: extra.osBuild || "-",
+          processor: extra.processor || "-",
+          serialNumber: extra.serialNumber || "-",
+          manufacturer: extra.manufacturer || "-",
+          model: extra.model || "-",
+          bootTime: extra.bootTime || "-",
+          adDomain: extra.adDomain || "-",
+          formFactor: extra.formFactor || "-",
+          agentVersion: extra.agentVersion || "-"
         };
       })
       .filter(Boolean) as any[];
