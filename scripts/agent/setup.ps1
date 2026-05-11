@@ -1,9 +1,9 @@
 # =============================================================================
-# RUSTDESK RMM AGENT V3 — INSTALLER (Gelistirilmiş ID Tespit Sistemi)
+# RUSTDESK RMM AGENT V3 — INSTALLER
 # =============================================================================
-param($apiServer)
+param($apiServer, $deviceId)
 
-# --- 1. API SUNUCU TESPITI (DOMAIN ZORLAMA) ---
+# --- 1. API SUNUCU TESPITI ---
 $settingsFile = "C:\ProgramData\RustDeskRMM\settings.json"
 if (-not $apiServer) {
     if (Test-Path $settingsFile) {
@@ -20,9 +20,12 @@ if (!(Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Nu
 
 Write-Host ">> Sunucu : $apiServer" -ForegroundColor Cyan
 
-# --- 2. AGRESIF ID TESPITI (Derin Tarama) ---
-$rdId = ""
-$possiblePaths = @(
+# --- 2. ID TESPITI ---
+$rdId = $deviceId
+if ($rdId) {
+    Write-Host "[OK] ID Parametreden Alindi: $rdId" -ForegroundColor Green
+} else {
+    $possiblePaths = @(
     "C:\Windows\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\config\RustDesk.toml",
     "C:\Windows\System32\config\systemprofile\AppData\Roaming\RustDesk\config\RustDesk.toml",
     "$env:ProgramData\RustDesk\config\RustDesk.toml",

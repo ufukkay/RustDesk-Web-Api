@@ -160,13 +160,31 @@ if (Test-Path $rd) {
 
 # 5. RMM Ajani Kurulumu (Agent V2 - Real-time WebSocket & WMI Telemetry)
 Write-Host ">> RMM Ajani (Agent V2) kuruluyor..." -ForegroundColor Cyan
+
+# --- ID TESPITI (YUKLEME SIRASINDA) ---
+$foundId = ""
+$idPaths = @(
+    "C:\Windows\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\config\RustDesk.toml",
+    "C:\Windows\System32\config\systemprofile\AppData\Roaming\RustDesk\config\RustDesk.toml",
+    "$env:ProgramData\RustDesk\config\RustDesk.toml"
+)
+foreach ($p in $idPaths) {
+    if (Test-Path $p) {
+        $content = Get-Content $p -Raw -ErrorAction SilentlyContinue
+        if ($content -match 'id\s*=\s*[''"]?(\d{6,15})[''"]?') {
+            $foundId = $matches[1]
+            Write-Host "[OK] RustDesk ID tespit edildi: $foundId" -ForegroundColor Cyan
+            break
+        }
+    }
+}
+
 $agentSetupUrl = "${apiServer}/api/agent/setup"
 try {
     $tempPs1 = Join-Path $env:TEMP "agent_setup.ps1"
     (New-Object System.Net.WebClient).DownloadFile($agentSetupUrl, $tempPs1)
     Write-Host ">> Ajan betigi indirildi, calistiriliyor..." -ForegroundColor Gray
-    # setup.ps1 dosyasinin en basina param($apiServer) eklenmesi gerektigi varsayilarak:
-    & powershell.exe -ExecutionPolicy Bypass -File $tempPs1 -apiServer "${apiServer}"
+    & powershell.exe -ExecutionPolicy Bypass -File $tempPs1 -apiServer "${apiServer}" -deviceId "$foundId"
 } catch {
     Write-Host "[HATA] RMM Ajani indirilemedi veya calistirilemedi: $($_.Exception.Message)" -ForegroundColor Red
 }
