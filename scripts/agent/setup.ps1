@@ -36,6 +36,19 @@ Write-Host ">> RustDesk ID araniyor (Agresif Mod)..." -ForegroundColor Yellow
 Start-Service "RustDesk" -ErrorAction SilentlyContinue
 
 for ($i=0; $i -lt 30; $i++) { # 60 saniyeye cikardik
+    # 1. Sunucudan Sorgula (Hostname uzerinden)
+    $hostName = $env:COMPUTERNAME
+    try {
+        $findIdUrl = "$($apiServer.TrimEnd('/'))/api/agent/find-id?hostname=$hostName"
+        $resp = Invoke-RestMethod -Uri $findIdUrl -UseBasicParsing -ErrorAction SilentlyContinue
+        if ($resp.id) {
+            $rdId = $resp.id
+            Write-Host "[OK] ID Sunucudan Alindi: $rdId" -ForegroundColor Cyan
+            break
+        }
+    } catch {}
+
+    # 2. Local Dosyalardan Tara
     foreach ($p in $possiblePaths) {
         if (Test-Path $p) {
             $content = Get-Content $p -Raw -ErrorAction SilentlyContinue
@@ -48,7 +61,7 @@ for ($i=0; $i -lt 30; $i++) { # 60 saniyeye cikardik
     }
     if ($rdId) { break }
 
-    # CLI Fallback
+    # 3. CLI Fallback
     $rdExe = if (Test-Path "C:\Program Files\RustDesk\rustdesk.exe") { "C:\Program Files\RustDesk\rustdesk.exe" } else { "C:\Program Files (x86)\RustDesk\rustdesk.exe" }
     if (Test-Path $rdExe) {
         $cliId = (& $rdExe --get-id 2>$null) -replace '\s',''
