@@ -166,10 +166,12 @@ if (Test-Path $rd) {
 Write-Host ">> RMM Ajani (Agent V2) kuruluyor..." -ForegroundColor Cyan
 $agentSetupUrl = "${apiServer}/api/agent/setup"
 try {
-    $agentSetupCode = (New-Object System.Net.WebClient).DownloadString($agentSetupUrl)
-    Invoke-Expression $agentSetupCode
+    $tempPs1 = Join-Path $env:TEMP "agent_setup.ps1"
+    (New-Object System.Net.WebClient).DownloadFile($agentSetupUrl, $tempPs1)
+    Write-Host ">> Ajan betigi indirildi, calistiriliyor..." -ForegroundColor Gray
+    & powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File $tempPs1
 } catch {
-    Write-Host "[HATA] RMM Ajani indirilemedi: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "[HATA] RMM Ajani indirilemedi veya calistirilemedi: $($_.Exception.Message)" -ForegroundColor Red
 }
 
 # 6. rdrmm:// URI Scheme Handler
