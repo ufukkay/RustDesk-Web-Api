@@ -43,6 +43,7 @@ using System.Net.WebSockets;
 
 public class RustDeskAgent {
     [DllImport("user32.dll")] public static extern bool LockWorkStation();
+    [DllImport("kernel32.dll")] public static extern ulong GetTickCount64();
 
     public static string GetWmi(string wclass, string prop) {
         try {
@@ -153,7 +154,7 @@ public class RustDeskAgent {
         DriveInfo c = new DriveInfo("C");
         string disk = string.Format("{0:N1} GB / {1:N1} GB", c.AvailableFreeSpace / 1073741824.0, c.TotalSize / 1073741824.0);
         
-        long uptimeTicks = Environment.TickCount64;
+        long uptimeTicks = (long)GetTickCount64();
         DateTime bootTimeDt = DateTime.Now - TimeSpan.FromMilliseconds(uptimeTicks);
         string bootTime = bootTimeDt.ToString("yyyy/MM/dd HH:mm:ss");
 
