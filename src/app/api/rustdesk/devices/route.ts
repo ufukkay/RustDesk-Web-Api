@@ -181,11 +181,22 @@ export async function GET() {
           ...primary,
           // Online durumu her zaman kazanır
           status: (primary.status === "online" || secondary.status === "online") ? "online" : "offline",
-          // Donanım verilerini birleştir
+          // Donanım verilerini birleştir (primary'de yoksa veya "-" ise secondary'den al)
           cpu: (primary.cpu && primary.cpu !== "-") ? primary.cpu : secondary.cpu,
           ram: (primary.ram && primary.ram !== "-") ? primary.ram : secondary.ram,
           disk: (primary.disk && primary.disk !== "-") ? primary.disk : secondary.disk,
           ip: (primary.ip && primary.ip !== "-") ? primary.ip : secondary.ip,
+          osName: (primary.osName && primary.osName !== "-") ? primary.osName : secondary.osName,
+          osBuild: (primary.osBuild && primary.osBuild !== "-") ? primary.osBuild : secondary.osBuild,
+          processor: (primary.processor && primary.processor !== "-") ? primary.processor : secondary.processor,
+          serialNumber: (primary.serialNumber && primary.serialNumber !== "-") ? primary.serialNumber : secondary.serialNumber,
+          manufacturer: (primary.manufacturer && primary.manufacturer !== "-") ? primary.manufacturer : secondary.manufacturer,
+          model: (primary.model && primary.model !== "-") ? primary.model : secondary.model,
+          bootTime: (primary.bootTime && primary.bootTime !== "-") ? primary.bootTime : secondary.bootTime,
+          adDomain: (primary.adDomain && primary.adDomain !== "-") ? primary.adDomain : secondary.adDomain,
+          formFactor: (primary.formFactor && primary.formFactor !== "-") ? primary.formFactor : secondary.formFactor,
+          agentVersion: (primary.agentVersion && primary.agentVersion !== "-") ? primary.agentVersion : secondary.agentVersion,
+          net_details: (primary.net_details && primary.net_details.length > 0) ? primary.net_details : secondary.net_details,
           lastSeen: primary.lastSeenTimestamp > secondary.lastSeenTimestamp ? primary.lastSeen : secondary.lastSeen,
           lastSeenTimestamp: Math.max(primary.lastSeenTimestamp, secondary.lastSeenTimestamp)
         };
