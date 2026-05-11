@@ -22,9 +22,12 @@ export async function GET(req: Request) {
     }
 
     let idServer = searchParams.get("host") || settings.idServer || settings.host || currentHost;
-    if (currentHost === "rmm.talay.com") {
+    
+    // Domain tespiti ve zorlama
+    if (currentHost.includes("talay.com")) {
       idServer = "rmm.talay.com";
     }
+
 
     const relayServer = settings.relayServer && settings.relayServer !== "192.168.0.184" ? settings.relayServer : idServer;
     const apiServer   = baseUrl;
@@ -211,6 +214,9 @@ Write-Host ""
 Write-Host "--- KURULUM TAMAMLANDI ---" -ForegroundColor Green
 Write-Host "Sunucu : ${idServer}" -ForegroundColor White
 if ($rdId) { Write-Host "Cihaz ID: $rdId" -ForegroundColor Yellow }
+Write-Host ""
+Write-Host "Lutfen paneli kontrol edin..." -ForegroundColor Gray
+
 `;
 
     return new Response(psScript, {
