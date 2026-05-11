@@ -2,112 +2,240 @@ const { createServer } = require("http");
 const { parse } = require("url");
 const next = require("next");
 const { Server } = require("socket.io");
+const { WebSocketServer } = require("ws");
+const fs = require("fs");
+const path = require("path");
 
-const dev = process.env.NODE_VALUE !== "production";
-const hostname = "localhost";
+const dev = process.env.NODE_ENV !== "production";
 const port = process.env.PORT || 3000;
 
-// Initialize Next.js
-const app = next({ dev, hostname, port });
+const SCRIPTS_DIR = path.join(__dirname, "scripts");
+const STATUS_FILE  = path.join(SCRIPTS_DIR, "online_status.json");
+const INFO_FILE    = path.join(SCRIPTS_DIR, "device_info.json");
+const QUEUE_FILE   = path.join(SCRIPTS_DIR, "command_queue.json");
+const RESULTS_DIR  = path.join(SCRIPTS_DIR, "command_results");
+
+// ── JSON helpers ────────────────────────────────────────────────────
+function readJson(file, fallback = {}) {
+  try {
+    if (fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, "utf-8"));
+  } catch {}
+  return fallback;
+}
+
+function writeJson(file, data) {
+  try { fs.writeFileSync(file, JSON.stringify(data, null, 2)); } catch {}
+}
+
+// ── Bootstrap ───────────────────────────────────────────────────────
+const app    = next({ dev, hostname: "0.0.0.0", port });
 const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
   const httpServer = createServer((req, res) => {
-    const parsedUrl = parse(req.url, true);
-    handle(req, res, parsedUrl);
+    handle(req, res, parse(req.url, true));
   });
 
-  // Initialize Socket.io (for Dashboard)
+  // Socket.IO — dashboard clients
   const io = new Server(httpServer, {
-    cors: { origin: "*", methods: ["GET", "POST"] }
+    cors: { origin: "*", methods: ["GET", "POST"] },
+    path: "/socket.io",
   });
 
-  // Initialize Raw WebSocket (for PowerShell Agents)
-  const { WebSocketServer } = require("ws");
+  // Raw WS — C# agents
   const wss = new WebSocketServer({ noServer: true });
 
-  httpServer.on("upgrade", (request, socket, head) => {
-    const parsedUrl = parse(request.url, true);
-    const pathname = parsedUrl.pathname;
-
-    if (pathname === "/agent-socket") {
-      console.log(`[WS-UPGRADE] Agent trying to connect...`);
-      wss.handleUpgrade(request, socket, head, (ws) => {
-        wss.emit("connection", ws, request);
-      });
-    } else if (pathname.startsWith("/socket.io/")) {
-      // Socket.io handles its own upgrade
-    } else {
-      console.log(`[WS-UPGRADE] Unknown path: ${pathname}`);
-      socket.destroy();
-    }
-  });
-
-  // Global device map to link raw WS agents and Socket.io dashboard
+  // Agent registry: deviceId (string) → WebSocket
   const agents = new Map();
 
-  wss.on("connection", (ws, request) => {
-    const parsedUrl = parse(request.url, true);
-    const deviceId = parsedUrl.query.deviceId;
-    const agentHostname = parsedUrl.query.hostname;
-    
-    if (deviceId) {
-      console.log(`[AGENT] Connected: ${deviceId} (${agentHostname || "no-host"})`);
-      agents.set(deviceId, ws);
-      if (agentHostname) agents.set(agentHostname, ws);
-      
-      ws.on("message", (data) => {
-        try {
-          const msg = JSON.parse(data.toString());
-          console.log(`[AGENT-MSG] from ${deviceId}:`, msg.type);
-          io.to(`device_${deviceId}`).emit(msg.type || "result", msg);
-          if (agentHostname) io.to(`device_${agentHostname}`).emit(msg.type || "result", msg);
-        } catch (e) {
-          console.log("[AGENT-ERROR] Parsing message failed", e);
-        }
-      });
-
-      ws.on("close", () => {
-        console.log(`[AGENT] Disconnected: ${deviceId}`);
-        agents.delete(deviceId);
-        if (agentHostname) agents.delete(agentHostname);
-      });
-    } else {
-      console.log("[AGENT] Connection attempt without deviceId");
-      ws.close();
+  // ── HTTP upgrade router ──────────────────────────────────────────
+  httpServer.on("upgrade", (req, socket, head) => {
+    const { pathname } = parse(req.url, true);
+    if (pathname === "/agent-socket") {
+      wss.handleUpgrade(req, socket, head, (ws) => wss.emit("connection", ws, req));
     }
+    // Socket.IO manages its own /socket.io/ upgrades — no action needed here.
   });
 
-  io.on("connection", (socket) => {
-    const { deviceId, type } = socket.handshake.query;
-    
-    if (type === "dashboard" && deviceId) {
-      console.log(`Dashboard connected for device: ${deviceId}`);
-      socket.join(`device_${deviceId}`);
+  // ── Helpers ──────────────────────────────────────────────────────
+
+  function markOnline(deviceId) {
+    const now = Math.floor(Date.now() / 1000);
+    const status = readJson(STATUS_FILE);
+    status[deviceId] = now;
+    writeJson(STATUS_FILE, status);
+    io.to("dashboard").emit("device_status", { deviceId, status: "online", ts: now, wsConnected: true });
+    console.log(`[AGENT +] ${deviceId}`);
+  }
+
+  function markOffline(deviceId) {
+    const status = readJson(STATUS_FILE);
+    delete status[deviceId];
+    writeJson(STATUS_FILE, status);
+    io.to("dashboard").emit("device_status", { deviceId, status: "offline", wsConnected: false });
+    console.log(`[AGENT -] ${deviceId}`);
+  }
+
+  function saveTelemetry(deviceId, data) {
+    const now  = Math.floor(Date.now() / 1000);
+
+    // Keep status fresh
+    const status = readJson(STATUS_FILE);
+    status[deviceId] = now;
+    writeJson(STATUS_FILE, status);
+
+    // Merge into device info
+    const info = readJson(INFO_FILE);
+    info[deviceId] = { ...(info[deviceId] || {}), ...data, lastUpdate: now };
+    writeJson(INFO_FILE, info);
+
+    // Push to device-specific dashboard room
+    io.to(`device_${deviceId}`).emit("telemetry_update", { deviceId, data });
+    io.to("dashboard").emit("device_status", {
+      deviceId,
+      status: "online",
+      ts: now,
+      wsConnected: true,
+    });
+  }
+
+  function popCommand(deviceId, hostname) {
+    const queue = readJson(QUEUE_FILE, {});
+    const id    = String(deviceId);
+    const host  = hostname ? hostname.toUpperCase() : "";
+    let cmd     = null;
+
+    if (queue[id]?.length > 0) {
+      cmd = queue[id].shift();
+      if (!queue[id].length) delete queue[id];
+    } else if (host && queue[host]?.length > 0) {
+      cmd = queue[host].shift();
+      if (!queue[host].length) delete queue[host];
     }
 
-    // Handle command from dashboard to agent
-    socket.on("send_command", (data) => {
-      // data: { deviceId, action, command }
-      console.log(`Command to ${data.deviceId}: ${data.action}`);
-      
-      // Try to find agent by ID or Hostname
-      const agentWs = agents.get(String(data.deviceId)) || agents.get(String(data.deviceId).toUpperCase());
-      
-      if (agentWs && agentWs.readyState === 1) {
-        agentWs.send(JSON.stringify(data));
-      } else {
-        console.log(`Agent ${data.deviceId} not found in active connections`);
-        socket.emit("error", { message: "Agent is not connected" });
+    if (cmd !== null) writeJson(QUEUE_FILE, queue);
+    return cmd;
+  }
+
+  // ── Raw WS — agent connection ────────────────────────────────────
+  wss.on("connection", (ws, req) => {
+    const query    = parse(req.url, true).query;
+    const deviceId = String(query.deviceId || "").trim();
+    const hostname = String(query.hostname  || "").trim().toUpperCase();
+
+    if (!deviceId) { ws.close(1008, "deviceId required"); return; }
+
+    // Register
+    agents.set(deviceId, ws);
+    if (hostname) agents.set(hostname, ws);
+    ws._deviceId = deviceId;
+    ws._hostname = hostname;
+
+    markOnline(deviceId);
+
+    // Flush any queued command immediately
+    const pending = popCommand(deviceId, hostname);
+    if (pending) {
+      ws.send(JSON.stringify({ action: "terminal", command: pending }));
+    }
+
+    ws.on("message", (raw) => {
+      let msg;
+      try { msg = JSON.parse(raw.toString()); } catch { return; }
+
+      const type = msg.type || msg.action;
+
+      switch (type) {
+        case "telemetry":
+          saveTelemetry(deviceId, msg.data || msg);
+          break;
+
+        case "heartbeat": {
+          markOnline(deviceId);
+          const cmd = popCommand(deviceId, hostname);
+          if (cmd) ws.send(JSON.stringify({ action: "terminal", command: cmd }));
+          break;
+        }
+
+        case "result":
+        case "terminal": {
+          // Route to watching dashboard tab
+          io.to(`device_${deviceId}`).emit("result", msg);
+          if (hostname) io.to(`device_${hostname}`).emit("result", msg);
+
+          // Also persist for HTTP polling fallback
+          try {
+            if (!fs.existsSync(RESULTS_DIR)) fs.mkdirSync(RESULTS_DIR, { recursive: true });
+            const key  = hostname || deviceId;
+            const out  = msg.output || "";
+            fs.writeFileSync(path.join(RESULTS_DIR, `${key}.txt`), out, "utf-8");
+          } catch {}
+          break;
+        }
+
+        default:
+          io.to(`device_${deviceId}`).emit(type || "message", msg);
       }
     });
 
-    socket.on("disconnect", () => {
-      console.log("Dashboard socket disconnected");
+    ws.on("close", () => {
+      agents.delete(deviceId);
+      if (hostname) agents.delete(hostname);
+      markOffline(deviceId);
     });
+
+    ws.on("error", (err) => console.error(`[WS-ERR] ${deviceId}: ${err.message}`));
   });
 
-  httpServer.listen(port, () => {
-    console.log(`> Ready on http://${hostname}:${port}`);
+  // ── Socket.IO — dashboard clients ───────────────────────────────
+  io.on("connection", (socket) => {
+    const { deviceId, type } = socket.handshake.query;
+
+    // Every dashboard client joins the global "dashboard" room
+    socket.join("dashboard");
+
+    // Optionally joins a device-specific room
+    if (deviceId) socket.join(`device_${deviceId}`);
+
+    console.log(`[IO +] ${type || "dashboard"} ${deviceId ? `(${deviceId})` : ""}`);
+
+    // Dashboard can subscribe to extra device rooms on the fly
+    socket.on("watch_device", (id) => socket.join(`device_${id}`));
+    socket.on("unwatch_device", (id) => socket.leave(`device_${id}`));
+
+    // Send command to agent
+    socket.on("send_command", (data) => {
+      const { deviceId: id, action, command } = data || {};
+      if (!id) return;
+
+      const ws = agents.get(String(id)) || agents.get(String(id).toUpperCase());
+
+      if (ws && ws.readyState === 1 /* OPEN */) {
+        ws.send(JSON.stringify({ action, command: command || "" }));
+        console.log(`[CMD→WS] ${id}: ${action}`);
+      } else {
+        // Agent offline — queue for next heartbeat
+        const queue = readJson(QUEUE_FILE, {});
+        if (!queue[id]) queue[id] = [];
+        queue[id].push(action === "terminal" ? (command || action) : action);
+        writeJson(QUEUE_FILE, queue);
+        console.log(`[CMD→Q] ${id}: ${action} (agent offline)`);
+        socket.emit("command_queued", { deviceId: id, action });
+      }
+    });
+
+    // Dashboard queries whether an agent is live right now
+    socket.on("get_agent_status", ({ deviceId: id }) => {
+      const ws       = id ? (agents.get(String(id)) || agents.get(String(id).toUpperCase())) : null;
+      const online   = !!(ws && ws.readyState === 1);
+      socket.emit("agent_status", { deviceId: id, wsConnected: online });
+    });
+
+    socket.on("disconnect", () => console.log(`[IO -] ${type || "dashboard"}`));
+  });
+
+  // ── Start ────────────────────────────────────────────────────────
+  httpServer.listen(port, "0.0.0.0", () => {
+    console.log(`\n🚀  RustDesk RMM ready → http://0.0.0.0:${port}\n`);
   });
 });

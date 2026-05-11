@@ -62,6 +62,8 @@ interface AppState {
   setDevices: (devices: Device[]) => void;
   addDevice: (device: Device) => void;
   deleteDevice: (id: string) => void;
+  updateDeviceStatus: (id: string, status: "online" | "offline") => void;
+  updateDeviceTelemetry: (id: string, data: Partial<Device>) => void;
   fetchDevices: () => Promise<void>;
 
   // Teknisyen yönetimi
@@ -102,6 +104,16 @@ export const useAppStore = create<AppState>()(
       devices: [], 
       setDevices: (devices) => set({ devices }),
       addDevice: (device) => set((state) => ({ devices: [device, ...state.devices] })),
+      updateDeviceStatus: (id, status) =>
+        set((state) => ({
+          devices: state.devices.map((d) => d.id === id ? { ...d, status } : d),
+        })),
+
+      updateDeviceTelemetry: (id, data) =>
+        set((state) => ({
+          devices: state.devices.map((d) => d.id === id ? { ...d, ...data } : d),
+        })),
+
       // Cihaz silme işlemi - Artık sunucudan da siliyor
       deleteDevice: async (id) => {
         try {

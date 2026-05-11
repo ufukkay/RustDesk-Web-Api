@@ -1,5 +1,6 @@
 import { Topbar } from "@/components/layout/Topbar";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { SocketProvider } from "@/components/providers/SocketProvider";
 
 export default function DashboardLayout({
   children,
@@ -12,7 +13,9 @@ export default function DashboardLayout({
       <div className="rd2-main">
         <Topbar />
         <main className="rd2-content">
-          {children}
+          <SocketProvider>
+            {children}
+          </SocketProvider>
         </main>
       </div>
     </div>
