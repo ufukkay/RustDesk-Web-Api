@@ -4,26 +4,40 @@
 $dir = "C:\ProgramData\RustDeskRMM"
 if (!(Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force }
 
-# 1. RUSTDESK ID TESPITI
+# 1. RUSTDESK ID TESPITI (TAM OTOMATIK & ZERO-TOUCH)
 $rdId = ""
 $possiblePaths = @(
     "$env:ProgramData\RustDesk\config\RustDesk.toml",
     "C:\Windows\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\config\RustDesk.toml",
     "$env:AppData\RustDesk\config\RustDesk.toml"
 )
-foreach ($p in $possiblePaths) {
-    if (Test-Path $p) {
-        $content = Get-Content $p -Raw
-        if ($content -match 'id\s*=\s*''?(\d{6,15})''?') { 
-            $rdId = $matches[1]
-            Write-Host "RustDesk ID bulundu: $rdId ($p)" -ForegroundColor Cyan
-            break 
+
+Write-Host "RustDesk ID araniyor..." -ForegroundColor Yellow
+$retryCount = 0
+while (-not $rdId -and $retryCount -lt 15) {
+    foreach ($p in $possiblePaths) {
+        if (Test-Path $p) {
+            $content = Get-Content $p -Raw
+            # id = '123456', id="123456", id=123456 varyasyonlarini yakala
+            if ($content -match 'id\s*=\s*[''"]?(\d{6,15})[''"]?') { 
+                $rdId = $matches[1]
+                Write-Host "RustDesk ID otomatik bulundu: $rdId ($p)" -ForegroundColor Cyan
+                break 
+            }
         }
+    }
+    
+    if (-not $rdId) {
+        $retryCount++
+        Write-Host "ID henüz olusmadi, 2 saniye bekleniyor... ($retryCount/15)" -ForegroundColor DarkGray
+        Start-Sleep -Seconds 2
     }
 }
 
-if (-not $rdId) { $rdId = Read-Host "RustDesk ID otomatik bulunamadi, lutfen elle girin" }
-if (-not $rdId) { Write-Error "ID olmadan devam edilemez!"; return }
+if (-not $rdId) { 
+    Write-Error "CRITICAL ERROR: RustDesk ID bulunamadi! RustDesk kurulu mu veya hic internete baglandi mi?" 
+    return 
+}
 
 # 2. C# AGENT KAYNAK KODU (AGENT V2 - WEBSOCKETS)
 $source = @"
