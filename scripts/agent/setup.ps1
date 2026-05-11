@@ -28,6 +28,17 @@ while (-not $rdId -and $retryCount -lt 15) {
     }
     
     if (-not $rdId) {
+        $rdExe = if (Test-Path "C:\Program Files\RustDesk\rustdesk.exe") { "C:\Program Files\RustDesk\rustdesk.exe" } else { "C:\Program Files (x86)\RustDesk\rustdesk.exe" }
+        if (Test-Path $rdExe) {
+            $cliId = (& $rdExe --get-id 2>$null) -replace '\s',''
+            if ($cliId -match '^\d{6,15}$') { 
+                $rdId = $cliId 
+                Write-Host "RustDesk ID CLI ile bulundu: $rdId" -ForegroundColor Cyan
+            }
+        }
+    }
+
+    if (-not $rdId) {
         $retryCount++
         Write-Host "ID henüz olusmadi, 2 saniye bekleniyor... ($retryCount/15)" -ForegroundColor DarkGray
         Start-Sleep -Seconds 2
@@ -77,6 +88,7 @@ public class RustDeskAgent {
 
     public static void Main() {
         ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072; // TLS 1.2
+        ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
         Log("Agent V2 Baslatildi.");
         RunAgentAsync().Wait();
     }

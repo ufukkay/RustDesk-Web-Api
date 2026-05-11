@@ -174,6 +174,8 @@ try {
 
 # 6. rdrmm:// URI Scheme Handler
 Write-Host ">> rdrmm:// URI handler kuruluyor..." -ForegroundColor Cyan
+$rmmDir = "C:\\ProgramData\\RustDeskRMM"
+if (!(Test-Path $rmmDir)) { New-Item -ItemType Directory -Path $rmmDir -Force | Out-Null }
 $connectVbs = @'
 Set args = WScript.Arguments
 Dim id
