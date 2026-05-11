@@ -9,13 +9,6 @@ export async function GET(req: Request) {
     const settings = getSettings();
     
     // Header'lardan baz URL'i al (HTTPS uyumu için)
-    const hostHeader = req.headers.get("host");
-    const currentHost = hostHeader?.split(":")[0] || "rmm.talay.com";
-    const protocol = req.headers.get("x-forwarded-proto") || "http";
-    
-    // Domain algılandıysa IP yerine her zaman domain kullanalım
-    let baseUrl = settings.apiServer;
-    if (hostHeader && !hostHeader.includes("192.168.")) {
        baseUrl = `${protocol}://${hostHeader}`;
     } else if (!baseUrl) {
        baseUrl = `${protocol}://${hostHeader}`;
@@ -23,10 +16,11 @@ export async function GET(req: Request) {
 
     let idServer = searchParams.get("host") || settings.idServer || settings.host || currentHost;
     
-    // Domain tespiti ve zorlama
-    if (currentHost.includes("talay.com")) {
+    // Domain tespiti ve zorlama (IP fallback'ini engelle)
+    if (currentHost.includes("talay.com") || idServer === "192.168.0.184") {
       idServer = "rmm.talay.com";
     }
+
 
 
     const relayServer = settings.relayServer && settings.relayServer !== "192.168.0.184" ? settings.relayServer : idServer;

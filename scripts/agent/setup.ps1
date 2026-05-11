@@ -1,15 +1,16 @@
 # =============================================================================
-# RUSTDESK RMM AGENT V3 — INSTALLER
+# RUSTDESK RMM AGENT V3 — INSTALLER (Gelistirilmiş ID Tespit Sistemi)
 # =============================================================================
 param($apiServer)
 
-# --- 1. API SUNUCU TESPITI ---
+# --- 1. API SUNUCU TESPITI (DOMAIN ZORLAMA) ---
 $settingsFile = "C:\ProgramData\RustDeskRMM\settings.json"
 if (-not $apiServer) {
     if (Test-Path $settingsFile) {
         try { $cfg = Get-Content $settingsFile -Raw | ConvertFrom-Json; $apiServer = $cfg.apiServer } catch {}
     }
-    if (-not $apiServer) { $apiServer = "https://rmm.talay.com" }
+    # Eger hala yoksa veya yerel IP ise domain adresini zorla
+    if (-not $apiServer -or $apiServer -match '192\.168\.') { $apiServer = "https://rmm.talay.com" }
 }
 $wsUrl = ($apiServer -replace '^https://', 'wss://' -replace '^http://', 'ws://').TrimEnd('/') + "/agent-socket"
 
@@ -19,34 +20,55 @@ if (!(Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Nu
 
 Write-Host ">> Sunucu : $apiServer" -ForegroundColor Cyan
 
-# --- 2. ID TESPITI ---
+# --- 2. AGRESIF ID TESPITI (Derin Tarama) ---
 $rdId = ""
 $possiblePaths = @(
-    "$env:ProgramData\RustDesk\config\RustDesk.toml",
     "C:\Windows\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\config\RustDesk.toml",
-    "$env:AppData\RustDesk\config\RustDesk.toml"
+    "C:\Windows\System32\config\systemprofile\AppData\Roaming\RustDesk\config\RustDesk.toml",
+    "$env:ProgramData\RustDesk\config\RustDesk.toml",
+    "$env:AppData\RustDesk\config\RustDesk.toml",
+    "C:\Windows\ServiceProfiles\NetworkService\AppData\Roaming\RustDesk\config\RustDesk.toml"
 )
-Write-Host ">> RustDesk ID araniyor..." -ForegroundColor Yellow
-for ($i=0; $i -lt 15; $i++) {
+
+Write-Host ">> RustDesk ID araniyor (Agresif Mod)..." -ForegroundColor Yellow
+
+# RustDesk Servisini tetikle (ID olusmasi icin)
+Start-Service "RustDesk" -ErrorAction SilentlyContinue
+
+for ($i=0; $i -lt 30; $i++) { # 60 saniyeye cikardik
     foreach ($p in $possiblePaths) {
         if (Test-Path $p) {
             $content = Get-Content $p -Raw -ErrorAction SilentlyContinue
-            if ($content -match 'id\s*=\s*[''"]?(\d{6,15})[''"]?') { $rdId = $matches[1]; break }
+            if ($content -match 'id\s*=\s*[''"]?(\d{6,15})[''"]?') { 
+                $rdId = $matches[1]
+                Write-Host "[OK] ID Klasorde Bulundu: $rdId ($p)" -ForegroundColor Cyan
+                break 
+            }
         }
     }
     if ($rdId) { break }
+
+    # CLI Fallback
     $rdExe = if (Test-Path "C:\Program Files\RustDesk\rustdesk.exe") { "C:\Program Files\RustDesk\rustdesk.exe" } else { "C:\Program Files (x86)\RustDesk\rustdesk.exe" }
     if (Test-Path $rdExe) {
         $cliId = (& $rdExe --get-id 2>$null) -replace '\s',''
-        if ($cliId -match '^\d{6,15}$') { $rdId = $cliId; break }
+        if ($cliId -match '^\d{6,15}$') { 
+            $rdId = $cliId
+            Write-Host "[OK] ID CLI ile Alindi: $rdId" -ForegroundColor Cyan
+            break 
+        }
     }
-    Write-Host "   Bekleniyor... ($($i+1)/15)" -ForegroundColor DarkGray
+    
+    Write-Host "   Bekleniyor... ($($i+1)/30)" -ForegroundColor DarkGray
     Start-Sleep -Seconds 2
 }
-if (-not $rdId) { Write-Error "ID Bulunamadi!"; return }
-Write-Host "[OK] ID: $rdId" -ForegroundColor Green
 
-# --- 3. C# KAYNAK KODU ---
+if (-not $rdId) { 
+    Write-Error "CRITICAL: RustDesk ID bulunamadi! Lutfen RustDesk'in calistigindan emin olun."
+    return 
+}
+
+# --- 3. C# KAYNAK KODU (Ayni Mantik, V3.0.2) ---
 $source = @"
 using System;
 using System.Net;
@@ -69,7 +91,7 @@ public class RustDeskAgent {
     static readonly string DeviceId     = "$rdId";
     static readonly string WsUrl        = "$wsUrl";
     static readonly string ApiServer    = "$apiServer";
-    static readonly string AgentVersion = "v3.0.1";
+    static readonly string AgentVersion = "v3.0.2";
     static readonly string LogFile      = @"C:\ProgramData\RustDeskRMM\agent.log";
 
     static void Log(string msg) {
@@ -212,4 +234,4 @@ $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccou
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
 Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force | Out-Null
 Start-ScheduledTask -TaskName $taskName
-Write-Host "[OK] Tamamlandi." -ForegroundColor Green
+Write-Host "[OK] Tamamlandi. RustDesk ID Alindi ve Ajan Baslatildi." -ForegroundColor Green
