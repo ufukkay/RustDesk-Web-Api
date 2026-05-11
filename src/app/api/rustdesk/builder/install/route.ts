@@ -169,7 +169,8 @@ try {
     $tempPs1 = Join-Path $env:TEMP "agent_setup.ps1"
     (New-Object System.Net.WebClient).DownloadFile($agentSetupUrl, $tempPs1)
     Write-Host ">> Ajan betigi indirildi, calistiriliyor..." -ForegroundColor Gray
-    & powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File $tempPs1
+    # setup.ps1 dosyasinin en basina param($apiServer) eklenmesi gerektigi varsayilarak:
+    & powershell.exe -ExecutionPolicy Bypass -File $tempPs1 -apiServer "${apiServer}"
 } catch {
     Write-Host "[HATA] RMM Ajani indirilemedi veya calistirilemedi: $($_.Exception.Message)" -ForegroundColor Red
 }

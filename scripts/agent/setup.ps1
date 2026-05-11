@@ -2,6 +2,7 @@
 # RUSTDESK RMM AGENT V3 — INSTALLER
 # Dinamik URL destekli, WebSocket tabanli, sifir-dokunuslu kurulum
 # =============================================================================
+param($apiServer)
 
 # --- 1. API SUNUCU URL TESPITI -----------------------------------------------
 # Oncelik: (a) cagiran scriptten $apiServer degiskeni,
