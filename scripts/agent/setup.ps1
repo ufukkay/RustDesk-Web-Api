@@ -14,7 +14,7 @@ $possiblePaths = @(
 foreach ($p in $possiblePaths) {
     if (Test-Path $p) {
         $content = Get-Content $p -Raw
-        if ($content -match 'id\s*=\s*''?(\d+)''?') { 
+        if ($content -match 'id\s*=\s*''?(\d{6,15})''?') { 
             $rdId = $matches[1]
             Write-Host "RustDesk ID bulundu: $rdId ($p)" -ForegroundColor Cyan
             break 
@@ -56,8 +56,14 @@ public class RustDeskAgent {
         return "";
     }
 
+    private static string logFile = @"C:\ProgramData\RustDeskRMM\agent.log";
+    public static void Log(string msg) {
+        try { File.AppendAllText(logFile, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " | " + msg + "\n"); } catch { }
+    }
+
     public static void Main() {
         ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072; // TLS 1.2
+        Log("Agent V2 Baslatildi.");
         RunAgentAsync().Wait();
     }
     
@@ -68,37 +74,41 @@ public class RustDeskAgent {
         string agentVersion = "v2.0.0";
         string hostname = Environment.MachineName;
 
-        // Telemetry Thread (Her 60 saniyede bir merkeze donanım bilgisini HTTP POST ile yollar)
+        // Telemetry Thread
         Thread t = new Thread(() => {
             while (true) {
-                try { SendTelemetry(sysinfoUrl, deviceId, agentVersion); } catch { }
+                try { SendTelemetry(sysinfoUrl, deviceId, agentVersion); Log("Telemetry gönderildi."); } catch(Exception ex) { Log("Telemetry hatasi: " + ex.Message); }
                 Thread.Sleep(60000); 
             }
         });
         t.IsBackground = true;
         t.Start();
 
-        // WebSocket Loop (Gerçek Zamanlı İletişim İçin)
+        // WebSocket Loop
         while (true) {
             try {
                 using (ClientWebSocket ws = new ClientWebSocket()) {
                     string wsUriStr = wsUrl + "?deviceId=" + deviceId + "&hostname=" + hostname + "&type=agent";
+                    Log("WebSocket baglaniliyor: " + wsUrl);
                     await ws.ConnectAsync(new Uri(wsUriStr), CancellationToken.None);
+                    Log("WebSocket baglandi!");
                     
                     byte[] buffer = new byte[8192];
                     while (ws.State == WebSocketState.Open) {
                         WebSocketReceiveResult result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                         if (result.MessageType == WebSocketMessageType.Close) {
                             await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
+                            Log("WebSocket kapatildi.");
                         } else {
                             string msg = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                            // Komutu arka planda işle (Fire and forget)
+                            Log("Komut alindi: " + msg);
                             var _ = Task.Run(() => ProcessCommand(msg, ws, deviceId));
                         }
                     }
                 }
-            } catch { }
-            // Bağlantı koparsa 5 saniye bekle ve yeniden bağlan
+            } catch (Exception ex) {
+                Log("WebSocket hatasi: " + ex.Message);
+            }
             await Task.Delay(5000);
         }
     }
