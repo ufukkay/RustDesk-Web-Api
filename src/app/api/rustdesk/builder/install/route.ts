@@ -8,20 +8,19 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const settings = getSettings();
     
-    // Header'lardan baz URL'i al (HTTPS uyumu için)
-       baseUrl = `${protocol}://${hostHeader}`;
-    } else if (!baseUrl) {
-       baseUrl = `${protocol}://${hostHeader}`;
+    const hostHeader = req.headers.get("host") || "";
+    const currentHost = hostHeader.split(":")[0];
+    
+    // Sunucu adresini belirle (HTTPS ve Domain zorlaması)
+    let baseUrl = settings.apiServer || `https://${currentHost}`;
+    if (currentHost.includes("talay.com") || currentHost.includes("192.168.")) {
+        baseUrl = "https://rmm.talay.com";
     }
 
     let idServer = searchParams.get("host") || settings.idServer || settings.host || currentHost;
-    
-    // Domain tespiti ve zorlama (IP fallback'ini engelle)
-    if (currentHost.includes("talay.com") || idServer === "192.168.0.184") {
-      idServer = "rmm.talay.com";
+    if (idServer.includes("192.168.") || currentHost.includes("talay.com")) {
+        idServer = "rmm.talay.com";
     }
-
-
 
     const relayServer = settings.relayServer && settings.relayServer !== "192.168.0.184" ? settings.relayServer : idServer;
     const apiServer   = baseUrl;
