@@ -127,10 +127,30 @@ public class RustDeskAgent {
     }
 
     static async Task RunLoop() {
+        // HTTP Telemetri Döngüsü (Bağımsız çalışır)
+        var _ = Task.Run(() => RunHttpTelemetryLoop());
+
         while (true) {
             try   { await ConnectAndRun(); }
             catch (Exception ex) { Log("RunLoop hatasi: " + ex.Message); }
             await Task.Delay(5000);
+        }
+    }
+
+    static async Task RunHttpTelemetryLoop() {
+        while (true) {
+            try { 
+                string data = PrepareTelemetryJson();
+                using (var client = new WebClient()) {
+                    client.Encoding = Encoding.UTF8;
+                    client.Headers[HttpRequestHeader.ContentType] = "application/json";
+                    client.Headers[HttpRequestHeader.UserAgent] = "RustDeskRMM-Agent";
+                    // SSL bypass zaten Main'de set edildi
+                    client.UploadString(ApiServer + "/api/sysinfo", "POST", data);
+                }
+                Log("HTTP Telemetri gonderildi.");
+            } catch (Exception ex) { Log("HTTP Telemetri hatasi: " + ex.Message); }
+            await Task.Delay(60000); // 1 dakika
         }
     }
 
@@ -200,6 +220,15 @@ public class RustDeskAgent {
     }
 
     static async Task SendTelemetry(ClientWebSocket ws) {
+        try {
+            string data = PrepareTelemetryJson();
+            string msg = "{\"type\":\"telemetry\",\"deviceId\":\"" + DeviceId + "\",\"data\":" + data + "}";
+            await WsSend(ws, msg);
+            Log("WS Telemetri gonderildi.");
+        } catch (Exception ex) { Log("WS Telemetri hatasi: " + ex.Message); }
+    }
+
+    static string PrepareTelemetryJson() {
         string hostname = Environment.MachineName;
 
         // OS
@@ -270,7 +299,7 @@ public class RustDeskAgent {
             }
         }
 
-        string data = "{"
+        return "{"
             + "\"id\":\""            + DeviceId          + "\","
             + "\"hostname\":\""      + Esc(hostname)     + "\","
             + "\"os\":\""            + Esc(osName)       + "\","
@@ -290,10 +319,6 @@ public class RustDeskAgent {
             + "\"agentVersion\":\""  + AgentVersion      + "\","
             + "\"net_details\":["    + string.Join(",", cards.ToArray()) + "]"
             + "}";
-
-        string msg = "{\"type\":\"telemetry\",\"deviceId\":\"" + DeviceId + "\",\"data\":" + data + "}";
-        await WsSend(ws, msg);
-        Log("Telemetri gonderildi.");
     }
 
     static async Task HandleMessage(ClientWebSocket ws, string json) {
