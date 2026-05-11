@@ -120,31 +120,31 @@ export default function DeviceDetailsPage() {
   const netDetails = Array.isArray(device.net_details) ? device.net_details : [];
 
   return (
-    <div className="rd2-page max-w-[1200px] mx-auto pb-10">
+    <div className="rd2-page" style={{ maxWidth: 1200, margin: "0 auto", paddingBottom: 40 }}>
       {/* Header */}
-      <div className="rd2-detail-header mb-6">
+      <div className="rd2-detail-header" style={{ marginBottom: 24 }}>
         <button className="rd2-back-btn" onClick={() => router.back()}>
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft width="20" height="20" />
         </button>
         <div>
-          <div className="flex items-center gap-3">
-            <h2 className="rd2-h1 !m-0">{device.name}</h2>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <h2 className="rd2-h1" style={{ margin: 0 }}>{device.name}</h2>
             <span className={`rd2-pill ${isOnline ? "rd2-pill-on" : "rd2-pill-off"}`}>
-              <span className={`rd2-dot ${isOnline ? "rd2-dot-green animate-brand-pulse" : "rd2-dot-gray"}`} />
+              <span className={`rd2-dot ${isOnline ? "rd2-dot-green rd2-pulse" : "rd2-dot-gray"}`} />
               {isOnline ? "Online" : "Offline"}
             </span>
           </div>
-          <div className="rd2-mono rd2-muted-sm mt-1">ID: {device.id} · {device.os} · {device.user}</div>
+          <div className="rd2-mono rd2-muted-sm" style={{ marginTop: 4 }}>ID: {device.id} · {device.os} · {device.user}</div>
         </div>
       </div>
 
       {/* Action Bar */}
-      <div className="rd2-card rd2-action-bar mb-6" style={{ background: "var(--surface)", border: "1px solid var(--line)" }}>
+      <div className="rd2-card rd2-action-bar" style={{ marginBottom: 24 }}>
         <button 
           onClick={handleConnect}
           disabled={!isOnline}
           className="rd2-btn"
-          style={isOnline ? { background: "#FFCC00", color: "#0E1116", border: "1px solid #0E111614" } : { opacity: 0.5 }}
+          style={isOnline ? { background: "#FFCC00", color: "#0E1116", border: "1px solid rgba(14,17,22,.08)" } : { opacity: 0.5 }}
         >
           <Play width="14" height="14" /> Uzaktan Bağlan
         </button>
@@ -173,7 +173,7 @@ export default function DeviceDetailsPage() {
           onClick={() => runAction("restart")}
           disabled={!isOnline}
           className="rd2-btn rd2-btn-sm"
-          style={isOnline ? { background: "#F1F2F4" } : { opacity: 0.5 }}
+          style={isOnline ? { background: "var(--gray-bg)" } : { opacity: 0.5 }}
         >
           <RotateCcw width="13" height="13" /> {actionStatus.restart === "running" ? "Bekleyin..." : "Yeniden Başlat"}
         </button>
@@ -182,7 +182,7 @@ export default function DeviceDetailsPage() {
           onClick={() => runAction("shutdown")}
           disabled={!isOnline}
           className="rd2-btn rd2-btn-sm"
-          style={isOnline ? { background: "#FCEAEA", color: "#C0392B" } : { opacity: 0.5 }}
+          style={isOnline ? { background: "var(--red-bg)", color: "var(--red)" } : { opacity: 0.5 }}
         >
           <Power width="13" height="13" /> Kapat
         </button>
@@ -191,7 +191,7 @@ export default function DeviceDetailsPage() {
           onClick={() => runAction("lock")}
           disabled={!isOnline}
           className="rd2-btn rd2-btn-sm"
-          style={isOnline ? { background: "#F1F2F4" } : { opacity: 0.5 }}
+          style={isOnline ? { background: "var(--gray-bg)" } : { opacity: 0.5 }}
         >
           <Lock width="13" height="13" /> Kilitle
         </button>
@@ -206,113 +206,101 @@ export default function DeviceDetailsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-6 border-b border-border mb-6 px-2">
+      <div className="rd2-tabs" style={{ marginBottom: 24, borderColor: "var(--line)" }}>
         <button 
           onClick={() => setActiveTab("overview")} 
-          className={`pb-3 text-[15px] font-bold transition-all relative ${activeTab === 'overview' ? 'text-brand-yellow' : 'text-muted-foreground hover:text-foreground'}`}
+          className={`rd2-tab ${activeTab === 'overview' ? 'on' : ''}`}
+          style={activeTab === 'overview' ? { borderBottomColor: '#FFCC00', color: 'var(--text)' } : {}}
         >
           Özet
-          {activeTab === 'overview' && <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-brand-yellow rounded-t-full"></div>}
         </button>
         <button 
           onClick={() => setActiveTab("networks")} 
-          className={`pb-3 text-[15px] font-bold transition-all relative ${activeTab === 'networks' ? 'text-brand-yellow' : 'text-muted-foreground hover:text-foreground'}`}
+          className={`rd2-tab ${activeTab === 'networks' ? 'on' : ''}`}
+          style={activeTab === 'networks' ? { borderBottomColor: '#FFCC00', color: 'var(--text)' } : {}}
         >
           Ağlar
-          {activeTab === 'networks' && <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-brand-yellow rounded-t-full"></div>}
         </button>
         <button 
           onClick={() => setActiveTab("terminal")} 
-          className={`pb-3 text-[15px] font-bold transition-all relative ${activeTab === 'terminal' ? 'text-brand-yellow' : 'text-muted-foreground hover:text-foreground'}`}
+          className={`rd2-tab ${activeTab === 'terminal' ? 'on' : ''}`}
+          style={activeTab === 'terminal' ? { borderBottomColor: '#FFCC00', color: 'var(--text)' } : {}}
         >
           Command Queue (Terminal)
-          {activeTab === 'terminal' && <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-brand-yellow rounded-t-full"></div>}
         </button>
       </div>
 
       {/* Tab Content: OVERVIEW */}
       {activeTab === "overview" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <div className="rd2-detail-grid">
           
           {/* Cihaz Özeti (Sol) */}
-          <div className="lg:col-span-1 space-y-6">
-            <div className="bg-card border-2 border-border rounded-xl overflow-hidden shadow-sm">
-              <div className="bg-muted px-4 py-3 border-b border-border">
-                <h3 className="font-black text-sm uppercase tracking-wider">Cihaz Özeti</h3>
-              </div>
-              <div className="p-0">
-                <table className="w-full text-[13px]">
-                  <tbody>
-                    <tr className="border-b border-border/50"><td className="py-2 px-4 font-bold text-muted-foreground w-1/3">İsim</td><td className="py-2 px-4">{device.name || "-"}</td></tr>
-                    <tr className="border-b border-border/50"><td className="py-2 px-4 font-bold text-muted-foreground">Giriş Yapmış K.</td><td className="py-2 px-4">{device.user || "-"}</td></tr>
-                    <tr className="border-b border-border/50"><td className="py-2 px-4 font-bold text-muted-foreground">AD/LDAP Domain</td><td className="py-2 px-4">{device.adDomain || "-"}</td></tr>
-                    <tr className="border-b border-border/50"><td className="py-2 px-4 font-bold text-muted-foreground">Biçim Katsayısı</td><td className="py-2 px-4">{device.formFactor || "-"}</td></tr>
-                    <tr className="border-b border-border/50"><td className="py-2 px-4 font-bold text-muted-foreground">Model</td><td className="py-2 px-4">{device.model || "-"}</td></tr>
-                    <tr className="border-b border-border/50"><td className="py-2 px-4 font-bold text-muted-foreground">İşlemci</td><td className="py-2 px-4">{device.processor || device.cpu || "-"}</td></tr>
-                    <tr className="border-b border-border/50"><td className="py-2 px-4 font-bold text-muted-foreground">Seri Numarası</td><td className="py-2 px-4">{device.serialNumber || "-"}</td></tr>
-                    <tr className="border-b border-border/50"><td className="py-2 px-4 font-bold text-muted-foreground">Sistem Üreticisi</td><td className="py-2 px-4">{device.manufacturer || "-"}</td></tr>
-                    <tr className="border-b border-border/50"><td className="py-2 px-4 font-bold text-muted-foreground">Ajan Sürümü</td><td className="py-2 px-4">{device.agentVersion || "Bilinmiyor"}</td></tr>
-                    <tr className="border-b border-border/50"><td className="py-2 px-4 font-bold text-muted-foreground">Son Bağlantı</td><td className="py-2 px-4">{device.lastSeen || "-"}</td></tr>
-                    <tr><td className="py-2 px-4 font-bold text-muted-foreground">Dış IP</td><td className="py-2 px-4 text-emerald-500 font-bold">{(device.ip || "-").replace(/^::ffff:/, "")}</td></tr>
-                  </tbody>
-                </table>
-              </div>
+          <div className="rd2-card rd2-card-flush" style={{ alignSelf: "start" }}>
+            <div style={{ background: "var(--gray-bg)", padding: "12px 16px", borderBottom: "1px solid var(--line2)" }}>
+              <h3 style={{ fontSize: 13, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".05em" }}>Cihaz Özeti</h3>
+            </div>
+            <div style={{ padding: "8px 16px 16px" }}>
+              <div className="rd2-info-row"><span className="rd2-info-label">İsim</span><span className="rd2-info-val">{device.name || "-"}</span></div>
+              <div className="rd2-info-row"><span className="rd2-info-label">Giriş Yapmış K.</span><span className="rd2-info-val">{device.user || "-"}</span></div>
+              <div className="rd2-info-row"><span className="rd2-info-label">AD/LDAP Domain</span><span className="rd2-info-val">{device.adDomain || "-"}</span></div>
+              <div className="rd2-info-row"><span className="rd2-info-label">Biçim Katsayısı</span><span className="rd2-info-val">{device.formFactor || "-"}</span></div>
+              <div className="rd2-info-row"><span className="rd2-info-label">Model</span><span className="rd2-info-val">{device.model || "-"}</span></div>
+              <div className="rd2-info-row"><span className="rd2-info-label">İşlemci</span><span className="rd2-info-val">{device.processor || device.cpu || "-"}</span></div>
+              <div className="rd2-info-row"><span className="rd2-info-label">Seri Numarası</span><span className="rd2-info-val">{device.serialNumber || "-"}</span></div>
+              <div className="rd2-info-row"><span className="rd2-info-label">Sistem Üreticisi</span><span className="rd2-info-val">{device.manufacturer || "-"}</span></div>
+              <div className="rd2-info-row"><span className="rd2-info-label">Ajan Sürümü</span><span className="rd2-info-val">{device.agentVersion || "Bilinmiyor"}</span></div>
+              <div className="rd2-info-row"><span className="rd2-info-label">Son Bağlantı</span><span className="rd2-info-val">{device.lastSeen || "-"}</span></div>
+              <div className="rd2-info-row"><span className="rd2-info-label">Dış IP</span><span className="rd2-info-val" style={{ color: "var(--green)" }}>{(device.ip || "-").replace(/^::ffff:/, "")}</span></div>
             </div>
           </div>
 
           {/* Orta & Sağ Kolon */}
-          <div className="lg:col-span-2 space-y-6">
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             
-            {/* Üst Kısım: Thumbnail + OS */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-card border-2 border-border rounded-xl overflow-hidden shadow-sm flex flex-col items-center justify-center min-h-[220px] p-6 text-center">
-                <div className="p-4 bg-muted/50 rounded-full mb-4">
-                  <Monitor className="w-12 h-12 text-muted-foreground/30" />
+            <div className="rd2-2col">
+              <div className="rd2-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", minHeight: "200px" }}>
+                <div style={{ padding: "16px", background: "var(--gray-bg)", borderRadius: "50%", marginBottom: "16px" }}>
+                  <Monitor style={{ width: 40, height: 40, color: "var(--muted2)" }} />
                 </div>
-                <h3 className="font-bold text-foreground">Desktop Thumbnail</h3>
-                <p className="text-[12px] text-muted-foreground mt-1">Görüntü önizlemesi şu an desteklenmiyor.</p>
+                <h3 style={{ fontSize: 14, fontWeight: 800 }}>Desktop Thumbnail</h3>
+                <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>Görüntü önizlemesi şu an desteklenmiyor.</p>
               </div>
 
-              <div className="bg-card border-2 border-border rounded-xl overflow-hidden shadow-sm">
-                <div className="bg-muted px-4 py-3 border-b border-border">
-                  <h3 className="font-black text-sm uppercase tracking-wider">İşletim Sistemi Özeti</h3>
+              <div className="rd2-card rd2-card-flush">
+                <div style={{ background: "var(--gray-bg)", padding: "12px 16px", borderBottom: "1px solid var(--line2)" }}>
+                  <h3 style={{ fontSize: 13, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".05em" }}>İşletim Sistemi Özeti</h3>
                 </div>
-                <div className="p-0">
-                  <table className="w-full text-[13px]">
-                    <tbody>
-                      <tr className="border-b border-border/50"><td className="py-2 px-4 font-bold text-muted-foreground w-2/5">OS</td><td className="py-2 px-4">{device.os || "-"}</td></tr>
-                      <tr className="border-b border-border/50"><td className="py-2 px-4 font-bold text-muted-foreground">OS Adı</td><td className="py-2 px-4">{device.osName || device.os || "-"}</td></tr>
-                      <tr className="border-b border-border/50"><td className="py-2 px-4 font-bold text-muted-foreground">İşletim Sistemi Tam Sürüm</td><td className="py-2 px-4">{device.osBuild || "-"}</td></tr>
-                      <tr className="border-b border-border/50"><td className="py-2 px-4 font-bold text-muted-foreground">Hizmet Paketi</td><td className="py-2 px-4">YOK</td></tr>
-                      <tr><td className="py-2 px-4 font-bold text-muted-foreground">Yeniden Başlatma Süresi</td><td className="py-2 px-4">{device.bootTime || "-"}</td></tr>
-                    </tbody>
-                  </table>
+                <div style={{ padding: "8px 16px 16px" }}>
+                  <div className="rd2-info-row"><span className="rd2-info-label">OS</span><span className="rd2-info-val">{device.os || "-"}</span></div>
+                  <div className="rd2-info-row"><span className="rd2-info-label">OS Adı</span><span className="rd2-info-val">{device.osName || device.os || "-"}</span></div>
+                  <div className="rd2-info-row"><span className="rd2-info-label">Tam Sürüm</span><span className="rd2-info-val">{device.osBuild || "-"}</span></div>
+                  <div className="rd2-info-row"><span className="rd2-info-label">Hizmet Paketi</span><span className="rd2-info-val">YOK</span></div>
+                  <div className="rd2-info-row"><span className="rd2-info-label">Boot Time</span><span className="rd2-info-val">{device.bootTime || "-"}</span></div>
                 </div>
               </div>
             </div>
 
-            {/* Alt Kısım: Performans */}
-            <div className="bg-card border-2 border-border rounded-xl overflow-hidden shadow-sm">
-              <div className="bg-muted px-4 py-3 border-b border-border">
-                <h3 className="font-black text-sm uppercase tracking-wider">Performans Metrikleri</h3>
+            <div className="rd2-card rd2-card-flush">
+              <div style={{ background: "var(--gray-bg)", padding: "12px 16px", borderBottom: "1px solid var(--line2)" }}>
+                <h3 style={{ fontSize: 13, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".05em" }}>Performans Metrikleri</h3>
               </div>
-              <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="flex flex-col gap-2">
-                  <span className="text-[12px] font-bold text-muted-foreground">CPU KULLANIMI</span>
-                  <div className="text-xl font-black text-foreground flex items-end gap-2">
-                    {device.cpu ? "2%" : "-"} <span className="text-[11px] text-muted-foreground font-medium pb-1">({device.processor || "-"})</span>
+              <div className="rd2-stats-grid rd2-stats-3" style={{ padding: "16px", gap: "16px" }}>
+                <div className="rd2-stat rd2-stat-mini" style={{ boxShadow: "none", border: "1px solid var(--line)" }}>
+                  <div className="rd2-stat-label">CPU KULLANIMI</div>
+                  <div className="rd2-stat-val" style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                    {device.cpu ? "2%" : "-"} <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 600 }}>({device.processor || "-"})</span>
                   </div>
                 </div>
-                <div className="flex flex-col gap-2">
-                  <span className="text-[12px] font-bold text-muted-foreground">RAM KULLANIMI</span>
-                  <div className="text-xl font-black text-foreground flex items-end gap-2">
-                    {device.ram || "-"} <span className="text-[11px] text-muted-foreground font-medium pb-1"></span>
+                <div className="rd2-stat rd2-stat-mini" style={{ boxShadow: "none", border: "1px solid var(--line)" }}>
+                  <div className="rd2-stat-label">RAM KULLANIMI</div>
+                  <div className="rd2-stat-val" style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                    {device.ram || "-"}
                   </div>
                 </div>
-                <div className="flex flex-col gap-2">
-                  <span className="text-[12px] font-bold text-muted-foreground">DİSK</span>
-                  <div className="text-xl font-black text-foreground flex items-end gap-2">
-                    {device.disk || "-"} <span className="text-[11px] text-muted-foreground font-medium pb-1">Boş</span>
+                <div className="rd2-stat rd2-stat-mini" style={{ boxShadow: "none", border: "1px solid var(--line)" }}>
+                  <div className="rd2-stat-label">DİSK</div>
+                  <div className="rd2-stat-val" style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                    {device.disk || "-"} <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 600 }}>Boş</span>
                   </div>
                 </div>
               </div>
@@ -324,63 +312,62 @@ export default function DeviceDetailsPage() {
 
       {/* Tab Content: NETWORKS */}
       {activeTab === "networks" && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           {netDetails.length === 0 ? (
-            <div className="bg-card border-2 border-border border-dashed rounded-xl p-10 text-center flex flex-col items-center">
-               <Network className="w-12 h-12 text-muted-foreground/30 mb-4" />
-               <p className="text-muted-foreground font-bold">Ağ bilgisi bulunamadı.</p>
-               <p className="text-[12px] text-muted-foreground mt-1">Ajanın veri göndermesi bekleniyor.</p>
+            <div className="rd2-card" style={{ padding: "40px 20px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", borderStyle: "dashed", borderColor: "var(--line)" }}>
+               <Network style={{ width: 48, height: 48, color: "var(--muted2)", marginBottom: 16 }} />
+               <h3 style={{ fontSize: 15, fontWeight: 800 }}>Ağ bilgisi bulunamadı</h3>
+               <p style={{ fontSize: 13, color: "var(--muted)", marginTop: 4 }}>Ajanın veri göndermesi bekleniyor.</p>
             </div>
           ) : (
-            netDetails.map((net: any, idx: number) => (
-              <div key={idx} className="bg-card border-2 border-border rounded-xl overflow-hidden shadow-sm">
-                <div className="bg-muted px-4 py-3 border-b border-border flex items-center justify-between">
-                  <h3 className="font-black text-sm uppercase tracking-wider">Cihaz Ağı №{idx + 1}</h3>
+            <div className="rd2-2col">
+              {netDetails.map((net: any, idx: number) => (
+                <div key={idx} className="rd2-card rd2-card-flush">
+                  <div style={{ background: "var(--gray-bg)", padding: "12px 16px", borderBottom: "1px solid var(--line2)" }}>
+                    <h3 style={{ fontSize: 13, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".05em" }}>Ağ Bağdaştırıcısı #{idx + 1}</h3>
+                  </div>
+                  <div style={{ padding: "8px 16px 16px" }}>
+                    <div className="rd2-info-row"><span className="rd2-info-label">İsim</span><span className="rd2-info-val" style={{ textAlign: "left", flex: 1, marginLeft: 16 }}>{net.name || "-"}</span></div>
+                    <div className="rd2-info-row"><span className="rd2-info-label">IP Adresi</span><span className="rd2-info-val" style={{ color: "var(--green)" }}>{net.ip || "-"}</span></div>
+                    <div className="rd2-info-row"><span className="rd2-info-label">Alt Ağ</span><span className="rd2-info-val rd2-mono">{net.mask || "-"}</span></div>
+                    <div className="rd2-info-row"><span className="rd2-info-label">Ağ Geçidi</span><span className="rd2-info-val rd2-mono">{net.gw || "YOK"}</span></div>
+                    <div className="rd2-info-row"><span className="rd2-info-label">MAC Adresi</span><span className="rd2-info-val rd2-mono">{net.mac || "-"}</span></div>
+                    <div className="rd2-info-row"><span className="rd2-info-label">Bağlantı Hızı</span><span className="rd2-info-val">{net.speed ? `${net.speed} Mbit/s` : "0 Mbit/s"}</span></div>
+                  </div>
                 </div>
-                <div className="p-0">
-                  <table className="w-full text-[13px]">
-                    <tbody>
-                      <tr className="border-b border-border/50"><td className="py-3 px-4 font-bold text-muted-foreground w-1/4">İsim</td><td className="py-3 px-4 font-medium">{net.name || "-"}</td></tr>
-                      <tr className="border-b border-border/50"><td className="py-3 px-4 font-bold text-muted-foreground">IP</td><td className="py-3 px-4 text-emerald-500 font-bold">{net.ip || "-"}</td></tr>
-                      <tr className="border-b border-border/50"><td className="py-3 px-4 font-bold text-muted-foreground">Alt Ağ</td><td className="py-3 px-4 rd2-mono text-[12px]">{net.mask || "-"}</td></tr>
-                      <tr className="border-b border-border/50"><td className="py-3 px-4 font-bold text-muted-foreground">Ağ Geçidi</td><td className="py-3 px-4 rd2-mono text-[12px]">{net.gw || "YOK"}</td></tr>
-                      <tr className="border-b border-border/50"><td className="py-3 px-4 font-bold text-muted-foreground">MAC Adresi</td><td className="py-3 px-4 rd2-mono text-[12px] uppercase">{net.mac || "-"}</td></tr>
-                      <tr><td className="py-3 px-4 font-bold text-muted-foreground">Bağlantı Hızı</td><td className="py-3 px-4">{net.speed ? `${net.speed} Mbit/s` : "0 Mbit/s"}</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
       )}
 
       {/* Tab Content: TERMINAL */}
       {activeTab === "terminal" && (
-        <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-           <div className="rd2-terminal h-[600px] flex flex-col">
-            <div className="rd2-term-header shrink-0">
-              <div className="flex items-center gap-2">
-                <Terminal className="w-4 h-4 text-brand-yellow" />
-                <span className="text-white text-[12px] font-bold">Command Queue</span>
+        <div>
+           <div className="rd2-terminal" style={{ height: "600px", display: "flex", flexDirection: "column" }}>
+            <div className="rd2-term-header" style={{ flexShrink: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Terminal style={{ width: 16, height: 16, color: "#FFCC00" }} />
+                <span style={{ color: "#FFF", fontSize: 12, fontWeight: 800 }}>Command Queue</span>
                 <span className="rd2-term-badge">PowerShell</span>
               </div>
             </div>
-            <div className="rd2-term-body bg-brand-ink/95 flex-1 overflow-y-auto" ref={terminalRef}>
+            <div className="rd2-term-body" style={{ flex: 1 }} ref={terminalRef}>
               <div className="rd2-term-comment"># RustDesk Remote Command Queue — {device.name}</div>
               {terminalHistory.map((e, i) => (
-                <div key={i} className="mt-3">
-                  <div className="flex gap-2">
-                    <span className="opacity-30">PS {">"}</span>
-                    <span className="text-brand-yellow">{e.cmd}</span>
+                <div key={i} style={{ marginTop: 12 }}>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <span style={{ opacity: 0.3 }}>PS {">"}</span>
+                    <span style={{ color: "#FFCC00" }}>{e.cmd}</span>
                   </div>
-                  <pre className="mt-1 text-[11px] text-emerald-400 opacity-80 whitespace-pre-wrap">{e.output}</pre>
+                  <pre style={{ marginTop: 4, fontSize: 11, color: "#34d399", opacity: 0.8, whiteSpace: "pre-wrap" }}>{e.output}</pre>
                 </div>
               ))}
-              <span className="text-emerald-500 animate-pulse">_</span>
+              <span style={{ color: "#34d399", animation: "rd2-pulse 1s infinite" }}>_</span>
             </div>
             <form 
-              className="rd2-term-input shrink-0" 
+              className="rd2-term-input" 
+              style={{ flexShrink: 0 }}
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!terminalInput.trim()) return;
@@ -396,10 +383,10 @@ export default function DeviceDetailsPage() {
               />
               <button 
                 type="submit" 
-                className="bg-brand-yellow text-brand-ink px-6 font-black uppercase text-[13px] disabled:opacity-50"
+                style={{ background: "#FFCC00", color: "#0E1116", padding: "0 24px", fontWeight: 900, textTransform: "uppercase", fontSize: 13, border: "none", cursor: "pointer", opacity: (!isOnline || !terminalInput.trim()) ? 0.5 : 1 }}
                 disabled={!isOnline || !terminalInput.trim()}
               >
-                <Send className="w-4 h-4 mr-2 inline-block" /> Gönder
+                <Send width="16" height="16" style={{ marginRight: 8, display: "inline-block", verticalAlign: "middle" }} /> Gönder
               </button>
             </form>
           </div>
