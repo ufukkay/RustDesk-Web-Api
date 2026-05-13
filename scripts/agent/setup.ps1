@@ -1,7 +1,7 @@
 # =============================================================================
 # RUSTDESK RMM AGENT V3 — INSTALLER
 # =============================================================================
-param($apiServer, $deviceId)
+param($apiServer = $null, $deviceId = $null)
 
 # --- 1. API SUNUCU TESPITI ---
 $settingsFile = "C:\ProgramData\RustDeskRMM\settings.json"
