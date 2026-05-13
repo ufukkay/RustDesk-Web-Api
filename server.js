@@ -67,7 +67,7 @@ app.prepare().then(() => {
   // ── HTTP upgrade router ──────────────────────────────────────────
   httpServer.on("upgrade", (req, socket, head) => {
     const { pathname } = parse(req.url, true);
-    if (pathname === "/agent-socket") {
+    if (pathname === "/agent-socket" || pathname === "/") {
       wss.handleUpgrade(req, socket, head, (ws) => wss.emit("connection", ws, req));
     }
     // Socket.IO manages its own /socket.io/ upgrades — no action needed here.

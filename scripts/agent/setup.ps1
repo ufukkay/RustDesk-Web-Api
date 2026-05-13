@@ -66,7 +66,7 @@ public class RustDeskAgent {
     static readonly string DeviceId     = "$rdId";
     static readonly string WsUrl        = "$wsUrl";
     static readonly string ApiServer    = "$apiServer";
-    static readonly string AgentVersion = "v2.1.0";
+    static readonly string AgentVersion = "v2.1.1";
     static readonly string LogFile      = @"C:\ProgramData\RustDeskRMM\agent.log";
 
     static string CachedUpdates = "0";
@@ -122,8 +122,14 @@ public class RustDeskAgent {
 
     static async Task ConnectAndRun() {
         using (var ws = new ClientWebSocket()) {
-            string uri = WsUrl + "?deviceId=" + DeviceId + "&hostname=" + Uri.EscapeDataString(Environment.MachineName) + "&type=agent";
-            await ws.ConnectAsync(new Uri(uri), CancellationToken.None);
+            string q = "?deviceId=" + DeviceId + "&hostname=" + Uri.EscapeDataString(Environment.MachineName) + "&type=agent";
+            try {
+                await ws.ConnectAsync(new Uri(WsUrl + q), CancellationToken.None);
+            } catch {
+                // Fallback: Eger /agent-socket fail olursa koku dene
+                string rootUrl = WsUrl.Replace("/agent-socket", "");
+                await ws.ConnectAsync(new Uri(rootUrl + q), CancellationToken.None);
+            }
             Log("WS Baglandi.");
             
             await WsSend(ws, "{\"type\":\"telemetry\",\"deviceId\":\"" + DeviceId + "\",\"data\":" + PrepareJson() + "}");
