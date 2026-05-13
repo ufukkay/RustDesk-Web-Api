@@ -215,6 +215,8 @@ export default function DeviceDetailsPage() {
               {[
                 ["İsim",             get("hostname") !== "-" ? get("hostname") : device.name],
                 ["Giriş Yapmış Kullanıcı",  get("user")],
+                ["Anlık CPU / RAM",  get("cpuUsage") !== "-" ? `${get("cpuUsage")}% / ${get("ramUsage")}%` : "Yükleniyor..."],
+                ["Windows Update",   get("pendingUpdates") === "0" ? "Güncel" : (get("pendingUpdates") === "Hata" ? "Kontrol Edilemedi" : `${get("pendingUpdates")} Eksik Yama`)],
                 ["İşlemci",          get("processor")],
                 ["Bellek (RAM)",     get("ram")],
                 ["Disk Durumu",      get("disk")],

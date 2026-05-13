@@ -143,6 +143,21 @@ public class RustDeskAgent {
     static readonly string AgentVersion = "v2.0.5";
     static readonly string LogFile      = @"C:\ProgramData\RustDeskRMM\agent.log";
 
+    static string CachedUpdates = "0";
+    static DateTime LastUpdateCheck = DateTime.MinValue;
+
+    static void CheckWindowsUpdates() {
+        if ((DateTime.Now - LastUpdateCheck).TotalHours < 6) return;
+        Task.Run(() => {
+            try {
+                dynamic searcher = Activator.CreateInstance(Type.GetTypeFromProgID("Microsoft.Update.Searcher"));
+                dynamic result = searcher.Search("IsInstalled=0 and Type='Software'");
+                CachedUpdates = result.Updates.Count.ToString();
+                LastUpdateCheck = DateTime.Now;
+            } catch { CachedUpdates = "Hata"; }
+        });
+    }
+
     static void Log(string msg) {
         try { File.AppendAllText(LogFile, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " | " + msg + "\n"); } catch {}
     }
@@ -274,7 +289,45 @@ public class RustDeskAgent {
             disk = string.Format("{0:N1}/{1:N1} GB", drive.AvailableFreeSpace / 1073741824.0, drive.TotalSize / 1073741824.0);
         } catch {}
 
-        string user = Wmi("Win32_ComputerSystem", "UserName");
+        string user = "-";
+        try {
+            user = Wmi("Win32_ComputerSystem", "UserName");
+            if (string.IsNullOrEmpty(user) || user == "-") {
+                // Fallback: explorer.exe sahibi
+                using (var s = new ManagementObjectSearcher("SELECT * FROM Win32_Process WHERE Name = 'explorer.exe'")) {
+                    foreach (ManagementObject o in s.Get()) {
+                        var argList = new string[] { string.Empty, string.Empty };
+                        int returnVal = Convert.ToInt32(o.InvokeMethod("GetOwner", argList));
+                        if (returnVal == 0) user = argList[1] + "\\" + argList[0];
+                    }
+                }
+            }
+        } catch {}
+
+        // CPU & RAM Usage
+        string cpuLoad = "0", ramUsage = "0";
+        try {
+            using (var pc = new PerformanceCounter("Processor", "% Processor Time", "_Total")) {
+                pc.NextValue();
+                System.Threading.Thread.Sleep(100);
+                cpuLoad = ((int)pc.NextValue()).ToString();
+            }
+            long totalRam = 0;
+            using (var s = new ManagementObjectSearcher("SELECT TotalPhysicalMemory FROM Win32_ComputerSystem")) {
+                foreach (ManagementObject o in s.Get()) totalRam = Convert.ToInt64(o["TotalPhysicalMemory"]);
+            }
+            long freeRam = 0;
+            using (var s = new ManagementObjectSearcher("SELECT FreePhysicalMemory FROM Win32_OperatingSystem")) {
+                foreach (ManagementObject o in s.Get()) freeRam = Convert.ToInt64(o["FreePhysicalMemory"]) * 1024;
+            }
+            if (totalRam > 0) ramUsage = ((int)((1.0 - (double)freeRam / totalRam) * 100)).ToString();
+        } catch {}
+
+        // Windows Update (Basit sayim)
+        CheckWindowsUpdates();
+        string pendingUpdates = CachedUpdates;
+
+        // Detayli Ag Bilgileri (IP, Subnet, Gateway)
 
         // Detayli Ag Bilgileri (IP, Subnet, Gateway)
         string netJson = "[]";
@@ -307,6 +360,9 @@ public class RustDeskAgent {
             + "\"serialNumber\":\"" + Esc(serial) + "\","
             + "\"manufacturer\":\"" + Esc(mfr) + "\","
             + "\"model\":\"" + Esc(mdl) + "\","
+            + "\"cpuUsage\":\"" + cpuLoad + "\","
+            + "\"ramUsage\":\"" + ramUsage + "\","
+            + "\"pendingUpdates\":\"" + pendingUpdates + "\","
             + "\"net_details\":" + netJson + ","
             + "\"agentVersion\":\"" + AgentVersion + "\""
             + "}";
