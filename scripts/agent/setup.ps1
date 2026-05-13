@@ -276,6 +276,25 @@ public class RustDeskAgent {
 
         string user = Wmi("Win32_ComputerSystem", "UserName");
 
+        // Detayli Ag Bilgileri (IP, Subnet, Gateway)
+        string netJson = "[]";
+        try {
+            var nets = new System.Collections.Generic.List<string>();
+            using (var s = new ManagementObjectSearcher("SELECT * FROM Win32_NetworkAdapterConfiguration WHERE IPEnabled = True")) {
+                foreach (ManagementObject o in s.Get()) {
+                    string name = o["Description"]?.ToString() ?? "Ethernet";
+                    string ip = "-", mask = "-", gw = "-";
+                    
+                    if (o["IPAddress"] != null)   ip   = ((string[])o["IPAddress"])[0];
+                    if (o["IPSubnet"] != null)    mask = ((string[])o["IPSubnet"])[0];
+                    if (o["DefaultIPGateway"] != null) gw = ((string[])o["DefaultIPGateway"])[0];
+
+                    nets.Add("{\"name\":\"" + Esc(name) + "\",\"ip\":\"" + ip + "\",\"mask\":\"" + mask + "\",\"gw\":\"" + gw + "\"}");
+                }
+            }
+            netJson = "[" + string.Join(",", nets.ToArray()) + "]";
+        } catch {}
+
         return "{"
             + "\"id\":\"" + DeviceId + "\","
             + "\"hostname\":\"" + Esc(Environment.MachineName) + "\","
@@ -288,6 +307,7 @@ public class RustDeskAgent {
             + "\"serialNumber\":\"" + Esc(serial) + "\","
             + "\"manufacturer\":\"" + Esc(mfr) + "\","
             + "\"model\":\"" + Esc(mdl) + "\","
+            + "\"net_details\":" + netJson + ","
             + "\"agentVersion\":\"" + AgentVersion + "\""
             + "}";
     }

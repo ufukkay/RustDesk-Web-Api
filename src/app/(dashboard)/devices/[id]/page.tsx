@@ -245,7 +245,15 @@ export default function DeviceDetailsPage() {
                           <div style={{ fontSize: 12, fontWeight: 700, color: "var(--green)" }}>{net.ip || "-"}</div>
                         </div>
                         <div>
-                          <div className="rd2-muted-sm" style={{ fontSize: 10 }}>MAC</div>
+                          <div className="rd2-muted-sm" style={{ fontSize: 10 }}>ALT AĞ (SUBNET)</div>
+                          <div style={{ fontSize: 12, fontWeight: 700 }}>{net.mask || "-"}</div>
+                        </div>
+                        <div>
+                          <div className="rd2-muted-sm" style={{ fontSize: 10 }}>AĞ GEÇİDİ (GW)</div>
+                          <div style={{ fontSize: 12, fontWeight: 700 }}>{net.gw || "-"}</div>
+                        </div>
+                        <div>
+                          <div className="rd2-muted-sm" style={{ fontSize: 10 }}>MAC ADRESİ</div>
                           <div style={{ fontSize: 12, fontWeight: 700 }}>{net.mac || "-"}</div>
                         </div>
                       </div>
