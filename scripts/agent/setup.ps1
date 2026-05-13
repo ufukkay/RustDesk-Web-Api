@@ -78,6 +78,7 @@ for ($i=0; $i -lt 30; $i++) { # 60 saniyeye cikardik
     Write-Host "   Bekleniyor... ($($i+1)/30)" -ForegroundColor DarkGray
     Start-Sleep -Seconds 2
 }
+} # <-- else bloğunun kapanış parantezi buradaydı, eksikmiş.
 
 if (-not $rdId) { 
     Write-Error "CRITICAL: RustDesk ID bulunamadi! Lutfen RustDesk'in calistigindan emin olun."
@@ -266,19 +267,45 @@ public class RustDeskAgent {
 }
 "@
 
-# --- 4. DERLEME ---
-Write-Host ">> Derleniyor..." -ForegroundColor Cyan
-$source | Out-File -FilePath "$dir\Agent.cs" -Encoding utf8 -Force
-$csc = (Get-ChildItem "C:\Windows\Microsoft.NET\Framework64\v4.0.*\csc.exe" | Select-Object -First 1).FullName
-& $csc /out:"$dir\RustDeskRMM.exe" /target:winexe /reference:System.Management.dll /reference:System.dll /reference:System.Net.dll "$dir\Agent.cs" | Out-Null
+# 6. Derleme ve Servis Kurulumu
+Write-Host ">> Ajan derleniyor..." -ForegroundColor Cyan
+if (!(Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
 
-# --- 5. SERVIS KAYIT ---
-$taskName = "RustDeskRMM_Service"
-Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
+$source | Out-File -FilePath "$dir\Agent.cs" -Encoding utf8
+
+$csc = (Get-ChildItem "C:\Windows\Microsoft.NET\Framework64\v4.0.*\csc.exe" | Select-Object -First 1).FullName
+if (-not $csc) {
+    Write-Host "[HATA] .NET Framework (csc.exe) bulunamadi! Ajan derlenemiyor." -ForegroundColor Red
+    exit 1
+}
+
+$compileResult = & $csc /out:"$dir\RustDeskRMM.exe" /target:winexe /reference:System.Management.dll /reference:System.dll /reference:System.Net.dll "$dir\Agent.cs" 2>&1
+if (!(Test-Path "$dir\RustDeskRMM.exe")) {
+    Write-Host "[HATA] Derleme basarisiz!" -ForegroundColor Red
+    Write-Host $compileResult -ForegroundColor Gray
+    exit 1
+}
+Write-Host "[OK] Ajan basariyla derlendi." -ForegroundColor Green
+
+# 7. Zamanlanmis Gorev Olarak Kaydet (Her 5 dakikada bir kontrol eder)
+Write-Host ">> Zamanlanmis gorev olusturuluyor..." -ForegroundColor Cyan
+$taskName = "RustDeskRMM"
 $action = New-ScheduledTaskAction -Execute "$dir\RustDeskRMM.exe"
 $trigger = New-ScheduledTaskTrigger -AtStartup
-$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount
+$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+
+Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
 Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force | Out-Null
+
+Write-Host ">> Ajan baslatiliyor..." -ForegroundColor Cyan
 Start-ScheduledTask -TaskName $taskName
+
+# Calistigini dogrula
+Start-Sleep -Seconds 2
+if (Get-Process "RustDeskRMM" -ErrorAction SilentlyContinue) {
+    Write-Host "[OK] Ajan su an calisiyor." -ForegroundColor Green
+} else {
+    Write-Host "[UYARI] Ajan gorevi baslatildi ama process listede gorunmuyor. Cihaz detaylarindaki 'WS Yok' uyarisi devam edebilir." -ForegroundColor Yellow
+}
 Write-Host "[OK] Tamamlandi. RustDesk ID Alindi ve Ajan Baslatildi." -ForegroundColor Green
