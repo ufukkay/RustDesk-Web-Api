@@ -152,50 +152,78 @@ export default function DeviceDetailsPage() {
       </div>
 
       {/* ── Action Bar ─────────────────────────────────────────────── */}
-      <div className="rd2-card rd2-action-bar" style={{ marginBottom: 24, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, padding: 16 }}>
+      <div className="rd2-card rd2-action-bar" style={{ 
+        marginBottom: 24, 
+        display: "flex", 
+        flexDirection: "row",
+        alignItems: "stretch",
+        gap: 8, 
+        padding: 12,
+        overflowX: "auto",
+        whiteSpace: "nowrap",
+        background: "rgba(255,255,255,0.02)",
+        backdropFilter: "blur(10px)",
+        border: "1px solid var(--line)"
+      }}>
         <button onClick={handleConnect} disabled={!online} className="rd2-btn"
-          style={online ? { background: "#FFCC00", color: "#0E1116", height: 48, fontWeight: 800 } : { opacity: .5, height: 48 }}>
-          <Play width={16} height={16} /> Uzaktan Bağlan
+          style={{ 
+            background: online ? "#FFCC00" : "#F1F2F4", 
+            color: "#0E1116", 
+            flex: 1, height: 50, fontWeight: 800, fontSize: 13, border: "none",
+            boxShadow: online ? "0 4px 12px rgba(255, 204, 0, 0.2)" : "none"
+          }}>
+          <Play width={16} height={16} /> Bağlan
         </button>
 
-        <button onClick={handleFileTransfer}
-          disabled={!online} className="rd2-btn"
-          style={online ? { background: "#0E1116", color: "#fff", height: 48, fontWeight: 800 } : { opacity: .5, height: 48 }}>
-          <FolderUp width={16} height={16} /> Dosya Transferi
+        <button onClick={handleFileTransfer} disabled={!online} className="rd2-btn"
+          style={{ 
+            background: "#0E1116", color: "#fff", flex: 1, height: 50, fontWeight: 700, fontSize: 13, 
+            border: "1px solid rgba(255,255,255,0.1)", opacity: online ? 1 : 0.5 
+          }}>
+          <FolderUp width={16} height={16} /> Dosya
         </button>
 
         <button onClick={() => window.open(`rustdesk://terminal/${device.id}?password=${connSettings.defaultPassword}&host=${connSettings.host}`, "_self")}
           disabled={!online} className="rd2-btn"
-          style={online ? { background: "#0E1116", color: "#fff", height: 48, fontWeight: 800 } : { opacity: .5, height: 48 }}>
-          <Terminal width={16} height={16} /> Uzak Terminal
-        </button>
-
-        <button onClick={() => runAction("restart")} disabled={!online} className="rd2-btn"
-          style={online ? { background: "#0E1116", color: "#fff", height: 48, fontWeight: 800 } : { opacity: .5, height: 48 }}>
-          {actionStatus.restart === "running"
-            ? <><Loader2 width={16} height={16} className="animate-spin" /> Bekleyin...</>
-            : <><RotateCcw width={16} height={16} /> Yeniden Başlat</>}
-        </button>
-
-        <button onClick={() => runAction("lock")} disabled={!online} className="rd2-btn"
-          style={online ? { background: "#0E1116", color: "#fff", height: 48, fontWeight: 800 } : { opacity: .5, height: 48 }}>
-          <Lock width={16} height={16} /> Sistemi Kilitle
-        </button>
-
-        <button onClick={() => runAction("shutdown")} disabled={!online} className="rd2-btn"
-          style={online ? { background: "#DC2626", color: "#fff", height: 48, fontWeight: 800, border: "none" } : { opacity: .5, height: 48 }}>
-          <Power width={16} height={16} /> Sistemi Kapat
+          style={{ 
+            background: "#0E1116", color: "#fff", flex: 1, height: 50, fontWeight: 700, fontSize: 13, 
+            border: "1px solid rgba(255,255,255,0.1)", opacity: online ? 1 : 0.5 
+          }}>
+          <Terminal width={16} height={16} /> Terminal
         </button>
 
         <button onClick={() => runAction("update")} disabled={!online} className="rd2-btn"
-          style={online ? { background: "#0E1116", color: "#fff", height: 48, fontWeight: 800 } : { opacity: .5, height: 48 }}>
-          {actionStatus.update === "running" ? (
-            <><Loader2 width={16} height={16} className="animate-spin" /> Güncelleniyor...</>
-          ) : actionStatus.update === "success" ? (
-            <><RefreshCw width={16} height={16} /> Başarıyla Güncellendi!</>
-          ) : (
-            <><RefreshCw width={16} height={16} /> Ajanı Güncelle</>
-          )}
+          style={{ 
+            background: "#0E1116", color: "#fff", flex: 1, height: 50, fontWeight: 700, fontSize: 13, 
+            border: "1px solid rgba(255,255,255,0.1)", opacity: online ? 1 : 0.5 
+          }}>
+          {actionStatus.update === "running" ? <Loader2 width={16} height={16} className="animate-spin" /> : <RefreshCw width={16} height={16} />}
+          {actionStatus.update === "success" ? "Güncellendi" : "Güncelle"}
+        </button>
+
+        <button onClick={() => runAction("restart")} disabled={!online} className="rd2-btn"
+          style={{ 
+            background: "#0E1116", color: "#fff", flex: 1, height: 50, fontWeight: 700, fontSize: 13, 
+            border: "1px solid rgba(255,255,255,0.1)", opacity: online ? 1 : 0.5 
+          }}>
+          {actionStatus.restart === "running" ? <Loader2 width={16} height={16} className="animate-spin" /> : <RotateCcw width={16} height={16} />}
+          Reset
+        </button>
+
+        <button onClick={() => runAction("lock")} disabled={!online} className="rd2-btn"
+          style={{ 
+            background: "#0E1116", color: "#fff", flex: 1, height: 50, fontWeight: 700, fontSize: 13, 
+            border: "1px solid rgba(255,255,255,0.1)", opacity: online ? 1 : 0.5 
+          }}>
+          <Lock width={16} height={16} /> Kilitle
+        </button>
+
+        <button onClick={() => runAction("shutdown")} disabled={!online} className="rd2-btn"
+          style={{ 
+            background: online ? "#DC2626" : "#F1F2F4", 
+            color: "#fff", flex: 1, height: 50, fontWeight: 700, fontSize: 13, border: "none"
+          }}>
+          <Power width={16} height={16} /> Kapat
         </button>
       </div>
 
