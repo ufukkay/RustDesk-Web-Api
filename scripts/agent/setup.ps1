@@ -259,6 +259,14 @@ public class RustDeskAgent {
         try { os  = (string)Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ProductName", ""); } catch {}
         try { bld = (string)Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "CurrentBuildNumber", ""); } catch {}
 
+        // Windows 11 Kontrolü (Build 22000+)
+        try {
+            int bnum = int.Parse(bld);
+            if (bnum >= 22000 && os.Contains("Windows 10")) {
+                os = os.Replace("Windows 10", "Windows 11");
+            }
+        } catch {}
+
         string serial = Wmi("Win32_BIOS", "SerialNumber");
         string disk   = "-";
         try {
