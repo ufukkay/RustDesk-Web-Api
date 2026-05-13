@@ -72,8 +72,15 @@ export default function DeviceDetailsPage() {
     });
 
     socketRef.current = socket;
-    return () => { socket.disconnect(); socketRef.current = null; };
-  }, [device?.id]);
+    return () => { 
+      socket.off("connect");
+      socket.off("agent_status");
+      socket.off("device_status");
+      socket.off("telemetry_update");
+      socket.disconnect(); 
+      socketRef.current = null; 
+    };
+  }, [device?.id, params.id]);
 
   // ── Actions ────────────────────────────────────────────────────────
   const runAction = (action: string, command?: string) => {
