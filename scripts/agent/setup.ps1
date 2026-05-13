@@ -266,9 +266,12 @@ public class RustDeskAgent {
             disk = string.Format("{0:N1}/{1:N1} GB", drive.AvailableFreeSpace / 1073741824.0, drive.TotalSize / 1073741824.0);
         } catch {}
 
+        string user = Wmi("Win32_ComputerSystem", "UserName");
+
         return "{"
             + "\"id\":\"" + DeviceId + "\","
             + "\"hostname\":\"" + Esc(Environment.MachineName) + "\","
+            + "\"user\":\"" + Esc(user) + "\","
             + "\"processor\":\"" + Esc(cpu) + "\","
             + "\"ram\":\"" + ram + "\","
             + "\"disk\":\"" + disk + "\","

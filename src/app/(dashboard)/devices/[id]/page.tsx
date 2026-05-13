@@ -198,7 +198,7 @@ export default function DeviceDetailsPage() {
             <div style={{ padding: "8px 16px 16px" }}>
               {[
                 ["İsim",             get("hostname") !== "-" ? get("hostname") : device.name],
-                ["Giriş Yapmış K.",  device.user],
+                ["Giriş Yapmış K.",  get("user")],
                 ["İşlemci",          get("processor")],
                 ["Bellek (RAM)",     get("ram")],
                 ["Disk Durumu",      get("disk")],
