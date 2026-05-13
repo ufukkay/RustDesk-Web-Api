@@ -20,6 +20,25 @@ if (!(Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Nu
 
 Write-Host ">> Sunucu : $apiServer" -ForegroundColor Cyan
 
+# --- 1b. .NET FRAMEWORK KONTROLU ---
+$dotnetKey = "HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full"
+$dotnetRelease = (Get-ItemProperty $dotnetKey -ErrorAction SilentlyContinue).Release
+if (-not $dotnetRelease -or $dotnetRelease -lt 378389) {
+    Write-Host "[UYARI] .NET Framework 4.5+ bulunamadi, yukleniyor..." -ForegroundColor Yellow
+    $dotnetUrl = "https://go.microsoft.com/fwlink/?LinkId=2085155" # .NET Framework 4.8 offline installer
+    $dotnetPath = Join-Path $env:TEMP "ndp48.exe"
+    try {
+        (New-Object System.Net.WebClient).DownloadFile($dotnetUrl, $dotnetPath)
+        Start-Process $dotnetPath -ArgumentList "/quiet /norestart" -Wait
+        Write-Host "[OK] .NET Framework 4.8 yuklendi, devam ediliyor..." -ForegroundColor Green
+    } catch {
+        Write-Host "[HATA] .NET Framework yuklenemedi: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "[BILGI] Manuel kurulum icin: https://dotnet.microsoft.com/download/dotnet-framework" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "[OK] .NET Framework mevcut (Release: $dotnetRelease)" -ForegroundColor Green
+}
+
 # --- 2. ID TESPITI ---
 $rdId = $deviceId
 if ($rdId) {
@@ -85,7 +104,7 @@ if (-not $rdId) {
     return 
 }
 
-# --- 3. C# KAYNAK KODU (Ayni Mantik, V3.0.2) ---
+# --- 3. C# KAYNAK KODU (C# 5 / .NET 4.0 Uyumlu) ---
 $source = @"
 using System;
 using System.Net;
@@ -94,7 +113,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Collections.Generic;
 using System.Net.NetworkInformation;
 using System.IO;
 using Microsoft.Win32;
@@ -103,12 +121,11 @@ using System.Net.WebSockets;
 
 public class RustDeskAgent {
     [DllImport("user32.dll")]  static extern bool LockWorkStation();
-    [DllImport("kernel32.dll")] static extern ulong GetTickCount64();
 
     static readonly string DeviceId     = "$rdId";
     static readonly string WsUrl        = "$wsUrl";
     static readonly string ApiServer    = "$apiServer";
-    static readonly string AgentVersion = "v3.0.2";
+    static readonly string AgentVersion = "v3.1.0";
     static readonly string LogFile      = @"C:\ProgramData\RustDeskRMM\agent.log";
 
     static void Log(string msg) {
@@ -125,21 +142,21 @@ public class RustDeskAgent {
     }
 
     public static void Main() {
-        ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072; // TLS 1.2
+        ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
         ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
         Log("Agent Basladi. ID=" + DeviceId);
         RunLoop().GetAwaiter().GetResult();
     }
 
     static async Task RunLoop() {
-        var _ = Task.Run(() => RunHttpLoop());
+        Task httpTask = Task.Run(new Action(RunHttpLoop));
         while (true) {
             try { await ConnectAndRun(); } catch (Exception ex) { Log("WS Hatasi: " + ex.Message); }
             await Task.Delay(10000);
         }
     }
 
-    static async Task RunHttpLoop() {
+    static void RunHttpLoop() {
         while (true) {
             try {
                 string json = PrepareJson();
@@ -150,29 +167,24 @@ public class RustDeskAgent {
                 }
                 Log("HTTP Telemetri Gonderildi.");
             } catch (Exception ex) { Log("HTTP Hatasi: " + ex.Message); }
-            await Task.Delay(60000);
+            Thread.Sleep(60000);
         }
     }
 
     static async Task ConnectAndRun() {
         using (var ws = new ClientWebSocket()) {
-            // SSL/TLS bypass for ClientWebSocket (if needed)
-            ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072; // TLS 1.2
-            
             string uri = WsUrl + "?deviceId=" + DeviceId + "&hostname=" + Uri.EscapeDataString(Environment.MachineName) + "&type=agent";
             await ws.ConnectAsync(new Uri(uri), CancellationToken.None);
             Log("WS Baglandi.");
-            
-            // Initial Telemetry
-            await WsSend(ws, "{\"type\":\"telemetry\",\"deviceId\":\""+DeviceId+"\",\"data\":"+PrepareJson()+"}");
 
-            // Start Heartbeat Task
+            await WsSend(ws, "{\"type\":\"telemetry\",\"deviceId\":\"" + DeviceId + "\",\"data\":" + PrepareJson() + "}");
+
             var cts = new CancellationTokenSource();
-            var heartbeatTask = Task.Run(async () => {
-                while (ws.State == WebSocketState.Open && !cts.Token.IsCancellationRequested) {
+            Task heartbeatTask = Task.Run(async () => {
+                while (ws.State == WebSocketState.Open && !cts.IsCancellationRequested) {
                     try {
-                        await WsSend(ws, "{\"type\":\"heartbeat\",\"deviceId\":\""+DeviceId+"\"}");
-                        await Task.Delay(30000, cts.Token); // 30 seconds
+                        await WsSend(ws, "{\"type\":\"heartbeat\",\"deviceId\":\"" + DeviceId + "\"}");
+                        await Task.Delay(30000);
                     } catch { break; }
                 }
             });
@@ -180,32 +192,39 @@ public class RustDeskAgent {
             byte[] buf = new byte[65536];
             try {
                 while (ws.State == WebSocketState.Open) {
-                    var res = await ws.ReceiveAsync(new ArraySegment<byte>(buf), CancellationToken.None);
+                    var seg = new ArraySegment<byte>(buf);
+                    var res = await ws.ReceiveAsync(seg, CancellationToken.None);
                     if (res.MessageType == WebSocketMessageType.Close) break;
                     string msg = Encoding.UTF8.GetString(buf, 0, res.Count);
                     await HandleMessage(ws, msg);
                 }
-            } finally {
-                cts.Cancel();
-                await heartbeatTask;
-            }
+            } catch (Exception ex) { Log("WS Loop Hatasi: " + ex.Message); }
+
+            cts.Cancel();
+            heartbeatTask.Wait();
         }
     }
 
     static string PrepareJson() {
-        string mfr = Wmi("Win32_ComputerSystem", "Manufacturer");
-        string mdl = Wmi("Win32_ComputerSystem", "Model");
+        string mfr    = Wmi("Win32_ComputerSystem", "Manufacturer");
+        string mdl    = Wmi("Win32_ComputerSystem", "Model");
         string ramRaw = Wmi("Win32_ComputerSystem", "TotalPhysicalMemory");
         string ram = "-";
         try { ram = string.Format("{0:N1} GB", long.Parse(ramRaw) / 1073741824.0); } catch {}
-        
-        string cpu = (string)Registry.GetValue(@"HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\CentralProcessor\0", "ProcessorNameString", "-");
-        string os = (string)Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ProductName", "Windows");
-        string bld = (string)Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "CurrentBuildNumber", "");
+
+        string cpu    = "";
+        string os     = "";
+        string bld    = "";
+        try { cpu = (string)Registry.GetValue(@"HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\CentralProcessor\0", "ProcessorNameString", ""); } catch {}
+        try { os  = (string)Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ProductName", ""); } catch {}
+        try { bld = (string)Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "CurrentBuildNumber", ""); } catch {}
+
         string serial = Wmi("Win32_BIOS", "SerialNumber");
-        
-        var drive = new DriveInfo("C");
-        string disk = string.Format("{0:N1}/{1:N1} GB", drive.AvailableFreeSpace/1073741824.0, drive.TotalSize/1073741824.0);
+        string disk   = "-";
+        try {
+            var drive = new DriveInfo("C");
+            disk = string.Format("{0:N1}/{1:N1} GB", drive.AvailableFreeSpace / 1073741824.0, drive.TotalSize / 1073741824.0);
+        } catch {}
 
         return "{"
             + "\"id\":\"" + DeviceId + "\","
@@ -225,16 +244,20 @@ public class RustDeskAgent {
     static async Task HandleMessage(ClientWebSocket ws, string json) {
         try {
             string action = Val(json, "action");
-            if (action == "lock") LockWorkStation();
-            else if (action == "restart") Process.Start("shutdown", "/r /t 0 /f");
-            else if (action == "shutdown") Process.Start("shutdown", "/s /t 0 /f");
+            if      (action == "lock")     { LockWorkStation(); }
+            else if (action == "restart")  { Process.Start("shutdown", "/r /t 0 /f"); }
+            else if (action == "shutdown") { Process.Start("shutdown", "/s /t 0 /f"); }
             else if (action == "terminal") {
                 string cmd = Val(json, "command");
-                var psi = new ProcessStartInfo("cmd.exe", "/c " + cmd) { RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true };
+                var psi = new ProcessStartInfo("cmd.exe", "/c " + cmd);
+                psi.RedirectStandardOutput = true;
+                psi.UseShellExecute = false;
+                psi.CreateNoWindow = true;
                 var p = Process.Start(psi);
                 string outStr = p.StandardOutput.ReadToEnd();
                 p.WaitForExit();
-                string res = "{\"type\":\"result\",\"action\":\"terminal\",\"deviceId\":\""+DeviceId+"\",\"output\":\""+Convert.ToBase64String(Encoding.UTF8.GetBytes(outStr))+"\",\"isBase64\":true}";
+                string encoded = Convert.ToBase64String(Encoding.UTF8.GetBytes(outStr));
+                string res = "{\"type\":\"result\",\"action\":\"terminal\",\"deviceId\":\"" + DeviceId + "\",\"output\":\"" + encoded + "\",\"isBase64\":true}";
                 await WsSend(ws, res);
             }
         } catch {}
@@ -242,11 +265,11 @@ public class RustDeskAgent {
 
     static async Task WsSend(ClientWebSocket ws, string msg) {
         byte[] b = Encoding.UTF8.GetBytes(msg);
-        await ws.SendAsync(new ArraySegment<byte>(b), WebSocketMessageType.Text, true, CancellationToken.None);
+        var seg = new ArraySegment<byte>(b);
+        await ws.SendAsync(seg, WebSocketMessageType.Text, true, CancellationToken.None);
     }
 
     static string Val(string j, string k) {
-        // Try both "key":" and "key": "
         string n1 = "\"" + k + "\":\"";
         string n2 = "\"" + k + "\": \"";
         int i = j.IndexOf(n1);
@@ -262,7 +285,8 @@ public class RustDeskAgent {
     }
 
     static string Esc(string s) {
-        return s?.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "\\r") ?? "";
+        if (s == null) return "";
+        return s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "\\r");
     }
 }
 "@
