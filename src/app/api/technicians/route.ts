@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isAdmin } from "@/lib/auth";
 import fs from "fs";
 import path from "path";
 
@@ -6,6 +7,9 @@ const TECH_FILE = path.join(process.cwd(), "scripts", "technicians.json");
 
 export async function GET() {
   try {
+    if (!await isAdmin()) {
+      return NextResponse.json({ error: "Yetkisiz işlem" }, { status: 403 });
+    }
     if (!fs.existsSync(TECH_FILE)) {
       return NextResponse.json([]);
     }
@@ -18,6 +22,9 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    if (!await isAdmin()) {
+      return NextResponse.json({ error: "Yetkisiz işlem" }, { status: 403 });
+    }
     const tech = await req.json();
     let technicians = [];
     
@@ -48,6 +55,9 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
+    if (!await isAdmin()) {
+      return NextResponse.json({ error: "Yetkisiz işlem" }, { status: 403 });
+    }
     const { id } = await req.json();
     if (!fs.existsSync(TECH_FILE)) return NextResponse.json({ success: true });
 

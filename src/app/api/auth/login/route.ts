@@ -25,14 +25,32 @@ export async function POST(req: Request) {
     if (user) {
       // Şifreyi response'dan çıkaralım
       const { password: _, ...userWithoutPassword } = user;
-      return NextResponse.json({
+      
+      const response = NextResponse.json({
         success: true,
         user: userWithoutPassword
       });
+
+      // Basit bir auth token oluşturalım (Gerçek senaryoda JWT kullanılmalı)
+      const token = Buffer.from(JSON.stringify({ 
+        email: user.email, 
+        role: user.role, 
+        exp: Date.now() + 24 * 60 * 60 * 1000 
+      })).toString('base64');
+
+      response.cookies.set("auth-token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 // 24 hours
+      });
+
+      return response;
     }
 
     return NextResponse.json({ success: false, message: "E-posta veya şifre hatalı." }, { status: 401 });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Login API Error:", error.message);
     return NextResponse.json({ success: false, message: "Sunucu hatası." }, { status: 500 });
   }
 }

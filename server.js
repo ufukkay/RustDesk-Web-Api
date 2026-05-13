@@ -15,16 +15,32 @@ const INFO_FILE    = path.join(SCRIPTS_DIR, "device_info.json");
 const QUEUE_FILE   = path.join(SCRIPTS_DIR, "command_queue.json");
 const RESULTS_DIR  = path.join(SCRIPTS_DIR, "command_results");
 
+// ── Helpers ────────────────────────────────────────────────────────
+function sanitize(name) {
+  return String(name || "").replace(/[^a-zA-Z0-9_-]/g, "_").substring(0, 64);
+}
+
 // ── JSON helpers ────────────────────────────────────────────────────
 function readJson(file, fallback = {}) {
   try {
-    if (fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, "utf-8"));
-  } catch {}
+    if (fs.existsSync(file)) {
+      const content = fs.readFileSync(file, "utf-8");
+      return content ? JSON.parse(content) : fallback;
+    }
+  } catch (err) {
+    console.error(`[FS-ERR] Error reading ${path.basename(file)}:`, err.message);
+  }
   return fallback;
 }
 
 function writeJson(file, data) {
-  try { fs.writeFileSync(file, JSON.stringify(data, null, 2)); } catch {}
+  try {
+    const dir = path.dirname(file);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(file, JSON.stringify(data, null, 2));
+  } catch (err) {
+    console.error(`[FS-ERR] Error writing ${path.basename(file)}:`, err.message);
+  }
 }
 
 // ── Bootstrap ───────────────────────────────────────────────────────
@@ -166,7 +182,7 @@ app.prepare().then(() => {
           // Also persist for HTTP polling fallback
           try {
             if (!fs.existsSync(RESULTS_DIR)) fs.mkdirSync(RESULTS_DIR, { recursive: true });
-            const key  = hostname || deviceId;
+            const key  = sanitize(hostname || deviceId);
             const out  = msg.output || "";
             fs.writeFileSync(path.join(RESULTS_DIR, `${key}.txt`), out, "utf-8");
           } catch {}

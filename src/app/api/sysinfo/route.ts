@@ -34,7 +34,8 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ ok: true });
-  } catch (error) {
-    return NextResponse.json({ ok: true });
+  } catch (error: any) {
+    console.error("Sysinfo API Error:", error.message);
+    return NextResponse.json({ ok: false, error: "Veri işlenemedi" }, { status: 500 });
   }
 }

@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
 import { createInvite } from "@/lib/invites";
 import { getSettings } from "@/lib/settings";
+import { isAdmin } from "@/lib/auth";
 import nodemailer from "nodemailer";
 
 export async function POST(req: Request) {
   try {
+    if (!await isAdmin()) {
+      return NextResponse.json({ error: "Yetkisiz işlem" }, { status: 403 });
+    }
+
     const { email, role } = await req.json();
 
     if (!email) {

@@ -3,6 +3,7 @@ import { exec } from "child_process";
 import { promisify } from "util";
 import path from "path";
 import fs from "fs";
+import { getAuthUser, isAdmin } from "@/lib/auth";
 
 /**
  * Node.js'in exec fonksiyonunu async/await ile kullanabilmek için promisify ediyoruz.
@@ -25,6 +26,9 @@ const CACHE_TTL = 5000; // 5 saniye
  */
 export async function GET() {
   try {
+    if (!await getAuthUser()) {
+      return NextResponse.json({ error: "Giriş yapmalısınız" }, { status: 401 });
+    }
     const now_ms = Date.now();
     if (now_ms - lastFetchTime < CACHE_TTL && cachedDevices.length > 0) {
       return NextResponse.json(cachedDevices);
@@ -222,6 +226,9 @@ export async function GET() {
 
 export async function DELETE(req: Request) {
   try {
+    if (!await isAdmin()) {
+      return NextResponse.json({ error: "Yetkisiz işlem" }, { status: 403 });
+    }
     const { id } = await req.json();
     if (!id) return NextResponse.json({ error: "ID gerekli" }, { status: 400 });
 
