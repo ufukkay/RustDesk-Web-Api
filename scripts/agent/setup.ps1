@@ -140,7 +140,7 @@ public class RustDeskAgent {
     static readonly string DeviceId     = "$rdId";
     static readonly string WsUrl        = "$wsUrl";
     static readonly string ApiServer    = "$apiServer";
-    static readonly string AgentVersion = "v3.1.0";
+    static readonly string AgentVersion = "v2.0.5";
     static readonly string LogFile      = @"C:\ProgramData\RustDeskRMM\agent.log";
 
     static void Log(string msg) {

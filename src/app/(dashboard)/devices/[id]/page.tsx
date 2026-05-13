@@ -82,7 +82,12 @@ export default function DeviceDetailsPage() {
 
     socketRef.current.emit("send_command", { deviceId: device.id, action, command: command || "" });
 
-    setTimeout(() => setActionStatus(prev => ({ ...prev, [action]: "idle" })), 3000);
+    setTimeout(() => {
+      setActionStatus(prev => ({ ...prev, [action]: "success" }));
+      setTimeout(() => {
+        setActionStatus(prev => ({ ...prev, [action]: "idle" }));
+      }, 3000);
+    }, 2000);
   };
 
   const handleConnect = () => {
@@ -184,9 +189,13 @@ export default function DeviceDetailsPage() {
 
         <button onClick={() => runAction("update")} disabled={!online} className="rd2-btn"
           style={online ? { background: "#0E1116", color: "#fff", height: 48, fontWeight: 800 } : { opacity: .5, height: 48 }}>
-          {actionStatus.update === "running"
-            ? <><Loader2 width={16} height={16} className="animate-spin" /> Güncelleniyor...</>
-            : <><RefreshCw width={16} height={16} /> Ajanı Güncelle</>}
+          {actionStatus.update === "running" ? (
+            <><Loader2 width={16} height={16} className="animate-spin" /> Güncelleniyor...</>
+          ) : actionStatus.update === "success" ? (
+            <><RefreshCw width={16} height={16} /> Başarıyla Güncellendi!</>
+          ) : (
+            <><RefreshCw width={16} height={16} /> Ajanı Güncelle</>
+          )}
         </button>
       </div>
 
@@ -214,6 +223,7 @@ export default function DeviceDetailsPage() {
                 ["Model",            get("model")],
                 ["İşletim Sistemi",  get("osName")],
                 ["OS Derleme",       get("osBuild")],
+                ["Ajan Sürümü",      get("agentVersion")],
                 ["Boot Time",        get("bootTime")],
                 ["IP Adresi",        get("ip")],
                 ["Son Görülme",      device.lastSeen],
