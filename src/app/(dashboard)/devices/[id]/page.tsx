@@ -4,7 +4,7 @@ import { useAppStore } from "@/lib/store";
 import { useParams, useRouter } from "next/navigation";
 import {
   Play, Lock,
-  RotateCcw, Power, RefreshCw,
+  RotateCcw, Power, RefreshCw, Terminal,
   FolderUp, Loader2, ChevronLeft,
   Network, Wifi, WifiOff,
 } from "lucide-react";
@@ -157,6 +157,12 @@ export default function DeviceDetailsPage() {
           disabled={!online} className="rd2-btn"
           style={online ? { background: "#0E1116", color: "#fff", height: 48, fontWeight: 800 } : { opacity: .5, height: 48 }}>
           <FolderUp width={16} height={16} /> Dosya Transferi
+        </button>
+
+        <button onClick={() => window.open(`rustdesk://terminal/${device.id}?password=${connSettings.defaultPassword}&host=${connSettings.host}`, "_self")}
+          disabled={!online} className="rd2-btn"
+          style={online ? { background: "#0E1116", color: "#fff", height: 48, fontWeight: 800 } : { opacity: .5, height: 48 }}>
+          <Terminal width={16} height={16} /> Uzak Terminal
         </button>
 
         <button onClick={() => runAction("restart")} disabled={!online} className="rd2-btn"
