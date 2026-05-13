@@ -172,7 +172,8 @@ public class RustDeskAgent {
     }
 
     static async Task ConnectAndRun() {
-        using (var ws = new ClientWebSocket()) {
+        var ws = new ClientWebSocket();
+        try {
             string uri = WsUrl + "?deviceId=" + DeviceId + "&hostname=" + Uri.EscapeDataString(Environment.MachineName) + "&type=agent";
             await ws.ConnectAsync(new Uri(uri), CancellationToken.None);
             Log("WS Baglandi.");
@@ -202,6 +203,8 @@ public class RustDeskAgent {
 
             cts.Cancel();
             heartbeatTask.Wait();
+        } finally {
+            try { ws.Dispose(); } catch {}
         }
     }
 
@@ -297,11 +300,28 @@ if (!(Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Nu
 
 $source | Out-File -FilePath "$dir\Agent.cs" -Encoding utf8
 
-$csc = (Get-ChildItem "C:\Windows\Microsoft.NET\Framework64\v4.0.*\csc.exe" | Select-Object -First 1).FullName
+$csc = $null
+foreach ($pattern in @(
+    "C:\Program Files\Microsoft Visual Studio\2022\*\MSBuild\Current\bin\Roslyn\csc.exe",
+    "C:\Program Files (x86)\Microsoft Visual Studio\2022\*\MSBuild\Current\bin\Roslyn\csc.exe",
+    "C:\Program Files\Microsoft Visual Studio\2019\*\MSBuild\Current\bin\Roslyn\csc.exe",
+    "C:\Program Files (x86)\Microsoft Visual Studio\2019\*\MSBuild\Current\bin\Roslyn\csc.exe",
+    "C:\Program Files (x86)\Microsoft Visual Studio\2017\*\MSBuild\*\bin\Roslyn\csc.exe"
+)) {
+    $found = Get-ChildItem $pattern -ErrorAction SilentlyContinue | Select-Object -Last 1
+    if ($found) { $csc = $found.FullName; break }
+}
+if (-not $csc) {
+    $csc = (Get-ChildItem "C:\Windows\Microsoft.NET\Framework64\v4.0.*\csc.exe" -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
+}
+if (-not $csc) {
+    $csc = (Get-ChildItem "C:\Windows\Microsoft.NET\Framework\v4.0.*\csc.exe" -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
+}
 if (-not $csc) {
     Write-Host "[HATA] .NET Framework (csc.exe) bulunamadi! Ajan derlenemiyor." -ForegroundColor Red
     exit 1
 }
+Write-Host "[OK] Derleyici: $csc" -ForegroundColor DarkGray
 
 $compileResult = & $csc /out:"$dir\RustDeskRMM.exe" /target:winexe /reference:System.Management.dll /reference:System.dll /reference:System.Net.dll "$dir\Agent.cs" 2>&1
 if (!(Test-Path "$dir\RustDeskRMM.exe")) {
