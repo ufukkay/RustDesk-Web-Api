@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 
 const INFO_FILE = path.join(process.cwd(), "scripts", "device_info.json");
+const STATUS_FILE = path.join(process.cwd(), "scripts", "online_status.json");
 const DEBUG_FILE = path.join(process.cwd(), "scripts", "last_payload.json");
 
 export async function POST(req: Request) {
@@ -31,6 +32,14 @@ export async function POST(req: Request) {
       };
       
       fs.writeFileSync(INFO_FILE, JSON.stringify(infoData, null, 2));
+
+      // Online durumunu da güncelle
+      let statusData: Record<string, number> = {};
+      if (fs.existsSync(STATUS_FILE)) {
+        try { statusData = JSON.parse(fs.readFileSync(STATUS_FILE, "utf-8")); } catch (e) {}
+      }
+      statusData[String(deviceId)] = Math.floor(Date.now() / 1000);
+      fs.writeFileSync(STATUS_FILE, JSON.stringify(statusData, null, 2));
     }
 
     return NextResponse.json({ ok: true });

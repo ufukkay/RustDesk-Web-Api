@@ -152,7 +152,16 @@ app.prepare().then(() => {
     // Flush any queued command immediately
     const pending = popCommand(deviceId, hostname);
     if (pending) {
-      ws.send(JSON.stringify({ action: "terminal", command: pending }));
+      if (typeof pending === "object") {
+        ws.send(JSON.stringify(pending));
+      } else {
+        // Fallback for simple string actions
+        if (["lock", "restart", "shutdown"].includes(pending)) {
+          ws.send(JSON.stringify({ action: pending }));
+        } else {
+          ws.send(JSON.stringify({ action: "terminal", command: pending }));
+        }
+      }
     }
 
     ws.on("message", (raw) => {
@@ -168,8 +177,18 @@ app.prepare().then(() => {
 
         case "heartbeat": {
           markOnline(deviceId);
-          const cmd = popCommand(deviceId, hostname);
-          if (cmd) ws.send(JSON.stringify({ action: "terminal", command: cmd }));
+          const pending = popCommand(deviceId, hostname);
+          if (pending) {
+            if (typeof pending === "object") {
+              ws.send(JSON.stringify(pending));
+            } else {
+              if (["lock", "restart", "shutdown"].includes(pending)) {
+                ws.send(JSON.stringify({ action: pending }));
+              } else {
+                ws.send(JSON.stringify({ action: "terminal", command: pending }));
+              }
+            }
+          }
           break;
         }
 
@@ -233,7 +252,7 @@ app.prepare().then(() => {
         // Agent offline — queue for next heartbeat
         const queue = readJson(QUEUE_FILE, {});
         if (!queue[id]) queue[id] = [];
-        queue[id].push(action === "terminal" ? (command || action) : action);
+        queue[id].push({ action, command: command || "" });
         writeJson(QUEUE_FILE, queue);
         console.log(`[CMD→Q] ${id}: ${action} (agent offline)`);
         socket.emit("command_queued", { deviceId: id, action });

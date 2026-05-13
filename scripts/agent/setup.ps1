@@ -155,18 +155,38 @@ public class RustDeskAgent {
 
     static async Task ConnectAndRun() {
         using (var ws = new ClientWebSocket()) {
+            // SSL/TLS bypass for ClientWebSocket (if needed)
+            ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072; // TLS 1.2
+            
             string uri = WsUrl + "?deviceId=" + DeviceId + "&hostname=" + Uri.EscapeDataString(Environment.MachineName) + "&type=agent";
             await ws.ConnectAsync(new Uri(uri), CancellationToken.None);
             Log("WS Baglandi.");
             
+            // Initial Telemetry
             await WsSend(ws, "{\"type\":\"telemetry\",\"deviceId\":\""+DeviceId+"\",\"data\":"+PrepareJson()+"}");
 
+            // Start Heartbeat Task
+            var cts = new CancellationTokenSource();
+            var heartbeatTask = Task.Run(async () => {
+                while (ws.State == WebSocketState.Open && !cts.Token.IsCancellationRequested) {
+                    try {
+                        await WsSend(ws, "{\"type\":\"heartbeat\",\"deviceId\":\""+DeviceId+"\"}");
+                        await Task.Delay(30000, cts.Token); // 30 seconds
+                    } catch { break; }
+                }
+            });
+
             byte[] buf = new byte[65536];
-            while (ws.State == WebSocketState.Open) {
-                var res = await ws.ReceiveAsync(new ArraySegment<byte>(buf), CancellationToken.None);
-                if (res.MessageType == WebSocketMessageType.Close) break;
-                string msg = Encoding.UTF8.GetString(buf, 0, res.Count);
-                await HandleMessage(ws, msg);
+            try {
+                while (ws.State == WebSocketState.Open) {
+                    var res = await ws.ReceiveAsync(new ArraySegment<byte>(buf), CancellationToken.None);
+                    if (res.MessageType == WebSocketMessageType.Close) break;
+                    string msg = Encoding.UTF8.GetString(buf, 0, res.Count);
+                    await HandleMessage(ws, msg);
+                }
+            } finally {
+                cts.Cancel();
+                await heartbeatTask;
             }
         }
     }
@@ -225,8 +245,19 @@ public class RustDeskAgent {
     }
 
     static string Val(string j, string k) {
-        string n = "\""+k+"\":\""; int i = j.IndexOf(n); if (i<0) return ""; i+=n.Length;
-        int e = j.IndexOf("\"", i); return e<0 ? "" : j.Substring(i, e-i);
+        // Try both "key":" and "key": "
+        string n1 = "\"" + k + "\":\"";
+        string n2 = "\"" + k + "\": \"";
+        int i = j.IndexOf(n1);
+        if (i < 0) {
+            i = j.IndexOf(n2);
+            if (i < 0) return "";
+            i += n2.Length;
+        } else {
+            i += n1.Length;
+        }
+        int e = j.IndexOf("\"", i);
+        return e < 0 ? "" : j.Substring(i, e - i);
     }
 
     static string Esc(string s) {
