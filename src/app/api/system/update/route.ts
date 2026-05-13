@@ -7,40 +7,41 @@ export async function POST() {
   try {
     const projectRoot = process.cwd();
     const logFile = path.join(projectRoot, "update.log");
-    
-    // Log dosyasını temizle ve başlat
-    fs.writeFileSync(logFile, `[${new Date().toISOString()}] Güncelleme başlatıldı...\n`);
 
-    // Komutları birleştir (Ubuntu/Linux uyumlu)
-    // git fetch ve reset kullanarak yerel çakışmaları önlüyoruz.
-    // npm run build, pm2 restart'tan ÖNCE çalışmalı; yoksa app ayağa kalkmaz.
-    const updateCommand = `
-      git fetch --all &&
-      git reset --hard origin/main &&
-      npm install &&
-      npm run build &&
-      (pm2 restart all || pm2 restart rustdesk-portal || echo "PM2 restart failed, but files updated")
-    `.replace(/\n/g, " ");
+    fs.writeFileSync(logFile, `[${new Date().toISOString()}] [STAGE:start] Güncelleme başlatıldı...\n`);
 
-    // Komutu arka planda (detached) çalıştır
-    // İşlem bitince log dosyasına DEPLOY_COMPLETE yazdırıyoruz
-    const fullCommand = `(${updateCommand} && echo "DEPLOY_COMPLETE" >> ${logFile}) > ${logFile} 2>&1 &`;
+    // Önce build, sonra restart — 502 penceresini minimuma indir
+    const steps = [
+      `echo "[STAGE:fetch] [$(date)] Git kodu çekiliyor..."`,
+      `git fetch --all`,
+      `git reset --hard origin/main`,
+      `echo "[STAGE:install] [$(date)] Bağımlılıklar yükleniyor..."`,
+      `npm install --legacy-peer-deps`,
+      `echo "[STAGE:build] [$(date)] Proje derleniyor (2-3 dakika)..."`,
+      `npm run build`,
+      `echo "[STAGE:restart] [$(date)] Servis yeniden başlatılıyor..."`,
+      // touch ile nginx'e maintenance flag ver, pm2 restart bitince kaldır
+      `touch /tmp/rmm_maintenance`,
+      `(pm2 restart all || pm2 restart rustdesk-portal) && sleep 5 && rm -f /tmp/rmm_maintenance || rm -f /tmp/rmm_maintenance`,
+      `echo "[STAGE:done] [$(date)] DEPLOY_COMPLETE"`,
+    ].join(" && ");
 
-    exec(fullCommand, (error) => {
+    const fullCommand = `(${steps}) >> ${logFile} 2>&1 &`;
+
+    exec(fullCommand, { shell: "/bin/bash" }, (error) => {
       if (error) {
         fs.appendFileSync(logFile, `[HATA] ${error.message}\n`);
       }
     });
 
-    return NextResponse.json({ 
-      success: true, 
-      message: "Güncelleme komutu başarıyla gönderildi. İşlem log dosyasından (update.log) takip edilebilir. Panel 1-2 dakika içinde güncellenip yeniden başlayacaktır." 
+    return NextResponse.json({
+      success: true,
+      message: "Güncelleme başlatıldı.",
     });
   } catch (error: any) {
-    console.error("Güncelleme API Hatası:", error);
-    return NextResponse.json({ 
-      success: false, 
-      error: error.message 
-    }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
   }
 }

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistem Güncelleniyor</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0a0a0a;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #fff;
+    }
+    .card {
+      max-width: 480px;
+      width: 90%;
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 20px;
+      padding: 48px 40px;
+      text-align: center;
+      box-shadow: 0 0 60px rgba(0,0,0,0.6);
+    }
+    .icon-ring {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(234,179,8,0.1);
+      border: 2px solid rgba(234,179,8,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 28px;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(234,179,8,0.4); }
+      50%       { box-shadow: 0 0 0 14px rgba(234,179,8,0); }
+    }
+    .icon-ring svg {
+      width: 36px;
+      height: 36px;
+      color: #eab308;
+      animation: spin 2s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    h1 {
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #fff;
+      margin-bottom: 12px;
+    }
+    p {
+      font-size: 14px;
+      color: #888;
+      line-height: 1.7;
+      margin-bottom: 32px;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: #222;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 32px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #eab308, #f59e0b);
+      border-radius: 4px;
+      animation: loading 2.5s ease-in-out infinite;
+      transform-origin: left;
+    }
+    @keyframes loading {
+      0%   { width: 10%; opacity: 1; }
+      50%  { width: 75%; opacity: 0.8; }
+      100% { width: 10%; opacity: 1; }
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(234,179,8,0.1);
+      border: 1px solid rgba(234,179,8,0.2);
+      color: #eab308;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 100px;
+    }
+    .dot {
+      width: 6px;
+      height: 6px;
+      background: #eab308;
+      border-radius: 50%;
+      animation: blink 1s ease-in-out infinite;
+    }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+    .footer {
+      margin-top: 40px;
+      font-size: 11px;
+      color: #444;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+    }
+  </style>
+  <!-- Otomatik yenile: 8 saniyede bir sayfanın hazır olup olmadığını kontrol et -->
+  <script>
+    (function () {
+      let attempts = 0;
+      function tryReload() {
+        attempts++;
+        fetch('/api/system/health', { cache: 'no-store' })
+          .then(function (r) {
+            if (r.ok) { window.location.reload(); }
+            else { schedule(); }
+          })
+          .catch(function () { schedule(); });
+      }
+      function schedule() {
+        // İlk 10 denemede 5 sn, sonra 10 sn
+        setTimeout(tryReload, attempts < 10 ? 5000 : 10000);
+      }
+      // İlk kontrol 6 saniye sonra
+      setTimeout(tryReload, 6000);
+    })();
+  </script>
+</head>
+<body>
+  <div class="card">
+    <div class="icon-ring">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+      </svg>
+    </div>
+
+    <h1>Sistem Güncelleniyor</h1>
+
+    <p>
+      Sisteme yeni sürüm yükleniyor.<br/>
+      Bu işlem genellikle <strong style="color:#eab308">2–3 dakika</strong> sürer.<br/>
+      Hazır olduğunda sayfa otomatik olarak yenilenecektir.
+    </p>
+
+    <div class="progress-bar">
+      <div class="progress-fill"></div>
+    </div>
+
+    <div class="badge">
+      <div class="dot"></div>
+      Güncelleme devam ediyor
+    </div>
+
+    <div class="footer">RustDesk RMM Panel &mdash; Maintenance Mode</div>
+  </div>
+</body>
+</html>
