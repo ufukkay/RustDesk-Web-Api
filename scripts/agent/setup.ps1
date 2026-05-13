@@ -121,18 +121,15 @@ public class RustDeskAgent {
     }
 
     static async Task ConnectAndRun() {
-        using (var ws = new ClientWebSocket()) {
-            string q = "?deviceId=" + DeviceId + "&hostname=" + Uri.EscapeDataString(Environment.MachineName) + "&type=agent";
-            try {
-                await ws.ConnectAsync(new Uri(WsUrl + q), CancellationToken.None);
-            } catch {
-                // Fallback: Eger /agent-socket fail olursa koku dene
-                string rootUrl = WsUrl.Replace("/agent-socket", "");
-                await ws.ConnectAsync(new Uri(rootUrl + q), CancellationToken.None);
-            }
+        var ws = new ClientWebSocket();
+        try {
+            string q = "?deviceId=" + DeviceId.Trim() + "&hostname=" + Uri.EscapeDataString(Environment.MachineName) + "&type=agent";
+            string uri = WsUrl + q;
+            Log("Baglaniliyor: " + uri);
+            await ws.ConnectAsync(new Uri(uri), CancellationToken.None);
             Log("WS Baglandi.");
             
-            await WsSend(ws, "{\"type\":\"telemetry\",\"deviceId\":\"" + DeviceId + "\",\"data\":" + PrepareJson() + "}");
+            await WsSend(ws, "{\"type\":\"telemetry\",\"deviceId\":\"" + DeviceId.Trim() + "\",\"data\":" + PrepareJson() + "}");
 
             byte[] buf = new byte[65536];
             while (ws.State == WebSocketState.Open) {
@@ -141,7 +138,8 @@ public class RustDeskAgent {
                 string msg = Encoding.UTF8.GetString(buf, 0, res.Count);
                 await HandleMessage(ws, msg);
             }
-        }
+        } catch (Exception ex) { Log("WS Baglanti Hatasi: " + ex.Message); }
+        finally { try { ws.Dispose(); } catch {} }
     }
 
     static string PrepareJson() {
