@@ -180,6 +180,7 @@ export default function DeviceDetailsPage() {
         <button onClick={() => runAction("shutdown")} disabled={!online} className="rd2-btn"
           style={online ? { background: "#DC2626", color: "#fff", height: 48, fontWeight: 800, border: "none" } : { opacity: .5, height: 48 }}>
           <Power width={16} height={16} /> Sistemi Kapat
+        </button>
 
         <button onClick={() => runAction("update")} disabled={!online} className="rd2-btn"
           style={online ? { background: "#0E1116", color: "#fff", height: 48, fontWeight: 800 } : { opacity: .5, height: 48 }}>
