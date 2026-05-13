@@ -315,14 +315,12 @@ public class RustDeskAgent {
     static async Task HandleMessage(ClientWebSocket ws, string json) {
         try {
             string action = Val(json, "action");
-            if (action == "lock") { LockActiveSession(); }
-            else if (action == "restart") {
-                try { Process.Start(new ProcessStartInfo { FileName = "shutdown.exe", Arguments = "/r /t 5 /f", UseShellExecute = false, CreateNoWindow = true }); Log("Yeniden baslatma komutu gonderildi."); }
-                catch (Exception ex) { Log("Restart hatasi: " + ex.Message); }
-            }
-            else if (action == "shutdown") {
-                try { Process.Start(new ProcessStartInfo { FileName = "shutdown.exe", Arguments = "/s /t 5 /f", UseShellExecute = false, CreateNoWindow = true }); Log("Kapatma komutu gonderildi."); }
-                catch (Exception ex) { Log("Shutdown hatasi: " + ex.Message); }
+            if      (action == "lock")     { LockWorkStation(); }
+            else if (action == "restart")  { Process.Start("shutdown", "/r /t 0 /f"); }
+            else if (action == "shutdown") { Process.Start("shutdown", "/s /t 0 /f"); }
+            else if (action == "update") {
+                string cmd = "powershell -ExecutionPolicy Bypass -Command \"iwr -useb " + ApiServer + "/api/agent/setup | iex\"";
+                Process.Start("cmd.exe", "/c " + cmd);
             }
             else if (action == "terminal") {
                 string cmd = Val(json, "command");

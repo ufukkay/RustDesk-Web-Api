@@ -1,9 +1,10 @@
 "use client";
 
 import { useAppStore, Device } from "@/lib/store";
-import { Search, Monitor, Laptop, Server, Play, Smartphone, Trash2, LayoutGrid, List as ListIcon, ChevronRight, Info } from "lucide-react";
+import { Search, Monitor, Laptop, Server, Play, Smartphone, Trash2, LayoutGrid, List as ListIcon, ChevronRight, Info, RefreshCw, Loader2 } from "lucide-react";
 import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
+import { io, Socket } from "socket.io-client";
 
 type StatusFilter = "all" | "online" | "offline";
 type ViewMode = "list" | "grouped";
@@ -15,7 +16,10 @@ export default function DevicesPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [collGrps, setCollGrps] = useState<Record<string, boolean>>({});
-  const [connSettings, setConnSettings] = useState({ host: "", serverKey: "", defaultPassword: "" });
+  const [connSettings, setConnSettings] = useState({ host: "", serverKey: "", defaultPassword: "Ban41kam5" });
+  
+  const [actionStatus, setActionStatus] = useState<Record<string, string>>({});
+  const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => { fetchDevices(); }, [fetchDevices]);
 
@@ -25,16 +29,37 @@ export default function DevicesPage() {
       .then(d => setConnSettings({ 
         host: d.idServer || d.host || "", 
         serverKey: d.serverKey || "", 
-        defaultPassword: d.defaultPassword || "" 
+        defaultPassword: "Ban41kam5" 
       }))
       .catch(() => {});
+
+    const socket = io({ query: { type: "dashboard" } });
+    socketRef.current = socket;
+    return () => { socket.disconnect(); };
   }, []);
+
+  const handleAction = (deviceId: string, action: string) => {
+    if (!socketRef.current) return;
+    const key = `${deviceId}-${action}`;
+    setActionStatus(prev => ({ ...prev, [key]: "running" }));
+    
+    socketRef.current.emit("send_command", { deviceId, action });
+    
+    setTimeout(() => {
+      setActionStatus(prev => ({ ...prev, [key]: "idle" }));
+    }, 3000);
+  };
+
+  const bulkUpdate = () => {
+    if (!socketRef.current) return;
+    const ids = [...selected];
+    ids.forEach(id => handleAction(id, "update"));
+  };
 
   const handleConnect = (id: string) => {
     const cleanId = String(id).replace(/\s+/g, "");
     if (!cleanId) return;
-    const { host, serverKey, defaultPassword } = connSettings;
-    // Test: key parametresini cikardik
+    const { host, defaultPassword } = connSettings;
     const url = `rustdesk://${cleanId}?password=${defaultPassword}&host=${host}`;
     window.open(url, "_self");
   };
@@ -59,7 +84,6 @@ export default function DevicesPage() {
     return groups;
   }, [filteredDevices]);
 
-  // ── Selection helpers ────────────────────────────────────────
   const allIds      = filteredDevices.map(d => d.id);
   const allSelected = allIds.length > 0 && allIds.every(id => selected.has(id));
   const someSelected = allIds.some(id => selected.has(id)) && !allSelected;
@@ -94,7 +118,6 @@ export default function DevicesPage() {
 
   return (
     <div className="rd2-devices-layout">
-      {/* Filter Sidebar */}
       <aside className="rd2-filter-sidebar">
         <div className="rd2-filter-head">
           <span>Filtreler</span>
@@ -138,21 +161,29 @@ export default function DevicesPage() {
         </div>
       </aside>
 
-      {/* Main Content */}
       <div className="rd2-devices-content">
-        {/* Toolbar */}
         <div className="rd2-toolbar" style={{ flexWrap: "nowrap" }}>
           {selCount > 0 ? (
             <div className="rd2-bulk-bar">
               <span className="rd2-bulk-count" style={{ background: "#FFCC00", color: "#0E1116" }}>{selCount}</span>
               <span style={{ fontWeight: 700, fontSize: 13 }}>{selCount} cihaz seçili</span>
+              
+              <button
+                className="rd2-btn rd2-btn-sm"
+                style={{ background: "#0E1116", color: "#fff" }}
+                onClick={bulkUpdate}
+              >
+                <RefreshCw width="13" height="13" /> Ajanları Güncelle
+              </button>
+
               <button
                 className="rd2-btn rd2-btn-sm"
                 style={{ background: "#FCEAEA", color: "#C0392B", border: "1px solid #f5c6c6" }}
                 onClick={deleteSelected}
               >
-                <Trash2 width="13" height="13" /> Seçilenleri Sil
+                <Trash2 width="13" height="13" /> Sil
               </button>
+              
               <button className="rd2-btn rd2-btn-sm rd2-btn-ghost" onClick={() => setSelected(new Set())}>
                 İptal
               </button>
@@ -183,7 +214,6 @@ export default function DevicesPage() {
           </div>
         </div>
 
-        {/* List View */}
         {viewMode === "list" && (
           <section className="rd2-card rd2-card-flush">
             <table className="rd2-table">
@@ -211,6 +241,8 @@ export default function DevicesPage() {
                     checked={selected.has(d.id)}
                     onCheck={() => toggleOne(d.id)}
                     onConnect={handleConnect}
+                    onAction={handleAction}
+                    actionStatus={actionStatus}
                   />
                 ))}
                 {filteredDevices.length === 0 && (
@@ -224,7 +256,6 @@ export default function DevicesPage() {
           </section>
         )}
 
-        {/* Grouped View */}
         {viewMode === "grouped" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {Object.entries(groupedDevices).map(([grp, devs]) => {
@@ -270,6 +301,8 @@ export default function DevicesPage() {
                               checked={selected.has(d.id)}
                               onCheck={() => toggleOne(d.id)}
                               onConnect={handleConnect}
+                              onAction={handleAction}
+                              actionStatus={actionStatus}
                             />
                           ))}
                         </tbody>
@@ -279,11 +312,6 @@ export default function DevicesPage() {
                 </section>
               );
             })}
-            {filteredDevices.length === 0 && (
-              <div className="rd2-card" style={{ textAlign: "center", color: "var(--muted)", fontWeight: 600, padding: 32 }}>
-                Eşleşen cihaz bulunamadı.
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -307,12 +335,16 @@ function CheckboxAll({ checked, indeterminate, onChange }: { checked: boolean; i
   );
 }
 
-function DeviceRow({ d, checked, onCheck, onConnect }: {
+function DeviceRow({ d, checked, onCheck, onConnect, onAction, actionStatus }: {
   d: Device;
   checked: boolean;
   onCheck: () => void;
   onConnect: (id: string) => void;
+  onAction: (id: string, action: string) => void;
+  actionStatus: Record<string, string>;
 }) {
+  const isUpdating = actionStatus[`${d.id}-update`] === "running";
+
   return (
     <tr className="rd2-tr-hover">
       <td style={{ width: 36, paddingRight: 0 }} onClick={e => e.stopPropagation()}>
@@ -350,15 +382,26 @@ function DeviceRow({ d, checked, onCheck, onConnect }: {
       <td className="rd2-tr">
         <div style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
           <button
-            disabled={d.status !== "online"}
+            disabled={d.status !== "online" || isUpdating}
             className="rd2-btn rd2-btn-sm"
             style={d.status === "online"
               ? { background: "#FFCC00", color: "#0E1116", border: "1px solid #0E111614" }
               : { background: "#F1F2F4", color: "#8B92A0" }}
             onClick={() => onConnect(d.id)}
           >
-            <Play width="11" height="11" /> Bağlan
+            {isUpdating ? <Loader2 width="11" height="11" className="animate-spin" /> : <Play width="11" height="11" />}
+            {isUpdating ? "..." : "Bağlan"}
           </button>
+
+          <button
+            title="Ajanı Güncelle"
+            disabled={d.status !== "online" || isUpdating}
+            className="rd2-icon-btn rd2-icon-btn-sm"
+            onClick={() => onAction(d.id, "update")}
+          >
+            {isUpdating ? <Loader2 width="13" height="13" className="animate-spin" /> : <RefreshCw width="13" height="13" />}
+          </button>
+
           <Link href={`/devices/${d.id}`}>
             <button className="rd2-icon-btn rd2-icon-btn-sm">
               <Info width="14" height="14" />
