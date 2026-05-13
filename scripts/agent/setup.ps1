@@ -5,7 +5,7 @@
 
 $dir = "C:\ProgramData\RustDeskRMM"
 $apiServer = "https://rmm.talay.com"
-$wsUrl = "wss://rmm.talay.com"
+$wsUrl = "wss://rmm.talay.com/agent-socket"
 
 # --- 1. ADMIN KONTROLÜ ---
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
