@@ -121,6 +121,21 @@ using System.Net.WebSockets;
 
 public class RustDeskAgent {
     [DllImport("user32.dll")]  static extern bool LockWorkStation();
+    [DllImport("kernel32.dll")] static extern uint WTSGetActiveConsoleSessionId();
+    [DllImport("wtsapi32.dll")] static extern bool WTSQueryUserToken(uint sessionId, out IntPtr phToken);
+    [DllImport("kernel32.dll")] static extern bool CloseHandle(IntPtr hObject);
+    [DllImport("advapi32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    static extern bool CreateProcessAsUser(IntPtr hToken, string app, string cmdLine, IntPtr procAttr, IntPtr threadAttr, bool inherit, uint flags, IntPtr env, string dir, ref STARTUPINFO si, out PROCESS_INFORMATION pi);
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    struct STARTUPINFO {
+        public int    cb; public string lpReserved, lpDesktop, lpTitle;
+        public int    dwX, dwY, dwXSize, dwYSize, dwXCountChars, dwYCountChars, dwFillAttribute, dwFlags;
+        public short  wShowWindow, cbReserved2;
+        public IntPtr lpReserved2, hStdInput, hStdOutput, hStdError;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    struct PROCESS_INFORMATION { public IntPtr hProcess, hThread; public int dwProcessId, dwThreadId; }
 
     static readonly string DeviceId     = "$rdId";
     static readonly string WsUrl        = "$wsUrl";
@@ -139,6 +154,28 @@ public class RustDeskAgent {
                     if (o[prop] != null) return o[prop].ToString().Trim();
         } catch {}
         return "";
+    }
+
+    static void LockActiveSession() {
+        try {
+            uint sid = WTSGetActiveConsoleSessionId();
+            if (sid == 0xFFFFFFFF) { Log("Lock: aktif kullanici oturumu bulunamadi"); return; }
+            IntPtr tok;
+            if (!WTSQueryUserToken(sid, out tok)) { Log("Lock: kullanici token alinamadi (hata: " + Marshal.GetLastWin32Error() + ")"); return; }
+            try {
+                var si = new STARTUPINFO();
+                si.cb = Marshal.SizeOf(typeof(STARTUPINFO));
+                PROCESS_INFORMATION pi;
+                string lockCmd = System.IO.Path.Combine(Environment.SystemDirectory, "rundll32.exe") + " user32.dll,LockWorkStation";
+                if (CreateProcessAsUser(tok, null, lockCmd, IntPtr.Zero, IntPtr.Zero, false, 0, IntPtr.Zero, null, ref si, out pi)) {
+                    CloseHandle(pi.hProcess);
+                    CloseHandle(pi.hThread);
+                    Log("Ekran kilitlendi.");
+                } else {
+                    Log("Lock: CreateProcessAsUser basarisiz (hata: " + Marshal.GetLastWin32Error() + ")");
+                }
+            } finally { CloseHandle(tok); }
+        } catch (Exception ex) { Log("Lock hatasi: " + ex.Message); }
     }
 
     public static void Main() {
@@ -247,9 +284,15 @@ public class RustDeskAgent {
     static async Task HandleMessage(ClientWebSocket ws, string json) {
         try {
             string action = Val(json, "action");
-            if      (action == "lock")     { LockWorkStation(); }
-            else if (action == "restart")  { Process.Start("shutdown", "/r /t 0 /f"); }
-            else if (action == "shutdown") { Process.Start("shutdown", "/s /t 0 /f"); }
+            if (action == "lock") { LockActiveSession(); }
+            else if (action == "restart") {
+                try { Process.Start(new ProcessStartInfo { FileName = "shutdown.exe", Arguments = "/r /t 5 /f", UseShellExecute = false, CreateNoWindow = true }); Log("Yeniden baslatma komutu gonderildi."); }
+                catch (Exception ex) { Log("Restart hatasi: " + ex.Message); }
+            }
+            else if (action == "shutdown") {
+                try { Process.Start(new ProcessStartInfo { FileName = "shutdown.exe", Arguments = "/s /t 5 /f", UseShellExecute = false, CreateNoWindow = true }); Log("Kapatma komutu gonderildi."); }
+                catch (Exception ex) { Log("Shutdown hatasi: " + ex.Message); }
+            }
             else if (action == "terminal") {
                 string cmd = Val(json, "command");
                 var psi = new ProcessStartInfo("cmd.exe", "/c " + cmd);
