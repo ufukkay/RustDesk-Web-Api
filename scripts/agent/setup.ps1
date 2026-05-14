@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    RustDesk RMM Agent v4.1.2 - C# 5.0 Kesin Uyum
+    RustDesk RMM Agent v4.1.3 - Kullanici Tespiti ve WS Detayli Log
 #>
 
 $dir          = "C:\ProgramData\RustDeskRMM"
@@ -44,7 +44,7 @@ public class RustDeskAgent {
     const string DeviceId     = "$rdId";
     const string WsUrl        = "$wsUrl";
     const string ApiServer    = "$apiServer";
-    const string AgentVersion = "v4.1.2";
+    const string AgentVersion = "v4.1.3";
     const string ApiKey       = "$agentApiKey";
     static readonly string LogPath = @"$dir\agent.log";
 
@@ -141,6 +141,24 @@ public class RustDeskAgent {
         return sb.ToString();
     }
 
+    static string GetCurrentUser() {
+        try {
+            string user = Wmi("Win32_ComputerSystem", "UserName");
+            if (user != "-" && !string.IsNullOrEmpty(user)) return user;
+            
+            // Alternatif: Explorer.exe owner
+            using (ManagementObjectSearcher s = new ManagementObjectSearcher("SELECT * FROM Win32_Process WHERE Name='explorer.exe'")) {
+                foreach (ManagementObject o in s.Get()) {
+                    string[] args = new string[] { "", "" };
+                    if (Convert.ToInt32(o.InvokeMethod("GetOwner", args)) == 0) {
+                        return args[1] + "\\" + args[0];
+                    }
+                }
+            }
+        } catch {}
+        return "-";
+    }
+
     static string BuildJson() {
         RefreshStatic();
         string cpuUsage = Wmi("Win32_Processor", "LoadPercentage");
@@ -162,20 +180,7 @@ public class RustDeskAgent {
             if (sb.Length > 0) disk = sb.ToString();
         } catch {}
         
-        string user = Wmi("Win32_ComputerSystem", "UserName");
-        if (user == "-") {
-            try {
-                using (ManagementObjectSearcher s = new ManagementObjectSearcher("SELECT * FROM Win32_Process WHERE Name='explorer.exe'")) {
-                    foreach (ManagementObject o in s.Get()) {
-                        string[] args = new string[] { "", "" };
-                        if (Convert.ToInt32(o.InvokeMethod("GetOwner", args)) == 0) {
-                            user = args[1] + "\\" + args[0];
-                            break;
-                        }
-                    }
-                }
-            } catch {}
-        }
+        string user = GetCurrentUser();
         
         if ((DateTime.Now - UpdateCheckTime).TotalHours >= 6) {
             UpdateCheckTime = DateTime.Now;
@@ -252,10 +257,15 @@ public class RustDeskAgent {
     static async Task Connect() {
         using (ClientWebSocket ws = new ClientWebSocket()) {
             string q = "?deviceId=" + DeviceId + "&hostname=" + Uri.EscapeDataString(Environment.MachineName) + "&type=agent";
-            Log("Connecting to " + WsUrl);
-            await ws.ConnectAsync(new Uri(WsUrl + q), CancellationToken.None);
+            Log("Connecting to WS: " + WsUrl + q);
+            try {
+                await ws.ConnectAsync(new Uri(WsUrl + q), CancellationToken.None);
+            } catch (Exception ex) {
+                Log("CRITICAL WS CONN ERROR: " + ex.Message + " (Inner: " + (ex.InnerException != null ? ex.InnerException.Message : "None") + ")");
+                throw;
+            }
             WsBackoff = 10000;
-            Log("Connected");
+            Log("WS Connected successfully.");
             await Send(ws, "{\"type\":\"telemetry\",\"deviceId\":\"" + DeviceId + "\",\"data\":" + BuildJson() + "}");
             
             CancellationTokenSource cts = new CancellationTokenSource();
@@ -286,7 +296,7 @@ public class RustDeskAgent {
                 }
             } finally {
                 cts.Cancel();
-                Log("Disconnected");
+                Log("WS Disconnected.");
             }
         }
     }
@@ -303,9 +313,13 @@ public class RustDeskAgent {
                         c.Encoding = Encoding.UTF8;
                         c.Headers["Content-Type"] = "application/json";
                         if (!string.IsNullOrEmpty(ApiKey)) c.Headers["Authorization"] = "Bearer " + ApiKey;
-                        c.UploadString(ApiServer + "/api/sysinfo", "POST", BuildJson());
+                        string telemetry = BuildJson();
+                        c.UploadString(ApiServer + "/api/sysinfo", "POST", telemetry);
+                        Log("HTTP Telemetry sent successfully.");
                     }
-                } catch {}
+                } catch (Exception ex) {
+                    Log("HTTP Telemetry Error: " + ex.Message);
+                }
                 await Task.Delay(300000);
             }
         });
@@ -314,7 +328,7 @@ public class RustDeskAgent {
             try {
                 Connect().GetAwaiter().GetResult();
             } catch (Exception ex) {
-                Log("WS Error: " + ex.Message);
+                Log("WS Main Loop Error: " + ex.Message);
             }
             Thread.Sleep(WsBackoff);
             WsBackoff = Math.Min(WsBackoff * 2, 300000);
@@ -322,6 +336,37 @@ public class RustDeskAgent {
     }
 }
 "@
+
+# --- 4. DERLEME ---
+$source | Out-File -FilePath "$dir\Agent.cs" -Encoding utf8
+$csc = (Get-ChildItem "C:\Windows\Microsoft.NET\Framework*\v4.0.*\csc.exe" -ErrorAction SilentlyContinue | Select-Object -Last 1).FullName
+if (!$csc) { Write-Error "csc.exe bulunamadi"; exit 1 }
+
+$refs = @(
+    "/reference:System.Management.dll",
+    "/reference:Microsoft.CSharp.dll",
+    "/reference:System.dll",
+    "/reference:System.Core.dll"
+)
+$args = "/target:exe /out:`"$dir\Agent.exe`" " + ($refs -join " ") + " `"$dir\Agent.cs`""
+
+# Derleme denemesi ve hata yakalama
+$result = Start-Process -FilePath $csc -ArgumentList $args -Wait -NoNewWindow -PassThru -RedirectStandardOutput "$dir\build.log" -RedirectStandardError "$dir\build_err.log"
+if ($result.ExitCode -ne 0) {
+    $err = Get-Content "$dir\build_err.log" -Raw
+    $msg = Get-Content "$dir\build.log" -Raw
+    Write-Error "Derleme basarisiz.`nDETAY: $err`n$msg"
+    exit 1
+}
+
+# --- 5. GOREV ZAMANLAYICI ---
+$taskName = "RustDeskRMM"
+if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) { Stop-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue; Unregister-ScheduledTask -TaskName $taskName -Confirm:$false }
+$action = New-ScheduledTaskAction -Execute "$dir\Agent.exe"; $trigger = New-ScheduledTaskTrigger -AtStartup
+$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+$settings = New-ScheduledTaskSettingsSet -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit (New-TimeSpan -Days 0)
+Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings | Out-Null
+Start-ScheduledTask -TaskName $taskName
 
 # --- 4. DERLEME ---
 $source | Out-File -FilePath "$dir\Agent.cs" -Encoding utf8
