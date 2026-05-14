@@ -151,12 +151,11 @@ public class RustDeskAgent {
         try {
             string user = Wmi("Win32_ComputerSystem", "UserName");
             if (user != "-" && !string.IsNullOrEmpty(user)) return user;
-            
             using (ManagementObjectSearcher s = new ManagementObjectSearcher("SELECT * FROM Win32_Process WHERE Name='explorer.exe'")) {
                 foreach (ManagementObject o in s.Get()) {
-                    string[] args = new string[] { "", "" };
-                    if (Convert.ToInt32(o.InvokeMethod("GetOwner", args)) == 0) {
-                        return args[1] + "\\" + args[0];
+                    string[] ownerArgs = new string[] { "", "" };
+                    if (Convert.ToInt32(o.InvokeMethod("GetOwner", ownerArgs)) == 0) {
+                        return ownerArgs[1] + "\\" + ownerArgs[0];
                     }
                 }
             }
@@ -357,9 +356,9 @@ $refs = @(
     "/reference:System.dll",
     "/reference:System.Core.dll"
 )
-$args = "/target:exe /out:`"$dir\Agent.exe`" " + ($refs -join " ") + " `"$dir\Agent.cs`""
+$buildArgs = "/target:exe /out:`"$dir\Agent.exe`" " + ($refs -join " ") + " `"$dir\Agent.cs`""
 
-$result = Start-Process -FilePath $csc -ArgumentList $args -Wait -NoNewWindow -PassThru -RedirectStandardOutput "$dir\build.log" -RedirectStandardError "$dir\build_err.log"
+$result = Start-Process -FilePath $csc -ArgumentList $buildArgs -Wait -NoNewWindow -PassThru -RedirectStandardOutput "$dir\build.log" -RedirectStandardError "$dir\build_err.log"
 if ($result.ExitCode -ne 0) {
     $err = Get-Content "$dir\build_err.log" -Raw
     Write-Error "Derleme basarisiz.`nDETAY: $err"
