@@ -20,22 +20,33 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "Cihaz ID gerekli" }, { status: 400 });
     }
 
-    // Bilgileri sil
-    const infoData = safeReadJson<Record<string, unknown>>(INFO_FILE, {});
-    if (infoData[deviceId]) {
-      delete infoData[deviceId];
-      safeWriteJson(INFO_FILE, infoData);
-    }
-
-    // Durumu sil
+    // Bilgileri ve Durumu sil (Detaylı temizlik)
+    const infoData = safeReadJson<Record<string, any>>(INFO_FILE, {});
     const statusData = safeReadJson<Record<string, number>>(STATUS_FILE, {});
-    if (statusData[deviceId]) {
-      delete statusData[deviceId];
-      safeWriteJson(STATUS_FILE, statusData);
+
+    // Silinecek cihazın hostname'ini bul
+    const targetHostname = (infoData[deviceId]?.hostname || "").toUpperCase();
+
+    // 1. Ana ID'yi sil
+    delete infoData[deviceId];
+    delete statusData[deviceId];
+
+    // 2. Aynı Hostname'e sahip diğer hayalet kayıtları bul ve sil
+    if (targetHostname && targetHostname !== "-") {
+      Object.keys(infoData).forEach(id => {
+        if ((infoData[id]?.hostname || "").toUpperCase() === targetHostname) {
+          console.log(`[Unregister] Hayalet kayıt temizleniyor: ${id}`);
+          delete infoData[id];
+          delete statusData[id];
+        }
+      });
     }
 
-    console.log(`[AGENT -] Cihaz kaydı silindi: ${deviceId}`);
-    return NextResponse.json({ ok: true, message: "Cihaz başarıyla silindi" });
+    safeWriteJson(INFO_FILE, infoData);
+    safeWriteJson(STATUS_FILE, statusData);
+
+    console.log(`[AGENT -] Cihaz ve bağlı tüm kayıtlar silindi: ${deviceId}`);
+    return NextResponse.json({ ok: true, message: "Cihaz ve bağlı kayıtlar başarıyla silindi" });
   } catch (error) {
     console.error("[Unregister] Hata:", error);
     return NextResponse.json({ ok: false, error: "İşlem başarısız" }, { status: 500 });

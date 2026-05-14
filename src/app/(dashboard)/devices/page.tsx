@@ -35,8 +35,28 @@ export default function DevicesPage() {
 
     const socket = io({ query: { type: "dashboard" } });
     socketRef.current = socket;
-    return () => { socket.disconnect(); };
-  }, []);
+
+    socket.on("device_status", () => {
+      fetchDevices();
+    });
+
+    socket.on("telemetry_update", () => {
+      // Small delay to ensure DB is written before fetch
+      setTimeout(() => fetchDevices(), 500);
+    });
+
+    socket.on("device_removed", (data) => {
+      console.log("[SOCKET] Device removed by server:", data.deviceId);
+      fetchDevices();
+    });
+
+    return () => { 
+      socket.off("device_status");
+      socket.off("telemetry_update");
+      socket.off("device_removed");
+      socket.disconnect(); 
+    };
+  }, [fetchDevices]);
 
   const handleAction = (deviceId: string, action: string) => {
     if (!socketRef.current) return;

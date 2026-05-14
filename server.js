@@ -37,7 +37,9 @@ function writeJson(file, data) {
   try {
     const dir = path.dirname(file);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(file, JSON.stringify(data, null, 2));
+    const tmp = file + ".tmp";
+    fs.writeFileSync(tmp, JSON.stringify(data, null, 2));
+    fs.renameSync(tmp, file);
   } catch (err) {
     console.error(`[FS-ERR] Error writing ${path.basename(file)}:`, err.message);
   }
@@ -94,14 +96,34 @@ app.prepare().then(() => {
 
   function saveTelemetry(deviceId, data) {
     const now  = Math.floor(Date.now() / 1000);
+    const info = readJson(INFO_FILE);
+    const status = readJson(STATUS_FILE);
+
+    // DEDUPLICATION: If another entry has the same hostname or serial, remove it
+    const incomingHost = (data.hostname || "").toUpperCase();
+    const incomingSerial = (data.serialNumber || "");
+
+    for (const [id, dev] of Object.entries(info)) {
+      if (id !== deviceId) {
+        const devHost = (dev.hostname || "").toUpperCase();
+        const devSerial = (dev.serialNumber || "");
+        
+        // If it's clearly the same machine (same serial or same host), delete the old record
+        if ((incomingSerial && incomingSerial !== "-" && incomingSerial === devSerial) || 
+            (incomingHost && incomingHost !== "-" && incomingHost === devHost)) {
+          console.log(`[DEDUPE] Removing duplicate entry ${id} in favor of ${deviceId}`);
+          delete info[id];
+          delete status[id];
+          io.to("dashboard").emit("device_removed", { deviceId: id });
+        }
+      }
+    }
 
     // Keep status fresh
-    const status = readJson(STATUS_FILE);
     status[deviceId] = now;
     writeJson(STATUS_FILE, status);
 
     // Merge into device info
-    const info = readJson(INFO_FILE);
     info[deviceId] = { ...(info[deviceId] || {}), ...data, lastUpdate: now };
     writeJson(INFO_FILE, info);
 

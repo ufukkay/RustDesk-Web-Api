@@ -71,12 +71,20 @@ export default function DeviceDetailsPage() {
       }
     });
 
+    socket.on("device_removed", (data: { deviceId: string }) => {
+      if (data.deviceId === device.id) {
+        console.warn("[SOCKET] Current device removed by deduplication. Redirecting...");
+        router.push("/devices");
+      }
+    });
+
     socketRef.current = socket;
     return () => { 
       socket.off("connect");
       socket.off("agent_status");
       socket.off("device_status");
       socket.off("telemetry_update");
+      socket.off("device_removed");
       socket.disconnect(); 
       socketRef.current = null; 
     };

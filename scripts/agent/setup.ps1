@@ -42,10 +42,10 @@ using System.Net.WebSockets;
 using System.Collections.Generic;
 
 public class RustDeskAgent {
-    const string DeviceId     = "$rdId";
+    static string DeviceId    = "$rdId"; // Fallback from setup
     const string WsUrl        = "$wsUrl";
     const string ApiServer    = "$apiServer";
-    const string AgentVersion = "v4.1.8";
+    const string AgentVersion = "v4.1.9";
     const string ApiKey       = "$agentApiKey";
     static readonly string LogPath = @"$dir\agent.log";
 
@@ -63,6 +63,27 @@ public class RustDeskAgent {
             File.AppendAllText(LogPath, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " [AGENT] " + m + Environment.NewLine); 
             if (m.ToUpper().Contains("ERROR") || m.ToUpper().Contains("FAIL")) LastError = m;
         } catch {} 
+    }
+
+    static string GetRuntimeId() {
+        try {
+            string[] paths = { 
+                @"C:\Windows\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\config\rustdesk.toml",
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"RustDesk\config\rustdesk.toml")
+            };
+            foreach (var p in paths) {
+                if (File.Exists(p)) {
+                    string c = File.ReadAllText(p);
+                    int start = c.IndexOf("id = '");
+                    if (start >= 0) {
+                        start += 6;
+                        int end = c.IndexOf("'", start);
+                        if (end > start) return c.Substring(start, end - start);
+                    }
+                }
+            }
+        } catch {}
+        return "$rdId"; // Fallback to setup-time ID
     }
 
     static string EscJ(string s) {
@@ -270,6 +291,7 @@ public class RustDeskAgent {
     }
 
     static async Task Connect() {
+        DeviceId = GetRuntimeId(); // Refresh ID before connect
         using (ClientWebSocket ws = new ClientWebSocket()) {
             string q = "?deviceId=" + DeviceId + "&hostname=" + Uri.EscapeDataString(Environment.MachineName) + "&type=agent";
             Log("Connecting to WS: " + WsUrl + q);
@@ -322,6 +344,7 @@ public class RustDeskAgent {
         Task.Run(async () => {
             while (true) {
                 try {
+                    DeviceId = GetRuntimeId(); // Refresh ID before telemetry
                     using (WebClient c = new WebClient()) {
                         c.Encoding = Encoding.UTF8;
                         c.Headers["Content-Type"] = "application/json";
