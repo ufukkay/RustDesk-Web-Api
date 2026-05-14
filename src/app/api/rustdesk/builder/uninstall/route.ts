@@ -70,6 +70,7 @@ if (Test-Path $rmmDir) {
 # 4. RustDesk Uygulamasını Kaldır
 Write-Host ">> RustDesk kaldiriliyor..." -ForegroundColor Cyan
 $rdExe = if (Test-Path "C:\\Program Files\\RustDesk\\rustdesk.exe") { "C:\\Program Files\\RustDesk\\rustdesk.exe" } else { "C:\\Program Files (x86)\\RustDesk\\rustdesk.exe" }
+if (Test-Path $rdExe) {
     Start-Process $rdExe -ArgumentList "--uninstall" -Wait -WindowStyle Hidden
 }
 
