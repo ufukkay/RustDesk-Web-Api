@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    RustDesk RMM Agent v4.1.7 - Kesin Stabilite ve Temiz Kurulum
+    RustDesk RMM Agent v4.1.8 - Stabilite ve Hata Fix
 #>
 
 $dir          = "C:\ProgramData\RustDeskRMM"
@@ -9,7 +9,8 @@ $wsUrl        = "wss://rmm.talay.com/agent-socket"
 $agentApiKey  = "AGENT_API_KEY_PLACEHOLDER"
 
 # --- 1. ADMIN VE KLASOR KONTROLU ---
-if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { exit 1 }
+$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (!$isAdmin) { Write-Error "Admin yetkisi gerekli"; exit 1 }
 if (!(Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
 
 # --- 2. CIHAZ ID TESPITI ---
@@ -44,7 +45,7 @@ public class RustDeskAgent {
     const string DeviceId     = "$rdId";
     const string WsUrl        = "$wsUrl";
     const string ApiServer    = "$apiServer";
-    const string AgentVersion = "v4.1.7";
+    const string AgentVersion = "v4.1.8";
     const string ApiKey       = "$agentApiKey";
     static readonly string LogPath = @"$dir\agent.log";
 
@@ -347,7 +348,8 @@ Stop-Process -Name "Agent" -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 2
 
 $source | Out-File -FilePath "$dir\Agent.cs" -Encoding utf8
-$csc = (Get-ChildItem "C:\Windows\Microsoft.NET\Framework*\v4.0.*\csc.exe" -ErrorAction SilentlyContinue | Select-Object -Last 1).FullName
+$cscPaths = Get-ChildItem "C:\Windows\Microsoft.NET\Framework*\v4.0.*\csc.exe" -ErrorAction SilentlyContinue
+$csc = ($cscPaths | Select-Object -Last 1).FullName
 if (!$csc) { Write-Error "csc.exe bulunamadi"; exit 1 }
 
 $refs = @(
@@ -358,10 +360,10 @@ $refs = @(
 )
 $buildArgs = "/target:exe /out:`"$dir\Agent.exe`" " + ($refs -join " ") + " `"$dir\Agent.cs`""
 
-$result = Start-Process -FilePath $csc -ArgumentList $buildArgs -Wait -NoNewWindow -PassThru -RedirectStandardOutput "$dir\build.log" -RedirectStandardError "$dir\build_err.log"
-if ($result.ExitCode -ne 0) {
-    $err = Get-Content "$dir\build_err.log" -Raw
-    Write-Error "Derleme basarisiz.`nDETAY: $err"
+$process = Start-Process -FilePath $csc -ArgumentList $buildArgs -Wait -NoNewWindow -PassThru -RedirectStandardOutput "$dir\build.log" -RedirectStandardError "$dir\build_err.log"
+if ($process.ExitCode -ne 0) {
+    $errText = Get-Content "$dir\build_err.log" -Raw
+    Write-Error "Derleme basarisiz.`nDETAY: $errText"
     exit 1
 }
 
@@ -374,6 +376,6 @@ if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
 $action = New-ScheduledTaskAction -Execute "$dir\Agent.exe"
 $trigger = New-ScheduledTaskTrigger -AtStartup
 $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
-$settings = New-ScheduledTaskSettingsSet -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit (New-TimeSpan -Days 0)
-Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings | Out-Null
+$settingsSet = New-ScheduledTaskSettingsSet -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit (New-TimeSpan -Days 0)
+Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settingsSet | Out-Null
 Start-ScheduledTask -TaskName $taskName
