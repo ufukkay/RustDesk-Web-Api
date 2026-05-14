@@ -12,7 +12,7 @@ export async function GET(req: Request) {
     const protocol = req.headers.get("x-forwarded-proto") || "http";
     const baseUrl = settings.apiServer || `${protocol}://${hostHeader}`;
 
-    const psScript = `# --- RUSTDESK RMM UNINSTALLER ---
+    const psScript = `# --- RUSTDESK RMM UNINSTALLER V2 ---
 # Bu script RustDesk ve RMM ajanını sistemden temizler ve panelden siler.
 
 $ErrorActionPreference = "SilentlyContinue"
@@ -25,27 +25,39 @@ if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]:
 
 Write-Host "--- RustDesk RMM Kaldirma Islemi Baslatiliyor ---" -ForegroundColor Yellow
 
-# 1. Panelden Silme İsteği Gönder
-Write-Host ">> Panelden silme istegi gonderiliyor..." -ForegroundColor Cyan
-$rdExe = if (Test-Path "C:\\Program Files\\RustDesk\\rustdesk.exe") { "C:\\Program Files\\RustDesk\\rustdesk.exe" } else { "C:\\Program Files (x86)\\RustDesk\\rustdesk.exe" }
+# 1. Cihaz ID Tespiti (RustDesk veya Hostname)
 $id = ""
-if (Test-Path $rdExe) {
-    $id = (& $rdExe --get-id 2>$null) -replace '\\s',''
+$configPaths = @(
+    "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk\\config\\rustdesk.toml",
+    "$env:AppData\\RustDesk\\config\\rustdesk.toml",
+    "$env:ProgramData\\RustDesk\\config\\rustdesk.toml"
+)
+foreach ($p in $configPaths) {
+    if (!$id -and (Test-Path $p)) {
+        $content = Get-Content $p -Raw
+        if ($content -match "id = '([^']+)'") { $id = $matches[1] }
+    }
 }
-if (!$id) {
-    $id = $env:COMPUTERNAME
-}
+if (!$id) { $id = $env:COMPUTERNAME }
 
+# 2. Panelden Silme İsteği Gönder (Yeni API)
+Write-Host ">> Panelden silme istegi gonderiliyor... (ID: $id)" -ForegroundColor Cyan
 try {
     $body = @{ id = "$id" } | ConvertTo-Json
-    Invoke-RestMethod -Uri "${baseUrl}/api/rustdesk/devices" -Method DELETE -Body $body -ContentType "application/json" -UseBasicParsing
+    $headers = @{ "Content-Type" = "application/json" }
+    # Agent V2 ApiKey placeholder (if needed)
+    Invoke-RestMethod -Uri "${baseUrl}/api/agent/unregister" -Method Post -Body $body -Headers $headers -TimeoutSec 10
     Write-Host ">> Cihaz panel listesinden kaldirildi." -ForegroundColor Green
 } catch {
-    Write-Host ">> Panel baglantisi kurulamadi, manuel silmeniz gerekebilir." -ForegroundColor Red
+    Write-Host ">> Panel baglantisi kurulamadi veya cihaz zaten silinmis." -ForegroundColor Red
 }
 
-# 2. RMM Ajanını Durdur ve Sil
+# 3. RMM Ajanını Durdur ve Sil (Agent V2 & V1)
 Write-Host ">> RMM Ajani durduruluyor..." -ForegroundColor Cyan
+# Agent V2
+Stop-Process -Name "Agent" -Force 2>$null
+Unregister-ScheduledTask -TaskName "RustDeskRMM" -Confirm:$false 2>$null
+# Agent V1 (Old)
 taskkill /F /IM RustDeskRMM.exe /T 2>$null
 Unregister-ScheduledTask -TaskName "RustDeskRMM_Service" -Confirm:$false 2>$null
 
@@ -55,9 +67,9 @@ if (Test-Path $rmmDir) {
     Remove-Item -Path $rmmDir -Recurse -Force 2>$null
 }
 
-# 3. RustDesk Uygulamasını Kaldır
+# 4. RustDesk Uygulamasını Kaldır
 Write-Host ">> RustDesk kaldiriliyor..." -ForegroundColor Cyan
-if (Test-Path $rdExe) {
+$rdExe = if (Test-Path "C:\\Program Files\\RustDesk\\rustdesk.exe") { "C:\\Program Files\\RustDesk\\rustdesk.exe" } else { "C:\\Program Files (x86)\\RustDesk\\rustdesk.exe" }
     Start-Process $rdExe -ArgumentList "--uninstall" -Wait -WindowStyle Hidden
 }
 
