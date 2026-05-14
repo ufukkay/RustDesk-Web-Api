@@ -44,7 +44,7 @@ public class RustDeskAgent {
     const string DeviceId     = "$rdId";
     const string WsUrl        = "$wsUrl";
     const string ApiServer    = "$apiServer";
-    const string AgentVersion = "v4.1.4";
+    const string AgentVersion = "v4.1.5";
     const string ApiKey       = "$agentApiKey";
     static readonly string LogPath = @"$dir\agent.log";
 
@@ -230,17 +230,29 @@ public class RustDeskAgent {
         return e < 0 ? "" : j.Substring(i, e - i);
     }
 
+    static void Exec(string c) {
+        try {
+            ProcessStartInfo psi = new ProcessStartInfo("cmd.exe", "/c " + c);
+            psi.WindowStyle = ProcessWindowStyle.Hidden;
+            psi.CreateNoWindow = true;
+            psi.UseShellExecute = false;
+            Process.Start(psi);
+        } catch (Exception ex) { Log("Exec Error: " + ex.Message); }
+    }
+
     static async Task Handle(ClientWebSocket ws, string j) {
         try {
             string a = GetVal(j, "action");
             if (string.IsNullOrEmpty(a)) return;
-            Log("Action: " + a);
-            if (a == "lock") Process.Start("rundll32.exe", "user32.dll,LockWorkStation");
-            else if (a == "restart") Process.Start("shutdown", "/r /t 5 /f");
-            else if (a == "shutdown") Process.Start("shutdown", "/s /t 5 /f");
-            else if (a == "update") Process.Start("cmd.exe", "/c powershell -ExecutionPolicy Bypass -Command \"iwr -useb " + ApiServer + "/api/agent/setup | iex\"");
+            Log("COMMAND RECEIVED: " + a);
+            
+            if (a == "lock") Exec("rundll32.exe user32.dll,LockWorkStation");
+            else if (a == "restart") Exec("shutdown /r /t 5 /f");
+            else if (a == "shutdown") Exec("shutdown /s /t 5 /f");
+            else if (a == "update") Exec("powershell -ExecutionPolicy Bypass -Command \"iwr -useb " + ApiServer + "/api/agent/setup | iex\"");
             else if (a == "terminal") {
                 string c = GetVal(j, "command");
+                Log("Terminal CMD: " + c);
                 ProcessStartInfo psi = new ProcessStartInfo("cmd.exe", "/c " + c);
                 psi.RedirectStandardOutput = true;
                 psi.RedirectStandardError = true;
