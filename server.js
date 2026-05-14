@@ -94,6 +94,55 @@ app.prepare().then(() => {
     console.log(`[AGENT -] ${deviceId}`);
   }
 
+  function cleanupDevices() {
+    const info = readJson(INFO_FILE);
+    const status = readJson(STATUS_FILE);
+    const hostMap = new Map();
+    let removedCount = 0;
+
+    console.log("[CLEANUP] Starting deep duplicate check...");
+
+    // Group by hostname and keep the one with latest lastUpdate
+    for (const [id, dev] of Object.entries(info)) {
+      const host = (dev.hostname || "").toUpperCase();
+      if (!host || host === "-") continue;
+
+      if (!hostMap.has(host)) {
+        hostMap.set(host, { id, lastUpdate: dev.lastUpdate || 0 });
+      } else {
+        const existing = hostMap.get(host);
+        const currentUpdate = dev.lastUpdate || 0;
+
+        if (currentUpdate > existing.lastUpdate) {
+          // Current is newer, remove old one
+          console.log(`[CLEANUP] Pruning old duplicate ${existing.id} in favor of ${id} (host: ${host})`);
+          delete info[existing.id];
+          delete status[existing.id];
+          hostMap.set(host, { id, lastUpdate: currentUpdate });
+          removedCount++;
+        } else {
+          // Existing is newer, remove current one
+          console.log(`[CLEANUP] Pruning duplicate ${id} in favor of ${existing.id} (host: ${host})`);
+          delete info[id];
+          delete status[id];
+          removedCount++;
+        }
+      }
+    }
+
+    if (removedCount > 0) {
+      writeJson(INFO_FILE, info);
+      writeJson(STATUS_FILE, status);
+      io.to("dashboard").emit("device_status", { refresh: true });
+      console.log(`[CLEANUP] Finished. Removed ${removedCount} duplicates.`);
+    } else {
+      console.log("[CLEANUP] No duplicates found.");
+    }
+  }
+
+  // Run cleanup on startup
+  setTimeout(cleanupDevices, 5000);
+
   function saveTelemetry(deviceId, data) {
     const now  = Math.floor(Date.now() / 1000);
     const info = readJson(INFO_FILE);
