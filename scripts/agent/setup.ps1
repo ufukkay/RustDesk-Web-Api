@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    RustDesk RMM Agent v4.1.0 - Ultra Stabilite Guncellemesi
+    RustDesk RMM Agent v4.1.1 - Derleme ve Stabilite Fix
 #>
 
 $dir          = "C:\ProgramData\RustDeskRMM"
@@ -44,7 +44,7 @@ public class RustDeskAgent {
     const string DeviceId     = "$rdId";
     const string WsUrl        = "$wsUrl";
     const string ApiServer    = "$apiServer";
-    const string AgentVersion = "v4.1.0";
+    const string AgentVersion = "v4.1.1";
     const string ApiKey       = "$agentApiKey";
     static readonly string LogPath = @"$dir\agent.log";
 
@@ -187,7 +187,7 @@ public class RustDeskAgent {
             WsBackoff = 10000; Log("Connected");
             await Send(ws, "{\"type\":\"telemetry\",\"deviceId\":\"" + DeviceId + "\",\"data\":" + BuildJson() + "}");
             var cts = new CancellationTokenSource();
-            _ = Task.Run(async () => {
+            Task.Run(async () => {
                 while (!cts.IsCancellationRequested && ws.State == WebSocketState.Open) {
                     try { await Task.Delay(30000, cts.Token); await Send(ws, "{\"type\":\"heartbeat\",\"deviceId\":\"" + DeviceId + "\"}"); } catch { break; }
                 }
@@ -208,7 +208,7 @@ public class RustDeskAgent {
         Log("Agent started " + AgentVersion);
         ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
         ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
-        _ = Task.Run(async () => {
+        Task.Run(async () => {
             while (true) {
                 try {
                     using (var c = new WebClient()) {
@@ -229,8 +229,23 @@ public class RustDeskAgent {
 $source | Out-File -FilePath "$dir\Agent.cs" -Encoding utf8
 $csc = (Get-ChildItem "C:\Windows\Microsoft.NET\Framework*\v4.0.*\csc.exe" -ErrorAction SilentlyContinue | Select-Object -Last 1).FullName
 if (!$csc) { Write-Error "csc.exe bulunamadi"; exit 1 }
-$result = Start-Process -FilePath $csc -ArgumentList "/target:exe /out:`"$dir\Agent.exe`" /reference:System.Management.dll `"$dir\Agent.cs`"" -Wait -PassThru -WindowStyle Hidden
-if ($result.ExitCode -ne 0) { Write-Error "Derleme basarisiz"; exit 1 }
+
+$refs = @(
+    "/reference:System.Management.dll",
+    "/reference:Microsoft.CSharp.dll",
+    "/reference:System.dll",
+    "/reference:System.Core.dll"
+)
+$args = "/target:exe /out:`"$dir\Agent.exe`" " + ($refs -join " ") + " `"$dir\Agent.cs`""
+
+# Derleme denemesi ve hata yakalama
+$result = Start-Process -FilePath $csc -ArgumentList $args -Wait -NoNewWindow -PassThru -RedirectStandardOutput "$dir\build.log" -RedirectStandardError "$dir\build_err.log"
+if ($result.ExitCode -ne 0) {
+    $err = Get-Content "$dir\build_err.log" -Raw
+    $msg = Get-Content "$dir\build.log" -Raw
+    Write-Error "Derleme basarisiz.`nDETAY: $err`n$msg"
+    exit 1
+}
 
 # --- 5. GOREV ZAMANLAYICI ---
 $taskName = "RustDeskRMM"
