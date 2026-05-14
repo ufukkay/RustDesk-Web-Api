@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Monitor, Users, Settings, Package, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Monitor, Users, Settings, Package, ChevronRight, BookOpen } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard",    label: "Genel Bakış",   icon: LayoutDashboard },
   { href: "/devices",      label: "Cihazlar",      icon: Monitor },
   { href: "/builder",      label: "Paket Oluşturucu", icon: Package },
   { href: "/technicians",  label: "Teknisyenler",  icon: Users },
+  { href: "/wiki",         label: "Bilgi Bankası", icon: BookOpen },
   { href: "/settings",     label: "Ayarlar",       icon: Settings },
 ];
 
