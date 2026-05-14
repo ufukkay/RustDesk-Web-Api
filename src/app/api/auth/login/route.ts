@@ -1,56 +1,83 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
+import bcrypt from "bcryptjs";
+import { signToken } from "@/lib/auth";
+import { safeReadJson, safeWriteJson } from "@/lib/fileUtils";
 import path from "path";
 
 const TECH_FILE = path.join(process.cwd(), "scripts", "technicians.json");
+
+interface Technician {
+  id: string;
+  name: string;
+  email: string;
+  username?: string;
+  password: string;
+  role: "Admin" | "Teknisyen";
+  status?: string;
+  lastLogin?: string;
+}
 
 export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
 
-    if (!fs.existsSync(TECH_FILE)) {
-      // Eğer hiç teknisyen yoksa, varsayılan admin girişine izin verelim (ilk kurulum için)
-      if (email === "admin@rustdesk.local" && password === "admin123") {
-        return NextResponse.json({
-          success: true,
-          user: { name: "Admin", email: "admin@rustdesk.local", role: "Admin" }
-        });
-      }
-      return NextResponse.json({ success: false, message: "Kullanıcı bulunamadı." }, { status: 401 });
+    if (!email || !password) {
+      return NextResponse.json({ success: false, message: "E-posta ve şifre gerekli." }, { status: 400 });
     }
 
-    const technicians = JSON.parse(fs.readFileSync(TECH_FILE, "utf-8"));
-    const user = technicians.find((t: any) => t.email === email && t.password === password);
+    const technicians = safeReadJson<Technician[]>(TECH_FILE, []);
 
-    if (user) {
-      // Şifreyi response'dan çıkaralım
-      const { password: _, ...userWithoutPassword } = user;
-      
-      const response = NextResponse.json({
-        success: true,
-        user: userWithoutPassword
-      });
-
-      // Basit bir auth token oluşturalım (Gerçek senaryoda JWT kullanılmalı)
-      const token = Buffer.from(JSON.stringify({ 
-        email: user.email, 
-        role: user.role, 
-        exp: Date.now() + 24 * 60 * 60 * 1000 
-      })).toString('base64');
-
-      response.cookies.set("auth-token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 // 24 hours
-      });
-
-      return response;
+    if (technicians.length === 0) {
+      return NextResponse.json(
+        { success: false, message: "Henüz hiç kullanıcı tanımlı değil. Lütfen önce bir Admin hesabı oluşturun." },
+        { status: 401 }
+      );
     }
 
-    return NextResponse.json({ success: false, message: "E-posta veya şifre hatalı." }, { status: 401 });
-  } catch (error: any) {
-    console.error("Login API Error:", error.message);
+    const user = technicians.find((t) => t.email === email);
+    if (!user) {
+      return NextResponse.json({ success: false, message: "E-posta veya şifre hatalı." }, { status: 401 });
+    }
+
+    // bcrypt hash mi yoksa eski düz metin mi? — geçiş dönemi için ikisini destekle
+    const isBcrypt = user.password.startsWith("$2");
+    const passwordValid = isBcrypt
+      ? await bcrypt.compare(password, user.password)
+      : password === user.password;
+
+    if (!passwordValid) {
+      return NextResponse.json({ success: false, message: "E-posta veya şifre hatalı." }, { status: 401 });
+    }
+
+    // Düz metin şifreyi hash'e yükselt (on-the-fly migration)
+    if (!isBcrypt) {
+      const hashed = await bcrypt.hash(password, 12);
+      const updated = technicians.map((t) =>
+        t.id === user.id ? { ...t, password: hashed, lastLogin: new Date().toISOString() } : t
+      );
+      safeWriteJson(TECH_FILE, updated);
+    } else {
+      const updated = technicians.map((t) =>
+        t.id === user.id ? { ...t, lastLogin: new Date().toISOString() } : t
+      );
+      safeWriteJson(TECH_FILE, updated);
+    }
+
+    const token = await signToken({ email: user.email, role: user.role });
+
+    const { password: _pw, ...userWithoutPassword } = user;
+    const response = NextResponse.json({ success: true, user: userWithoutPassword });
+
+    response.cookies.set("auth-token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24,
+    });
+
+    return response;
+  } catch (error) {
+    console.error("[Login] Hata:", error);
     return NextResponse.json({ success: false, message: "Sunucu hatası." }, { status: 500 });
   }
 }

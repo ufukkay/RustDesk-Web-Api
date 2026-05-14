@@ -1,68 +1,83 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
+import bcrypt from "bcryptjs";
+import { safeReadJson, safeWriteJson } from "@/lib/fileUtils";
+import { validateAgentKey } from "@/lib/agentAuth";
 import path from "path";
 
 const INFO_FILE = path.join(process.cwd(), "scripts", "device_info.json");
+const TECH_FILE = path.join(process.cwd(), "scripts", "technicians.json");
+
+interface Technician {
+  id: string;
+  name: string;
+  email: string;
+  username?: string;
+  password: string;
+  role: string;
+}
 
 export async function POST(req: Request) {
   try {
+    if (!validateAgentKey(req)) {
+      return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
+    }
+
     const body = await req.json();
     const { username, password, id, uuid } = body;
     const deviceId = id || uuid;
 
-    // 1. Cihaz Bilgilerini Güncelle (Mevcut mantık)
+    // Cihaz kayıt bilgilerini güncelle
     if (deviceId) {
-      let infoData: Record<string, any> = {};
-      if (fs.existsSync(INFO_FILE)) {
-        try { infoData = JSON.parse(fs.readFileSync(INFO_FILE, "utf-8")); } catch (e) {}
-      }
-      const currentInfo = infoData[String(deviceId)] || {};
+      const infoData = safeReadJson<Record<string, unknown>>(INFO_FILE, {});
+      const currentInfo = (infoData[String(deviceId)] as Record<string, unknown>) || {};
       const localIps = body.local_ips || body.info?.local_ips || "";
-      
+
       infoData[String(deviceId)] = {
         ...currentInfo,
         ...body,
         local_network_raw: localIps,
-        lastLoginUpdate: Math.floor(Date.now() / 1000)
+        lastLoginUpdate: Math.floor(Date.now() / 1000),
       };
-      fs.writeFileSync(INFO_FILE, JSON.stringify(infoData, null, 2));
+      safeWriteJson(INFO_FILE, infoData);
     }
 
-    // 2. RustDesk Uygulaması (Desktop) için Login Kontrolü
+    // RustDesk desktop uygulaması için kullanıcı doğrulaması
     if (username) {
-      const TECH_FILE = path.join(process.cwd(), "scripts", "technicians.json");
-      let technicians = [];
-      
-      if (fs.existsSync(TECH_FILE)) {
-        try { technicians = JSON.parse(fs.readFileSync(TECH_FILE, "utf-8")); } catch (e) {}
-      }
-
-      // Kullanıcı adı ve şifre kontrolü
-      const user = technicians.find((t: any) => 
-        (t.username === username || t.email === username) && t.password === password
-      );
+      const technicians = safeReadJson<Technician[]>(TECH_FILE, []);
+      const user = technicians.find((t) => t.username === username || t.email === username);
 
       if (!user) {
-
         return NextResponse.json({ error: "Invalid username or password" }, { status: 400 });
       }
 
+      const isBcrypt = user.password.startsWith("$2");
+      const valid = isBcrypt
+        ? await bcrypt.compare(password, user.password)
+        : password === user.password;
 
-      return NextResponse.json({ 
-        access_token: "token-" + Math.random().toString(36).substring(7),
+      if (!valid) {
+        return NextResponse.json({ error: "Invalid username or password" }, { status: 400 });
+      }
+
+      // On-the-fly migration: düz metin → bcrypt
+      if (!isBcrypt) {
+        const hashed = await bcrypt.hash(password, 12);
+        const updated = technicians.map((t) =>
+          t.id === user.id ? { ...t, password: hashed } : t
+        );
+        safeWriteJson(TECH_FILE, updated);
+      }
+
+      return NextResponse.json({
+        access_token: `token-${crypto.randomUUID()}`,
         type: "access_token",
-        user: { 
-          name: user.name,
-          email: user.email 
-        }
+        user: { name: user.name, email: user.email },
       });
     }
 
-    // 3. Varsayılan Başarılı Cevap (Cihaz kayıtları için)
     return NextResponse.json({ code: 200, message: "OK" });
-
   } catch (error) {
-    console.error("Login API Error:", error);
+    console.error("[Login API] Hata:", error);
     return NextResponse.json({ error: "Authentication failed" }, { status: 400 });
   }
 }

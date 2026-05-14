@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { exec } from "child_process";
 import { promisify } from "util";
 import path from "path";
-import fs from "fs";
 import { getAuthUser, isAdmin } from "@/lib/auth";
+import { safeReadJson, safeWriteJson } from "@/lib/fileUtils";
 
 /**
  * Node.js'in exec fonksiyonunu async/await ile kullanabilmek için promisify ediyoruz.
@@ -55,19 +55,9 @@ export async function GET() {
     const result = JSON.parse(stdout.trim());
     if (!result.ok) return NextResponse.json([]);
 
-    let onlineStatus: Record<string, number> = {};
-    let hardwareInfo: Record<string, any> = {};
-    let deletedDevices: string[] = [];
-
-    if (fs.existsSync(STATUS_FILE)) {
-      try { onlineStatus = JSON.parse(fs.readFileSync(STATUS_FILE, "utf-8")); } catch (e) {}
-    }
-    if (fs.existsSync(INFO_FILE)) {
-      try { hardwareInfo = JSON.parse(fs.readFileSync(INFO_FILE, "utf-8")); } catch (e) {}
-    }
-    if (fs.existsSync(DELETED_FILE)) {
-      try { deletedDevices = JSON.parse(fs.readFileSync(DELETED_FILE, "utf-8")); } catch (e) {}
-    }
+    const onlineStatus = safeReadJson<Record<string, number>>(STATUS_FILE, {});
+    const hardwareInfo = safeReadJson<Record<string, any>>(INFO_FILE, {});
+    const deletedDevices = safeReadJson<string[]>(DELETED_FILE, []);
 
     const now = Math.floor(now_ms / 1000);
     const sqliteDevices = Array.isArray(result.data) ? result.data : [];
@@ -232,37 +222,24 @@ export async function DELETE(req: Request) {
     const { id } = await req.json();
     if (!id) return NextResponse.json({ error: "ID gerekli" }, { status: 400 });
 
-    // 1. SİLİNENLER LİSTESİNE EKLE (Hafızada tutalım ki offline ise bir daha gelmesin)
-    let deletedDevices: string[] = [];
-    if (fs.existsSync(DELETED_FILE)) {
-      try { deletedDevices = JSON.parse(fs.readFileSync(DELETED_FILE, "utf-8")); } catch (e) {}
-    }
+    const deletedDevices = safeReadJson<string[]>(DELETED_FILE, []);
     if (!deletedDevices.includes(id)) {
-      deletedDevices.push(id);
-      fs.writeFileSync(DELETED_FILE, JSON.stringify(deletedDevices, null, 2));
+      safeWriteJson(DELETED_FILE, [...deletedDevices, id]);
     }
 
-    let hardwareInfo: Record<string, any> = {};
-    if (fs.existsSync(INFO_FILE)) {
-      try { hardwareInfo = JSON.parse(fs.readFileSync(INFO_FILE, "utf-8")); } catch (e) {}
-    }
-
+    const hardwareInfo = safeReadJson<Record<string, any>>(INFO_FILE, {});
     const deviceHostname = hardwareInfo[id]?.hostname || hardwareInfo[id]?.computer_name;
 
-    [STATUS_FILE, INFO_FILE].forEach(file => {
-      if (fs.existsSync(file)) {
-        try {
-          const data = JSON.parse(fs.readFileSync(file, "utf-8"));
-          let changed = false;
-          if (data[id]) { delete data[id]; changed = true; }
-          if (deviceHostname) {
-            const h = String(deviceHostname).toUpperCase();
-            if (data[h]) { delete data[h]; changed = true; }
-          }
-          if (changed) fs.writeFileSync(file, JSON.stringify(data, null, 2));
-        } catch (e) {}
+    for (const file of [STATUS_FILE, INFO_FILE]) {
+      const data = safeReadJson<Record<string, unknown>>(file, {});
+      let changed = false;
+      if (data[id]) { delete data[id]; changed = true; }
+      if (deviceHostname) {
+        const h = String(deviceHostname).toUpperCase();
+        if (data[h]) { delete data[h]; changed = true; }
       }
-    });
+      if (changed) safeWriteJson(file, data);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

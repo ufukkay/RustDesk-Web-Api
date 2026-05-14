@@ -1,50 +1,40 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
+import { safeReadJson, safeWriteJson } from "@/lib/fileUtils";
+import { validateAgentKey } from "@/lib/agentAuth";
 import path from "path";
 
 const INFO_FILE = path.join(process.cwd(), "scripts", "device_info.json");
 const STATUS_FILE = path.join(process.cwd(), "scripts", "online_status.json");
-const DEBUG_FILE = path.join(process.cwd(), "scripts", "last_payload.json");
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const deviceId = body.id || body.uuid;
-
-    // GELEN TÜM VERİYİ ANALİZ İÇİN DOSYAYA YAZALIM (DEBUG)
-    // fs.writeFileSync(DEBUG_FILE, JSON.stringify(body, null, 2));
-
-    if (deviceId) {
-      let infoData: Record<string, any> = {};
-      if (fs.existsSync(INFO_FILE)) {
-        try { infoData = JSON.parse(fs.readFileSync(INFO_FILE, "utf-8")); } catch (e) {}
-      }
-
-      // Her ihtimale karşı tüm ağ anahtarlarını deniyoruz
-      const netInfo = body.net || body.networks || body.network_interfaces || body.interfaces || body.adapters || body.info?.net || [];
-
-      infoData[String(deviceId)] = {
-        ...body,
-        standard_user: body.user || body.username || body.alias || body.login_name || "-",
-        ram: body.memory || body.ram || "-",
-        net_details: Array.isArray(netInfo) ? netInfo : [],
-        lastUpdate: Math.floor(Date.now() / 1000)
-      };
-      
-      fs.writeFileSync(INFO_FILE, JSON.stringify(infoData, null, 2));
-
-      // Online durumunu da güncelle
-      let statusData: Record<string, number> = {};
-      if (fs.existsSync(STATUS_FILE)) {
-        try { statusData = JSON.parse(fs.readFileSync(STATUS_FILE, "utf-8")); } catch (e) {}
-      }
-      statusData[String(deviceId)] = Math.floor(Date.now() / 1000);
-      fs.writeFileSync(STATUS_FILE, JSON.stringify(statusData, null, 2));
+    if (!validateAgentKey(req)) {
+      return NextResponse.json({ ok: false, error: "Yetkisiz" }, { status: 401 });
     }
 
+    const body = await req.json();
+    const deviceId = body.id || body.uuid;
+    if (!deviceId) return NextResponse.json({ ok: true });
+
+    const netInfo = body.net ?? body.networks ?? body.network_interfaces ?? body.interfaces ?? body.adapters ?? body.info?.net ?? [];
+
+    const infoData = safeReadJson<Record<string, unknown>>(INFO_FILE, {});
+    infoData[String(deviceId)] = {
+      ...body,
+      standard_user: body.user || body.username || body.alias || body.login_name || "-",
+      ram: body.memory || body.ram || "-",
+      net_details: Array.isArray(netInfo) ? netInfo : [],
+      lastUpdate: Math.floor(Date.now() / 1000),
+    };
+    safeWriteJson(INFO_FILE, infoData);
+
+    const statusData = safeReadJson<Record<string, number>>(STATUS_FILE, {});
+    statusData[String(deviceId)] = Math.floor(Date.now() / 1000);
+    safeWriteJson(STATUS_FILE, statusData);
+
     return NextResponse.json({ ok: true });
-  } catch (error: any) {
-    console.error("Sysinfo API Error:", error.message);
+  } catch (error) {
+    console.error("[Sysinfo] Hata:", error);
     return NextResponse.json({ ok: false, error: "Veri işlenemedi" }, { status: 500 });
   }
 }

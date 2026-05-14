@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
+import { validateAgentKey } from "@/lib/agentAuth";
+import { safeReadJson } from "@/lib/fileUtils";
 import path from "path";
 
 const INFO_FILE = path.join(process.cwd(), "scripts", "device_info.json");
 
 export async function GET(req: Request) {
   try {
+    if (!validateAgentKey(req)) {
+      return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const hostname = searchParams.get("hostname")?.toUpperCase();
 
@@ -13,14 +18,9 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "hostname required" }, { status: 400 });
     }
 
-    if (!fs.existsSync(INFO_FILE)) {
-      return NextResponse.json({ error: "no devices registered yet" }, { status: 404 });
-    }
+    const infoData = safeReadJson<Record<string, Record<string, string>>>(INFO_FILE, {});
 
-    const infoData = JSON.parse(fs.readFileSync(INFO_FILE, "utf-8"));
-    
-    // Hostname ile eslesen cihazi bul
-    const deviceId = Object.keys(infoData).find(id => {
+    const deviceId = Object.keys(infoData).find((id) => {
       const dev = infoData[id];
       return dev.hostname?.toUpperCase() === hostname || dev.name?.toUpperCase() === hostname;
     });
@@ -30,7 +30,7 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json({ error: "device not found" }, { status: 404 });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "internal error" }, { status: 500 });
   }
 }

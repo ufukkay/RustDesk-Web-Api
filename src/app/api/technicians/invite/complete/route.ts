@@ -1,9 +1,21 @@
 import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import { verifyInvite, removeInvite } from "@/lib/invites";
-import fs from "fs";
+import { safeReadJson, safeWriteJson } from "@/lib/fileUtils";
 import path from "path";
 
 const TECH_FILE = path.join(process.cwd(), "scripts", "technicians.json");
+
+interface Technician {
+  id: string;
+  name: string;
+  username?: string;
+  email: string;
+  password: string;
+  role: "Admin" | "Teknisyen";
+  status: string;
+  lastLogin: string;
+}
 
 export async function POST(req: Request) {
   try {
@@ -13,43 +25,40 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Eksik bilgiler" }, { status: 400 });
     }
 
+    if (password.length < 8) {
+      return NextResponse.json({ error: "Şifre en az 8 karakter olmalıdır" }, { status: 400 });
+    }
+
     const invite = verifyInvite(token);
     if (!invite) {
       return NextResponse.json({ error: "Geçersiz veya süresi dolmuş davet" }, { status: 404 });
     }
 
-    // Load existing technicians
-    let technicians = [];
-    if (fs.existsSync(TECH_FILE)) {
-      technicians = JSON.parse(fs.readFileSync(TECH_FILE, "utf-8"));
-    }
+    const technicians = safeReadJson<Technician[]>(TECH_FILE, []);
 
-    // Check if username or email already exists
-    if (technicians.some((t: any) => t.username === username || t.email === invite.email)) {
+    if (technicians.some((t) => t.username === username || t.email === invite.email)) {
       return NextResponse.json({ error: "Bu kullanıcı adı veya e-posta zaten kullanımda" }, { status: 400 });
     }
 
-    // Create new technician
-    const newTech = {
-      id: Math.random().toString(36).substr(2, 9),
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    const newTech: Technician = {
+      id: crypto.randomUUID(),
       name,
       username,
       email: invite.email,
-      password,
+      password: hashedPassword,
       role: invite.role,
       status: "Aktif",
-      lastLogin: new Date().toISOString()
+      lastLogin: new Date().toISOString(),
     };
 
-    technicians.push(newTech);
-    fs.writeFileSync(TECH_FILE, JSON.stringify(technicians, null, 2));
-
-    // Remove the invite
+    safeWriteJson(TECH_FILE, [...technicians, newTech]);
     removeInvite(token);
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error("Invite complete error:", error);
-    return NextResponse.json({ error: error.message || "Hesap oluşturulamadı" }, { status: 500 });
+  } catch (error) {
+    console.error("[InviteComplete] Hata:", error);
+    return NextResponse.json({ error: "Hesap oluşturulamadı" }, { status: 500 });
   }
 }

@@ -1,21 +1,32 @@
 import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import { isAdmin } from "@/lib/auth";
-import fs from "fs";
+import { safeReadJson, safeWriteJson } from "@/lib/fileUtils";
 import path from "path";
 
 const TECH_FILE = path.join(process.cwd(), "scripts", "technicians.json");
+
+interface Technician {
+  id: string;
+  name: string;
+  email: string;
+  username?: string;
+  password: string;
+  role: "Admin" | "Teknisyen";
+  status?: string;
+  lastLogin?: string;
+}
 
 export async function GET() {
   try {
     if (!await isAdmin()) {
       return NextResponse.json({ error: "Yetkisiz işlem" }, { status: 403 });
     }
-    if (!fs.existsSync(TECH_FILE)) {
-      return NextResponse.json([]);
-    }
-    const data = fs.readFileSync(TECH_FILE, "utf-8");
-    return NextResponse.json(JSON.parse(data));
-  } catch (error) {
+    const technicians = safeReadJson<Technician[]>(TECH_FILE, []);
+    // Şifreleri response'dan çıkar
+    const safe = technicians.map(({ password: _pw, ...rest }) => rest);
+    return NextResponse.json(safe);
+  } catch {
     return NextResponse.json([], { status: 500 });
   }
 }
@@ -25,30 +36,35 @@ export async function POST(req: Request) {
     if (!await isAdmin()) {
       return NextResponse.json({ error: "Yetkisiz işlem" }, { status: 403 });
     }
-    const tech = await req.json();
-    let technicians = [];
-    
-    if (fs.existsSync(TECH_FILE)) {
-      technicians = JSON.parse(fs.readFileSync(TECH_FILE, "utf-8"));
-    }
+    const tech: Technician = await req.json();
+    const technicians = safeReadJson<Technician[]>(TECH_FILE, []);
 
-    // Eğer ID varsa güncelle, yoksa ekle
-    const index = technicians.findIndex((t: any) => t.id === tech.id);
+    const index = technicians.findIndex((t) => t.id === tech.id);
+
     if (index > -1) {
-      // Mevcut şifreyi koru (eğer yeni şifre gelmediyse)
+      // Güncelleme: yeni şifre geldiyse hash'le, gelmediyse eskiyi koru
       const oldPassword = technicians[index].password;
-      technicians[index] = { 
-        ...technicians[index], 
-        ...tech,
-        password: tech.password || oldPassword 
-      };
+      let newPassword = oldPassword;
+
+      if (tech.password && tech.password !== oldPassword) {
+        const isAlreadyHashed = tech.password.startsWith("$2");
+        newPassword = isAlreadyHashed ? tech.password : await bcrypt.hash(tech.password, 12);
+      }
+
+      technicians[index] = { ...technicians[index], ...tech, password: newPassword };
     } else {
-      technicians.push(tech);
+      // Yeni ekleme: şifre zorunlu
+      if (!tech.password) {
+        return NextResponse.json({ error: "Şifre gerekli" }, { status: 400 });
+      }
+      const isAlreadyHashed = tech.password.startsWith("$2");
+      const hashedPassword = isAlreadyHashed ? tech.password : await bcrypt.hash(tech.password, 12);
+      technicians.push({ ...tech, id: tech.id || crypto.randomUUID(), password: hashedPassword });
     }
 
-    fs.writeFileSync(TECH_FILE, JSON.stringify(technicians, null, 2));
+    safeWriteJson(TECH_FILE, technicians);
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ success: false }, { status: 500 });
   }
 }
@@ -59,14 +75,10 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Yetkisiz işlem" }, { status: 403 });
     }
     const { id } = await req.json();
-    if (!fs.existsSync(TECH_FILE)) return NextResponse.json({ success: true });
-
-    let technicians = JSON.parse(fs.readFileSync(TECH_FILE, "utf-8"));
-    technicians = technicians.filter((t: any) => t.id !== id);
-    
-    fs.writeFileSync(TECH_FILE, JSON.stringify(technicians, null, 2));
+    const technicians = safeReadJson<Technician[]>(TECH_FILE, []);
+    safeWriteJson(TECH_FILE, technicians.filter((t) => t.id !== id));
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ success: false }, { status: 500 });
   }
 }
