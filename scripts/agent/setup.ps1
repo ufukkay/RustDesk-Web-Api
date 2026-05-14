@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    RustDesk RMM Agent v4.1.6 - Hata Raporlama ve Analiz
+    RustDesk RMM Agent v4.1.7 - Kesin Stabilite ve Temiz Kurulum
 #>
 
 $dir          = "C:\ProgramData\RustDeskRMM"
@@ -44,7 +44,7 @@ public class RustDeskAgent {
     const string DeviceId     = "$rdId";
     const string WsUrl        = "$wsUrl";
     const string ApiServer    = "$apiServer";
-    const string AgentVersion = "v4.1.6";
+    const string AgentVersion = "v4.1.7";
     const string ApiKey       = "$agentApiKey";
     static readonly string LogPath = @"$dir\agent.log";
 
@@ -152,7 +152,6 @@ public class RustDeskAgent {
             string user = Wmi("Win32_ComputerSystem", "UserName");
             if (user != "-" && !string.IsNullOrEmpty(user)) return user;
             
-            // Alternatif: Explorer.exe owner
             using (ManagementObjectSearcher s = new ManagementObjectSearcher("SELECT * FROM Win32_Process WHERE Name='explorer.exe'")) {
                 foreach (ManagementObject o in s.Get()) {
                     string[] args = new string[] { "", "" };
@@ -194,9 +193,7 @@ public class RustDeskAgent {
                 try {
                     dynamic searcher = Activator.CreateInstance(Type.GetTypeFromProgID("Microsoft.Update.Searcher"));
                     UpdateCount = searcher.Search("IsInstalled=0 and Type='Software'").Updates.Count.ToString();
-                } catch {
-                    UpdateCount = "0";
-                }
+                } catch { UpdateCount = "0"; }
             });
         }
         
@@ -259,7 +256,6 @@ public class RustDeskAgent {
             else if (a == "update") Exec("powershell -ExecutionPolicy Bypass -Command \"iwr -useb " + ApiServer + "/api/agent/setup | iex\"");
             else if (a == "terminal") {
                 string c = GetVal(j, "command");
-                Log("Terminal CMD: " + c);
                 ProcessStartInfo psi = new ProcessStartInfo("cmd.exe", "/c " + c);
                 psi.RedirectStandardOutput = true;
                 psi.RedirectStandardError = true;
@@ -280,10 +276,9 @@ public class RustDeskAgent {
             try {
                 await ws.ConnectAsync(new Uri(WsUrl + q), CancellationToken.None);
             } catch (Exception ex) {
-                Log("CRITICAL WS CONN ERROR: " + ex.Message + " (Inner: " + (ex.InnerException != null ? ex.InnerException.Message : "None") + ")");
+                Log("CRITICAL WS CONN ERROR: " + ex.Message);
                 throw;
             }
-            WsBackoff = 10000;
             Log("WS Connected successfully.");
             await Send(ws, "{\"type\":\"telemetry\",\"deviceId\":\"" + DeviceId + "\",\"data\":" + BuildJson() + "}");
             
@@ -307,7 +302,6 @@ public class RustDeskAgent {
                             if (r.MessageType == WebSocketMessageType.Close) break;
                             ms.Write(b, 0, r.Count);
                         } while (!r.EndOfMessage);
-                        
                         if (r.MessageType == WebSocketMessageType.Close) break;
                         string msg = Encoding.UTF8.GetString(ms.ToArray());
                         await Handle(ws, msg);
@@ -332,23 +326,16 @@ public class RustDeskAgent {
                         c.Encoding = Encoding.UTF8;
                         c.Headers["Content-Type"] = "application/json";
                         if (!string.IsNullOrEmpty(ApiKey)) c.Headers["Authorization"] = "Bearer " + ApiKey;
-                        string telemetry = BuildJson();
-                        c.UploadString(ApiServer + "/api/sysinfo", "POST", telemetry);
-                        Log("HTTP Telemetry sent successfully.");
+                        c.UploadString(ApiServer + "/api/sysinfo", "POST", BuildJson());
                     }
-                } catch (Exception ex) {
-                    Log("HTTP Telemetry Error: " + ex.Message);
-                }
+                } catch {}
                 await Task.Delay(300000);
             }
         });
         
         while (true) {
-            try {
-                Connect().GetAwaiter().GetResult();
-            } catch (Exception ex) {
-                Log("WS Main Loop Error: " + ex.Message);
-            }
+            try { Connect().GetAwaiter().GetResult(); } 
+            catch (Exception ex) { Log("WS Main Loop Error: " + ex.Message); }
             Thread.Sleep(WsBackoff);
             WsBackoff = Math.Min(WsBackoff * 2, 300000);
         }
@@ -357,9 +344,8 @@ public class RustDeskAgent {
 "@
 
 # --- 4. DERLEME VE BASLATMA ---
-# Eski süreci durdur (Dosya kullanımda hatasını önlemek için)
 Stop-Process -Name "Agent" -Force -ErrorAction SilentlyContinue
-Start-Sleep -Seconds 2 # Dosya kilidinin tam bırakılması için bekleme
+Start-Sleep -Seconds 2
 
 $source | Out-File -FilePath "$dir\Agent.cs" -Encoding utf8
 $csc = (Get-ChildItem "C:\Windows\Microsoft.NET\Framework*\v4.0.*\csc.exe" -ErrorAction SilentlyContinue | Select-Object -Last 1).FullName
@@ -373,12 +359,10 @@ $refs = @(
 )
 $args = "/target:exe /out:`"$dir\Agent.exe`" " + ($refs -join " ") + " `"$dir\Agent.cs`""
 
-# Derleme denemesi ve hata yakalama
 $result = Start-Process -FilePath $csc -ArgumentList $args -Wait -NoNewWindow -PassThru -RedirectStandardOutput "$dir\build.log" -RedirectStandardError "$dir\build_err.log"
 if ($result.ExitCode -ne 0) {
     $err = Get-Content "$dir\build_err.log" -Raw
-    $msg = Get-Content "$dir\build.log" -Raw
-    Write-Error "Derleme basarisiz.`nDETAY: $err`n$msg"
+    Write-Error "Derleme basarisiz.`nDETAY: $err"
     exit 1
 }
 
