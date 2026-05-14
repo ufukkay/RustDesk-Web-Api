@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     const deviceId = body.id || body.uuid;
     if (!deviceId) return NextResponse.json({ ok: true });
 
-    const netInfo = body.net ?? body.networks ?? body.network_interfaces ?? body.interfaces ?? body.adapters ?? body.info?.net ?? [];
+    const netInfo = body.net_details ?? body.net ?? body.networks ?? body.network_interfaces ?? body.interfaces ?? body.adapters ?? body.info?.net ?? [];
 
     const infoData = safeReadJson<Record<string, unknown>>(INFO_FILE, {});
     infoData[String(deviceId)] = {
