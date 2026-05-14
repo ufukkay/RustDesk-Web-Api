@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    RustDesk RMM Agent v4.1.3 - Kullanici Tespiti ve WS Detayli Log
+    RustDesk RMM Agent v4.1.4 - Kesin Stabilite ve Surec Fix
 #>
 
 $dir          = "C:\ProgramData\RustDeskRMM"
@@ -44,7 +44,7 @@ public class RustDeskAgent {
     const string DeviceId     = "$rdId";
     const string WsUrl        = "$wsUrl";
     const string ApiServer    = "$apiServer";
-    const string AgentVersion = "v4.1.3";
+    const string AgentVersion = "v4.1.4";
     const string ApiKey       = "$agentApiKey";
     static readonly string LogPath = @"$dir\agent.log";
 
