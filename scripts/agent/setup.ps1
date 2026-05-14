@@ -1,19 +1,70 @@
 <#
 .SYNOPSIS
-    RustDesk RMM Agent v4.1.8 - Stabilite ve Hata Fix
+    Talay RMM Pro Installer v5.0 (v4.1.10)
+    Professional, Robust, Enterprise Grade.
 #>
 
-$dir          = "C:\ProgramData\RustDeskRMM"
-$apiServer    = "https://rmm.talay.com"
-$wsUrl        = "wss://rmm.talay.com/agent-socket"
-$agentApiKey  = "AGENT_API_KEY_PLACEHOLDER"
+# --- KONFIGURASYON ---
+$dir           = "C:\ProgramData\RustDeskRMM"
+$apiServer     = "https://rmm.talay.com"
+$wsUrl         = "wss://rmm.talay.com/agent-socket"
+$agentApiKey   = "AGENT_API_KEY_PLACEHOLDER"
+$taskName      = "RustDeskRMM"
+$logFile       = "$dir\setup.log"
 
-# --- 1. ADMIN VE KLASOR KONTROLU ---
+# --- GORSEL FONKSIYONLAR ---
+function Show-Logo {
+    Clear-Host
+    Write-Host @"
+  _______   _              _____  __  __ __  __ 
+ |__   __| | |            |  __ \|  \/  |  \/  |
+    | | __ | | __ _ _   _ | |__) | \  / | \  / |
+    | |/ _` | |/ _` | | | ||  _  /| |\/| | |\/| |
+    | | (_| | | (_| | |_| || | \ \| |  | | |  | |
+    |_|\__,_|_|\__,_|\__, ||_|  \_\_|  |_|_|  |_|
+                      __/ |                     
+                     |___/  PRO INSTALLER v5.0
+"@ -ForegroundColor Yellow
+    Write-Host "------------------------------------------------" -ForegroundColor Gray
+}
+
+function Write-Step ([int]$step, [string]$msg) {
+    Write-Host "[$step/5] $msg..." -ForegroundColor Cyan
+}
+
+function Report-Error ([string]$msg) {
+    Write-Host "`n[!] HATA: $msg" -ForegroundColor Red
+    try {
+        $body = @{ id = $env:COMPUTERNAME; error = $msg; step = "setup" } | ConvertTo-Json
+        Invoke-RestMethod -Uri "$apiServer/api/agent/log" -Method Post -Body $body -ContentType "application/json" -ErrorAction SilentlyContinue
+    } catch {}
+    exit 1
+}
+
+# --- 1. HAZIRLIK VE ADMIN ---
+Show-Logo
+Write-Step 1 "Sistem gereksinimleri kontrol ediliyor"
+
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-if (!$isAdmin) { Write-Error "Admin yetkisi gerekli"; exit 1 }
+if (!$isAdmin) { Report-Error "Kurulum için Administrator yetkisi gereklidir." }
+
 if (!(Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
 
-# --- 2. CIHAZ ID TESPITI ---
+# --- 2. ESKI SURUM TEMIZLIGI (HARD RESET) ---
+Write-Step 2 "Eski versiyon kalıntıları temizleniyor"
+try {
+    if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
+        Stop-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+        Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
+    }
+    Stop-Process -Name "Agent" -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds 2
+} catch {
+    Write-Host "Temizlik sırasında ufak bir sorun oluştu, devam ediliyor..." -ForegroundColor Yellow
+}
+
+# --- 3. CIHAZ ID VE RUSTDESK ---
+Write-Step 3 "RustDesk yapılandırması taranıyor"
 $rdId = ""
 $configPaths = @(
     "C:\Windows\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\config\rustdesk.toml",
@@ -21,13 +72,16 @@ $configPaths = @(
 )
 foreach ($p in $configPaths) {
     if (!$rdId -and (Test-Path $p)) {
-        $content = Get-Content $p -Raw
-        if ($content -match "id = '([^']+)'") { $rdId = $matches[1] }
+        if ($content = Get-Content $p -Raw -ErrorAction SilentlyContinue) {
+            if ($content -match "id = '([^']+)'") { $rdId = $matches[1] }
+        }
     }
 }
 if (!$rdId) { $rdId = $env:COMPUTERNAME }
 
-# --- 3. C# KAYNAK KODU ---
+# --- 4. AJAN DERLEME (v4.1.10) ---
+Write-Step 4 "Pro-Agent derleniyor (v4.1.10)"
+
 $source = @"
 using System;
 using System.Net;
@@ -42,10 +96,10 @@ using System.Net.WebSockets;
 using System.Collections.Generic;
 
 public class RustDeskAgent {
-    static string DeviceId    = "$rdId"; // Fallback from setup
+    static string DeviceId    = "$rdId"; 
     const string WsUrl        = "$wsUrl";
     const string ApiServer    = "$apiServer";
-    const string AgentVersion = "v4.1.9";
+    const string AgentVersion = "v4.1.10";
     const string ApiKey       = "$agentApiKey";
     static readonly string LogPath = @"$dir\agent.log";
 
@@ -83,7 +137,7 @@ public class RustDeskAgent {
                 }
             }
         } catch {}
-        return "$rdId"; // Fallback to setup-time ID
+        return "$rdId"; 
     }
 
     static string EscJ(string s) {
@@ -291,7 +345,7 @@ public class RustDeskAgent {
     }
 
     static async Task Connect() {
-        DeviceId = GetRuntimeId(); // Refresh ID before connect
+        DeviceId = GetRuntimeId(); 
         using (ClientWebSocket ws = new ClientWebSocket()) {
             string q = "?deviceId=" + DeviceId + "&hostname=" + Uri.EscapeDataString(Environment.MachineName) + "&type=agent";
             Log("Connecting to WS: " + WsUrl + q);
@@ -344,7 +398,7 @@ public class RustDeskAgent {
         Task.Run(async () => {
             while (true) {
                 try {
-                    DeviceId = GetRuntimeId(); // Refresh ID before telemetry
+                    DeviceId = GetRuntimeId(); 
                     using (WebClient c = new WebClient()) {
                         c.Encoding = Encoding.UTF8;
                         c.Headers["Content-Type"] = "application/json";
@@ -366,39 +420,36 @@ public class RustDeskAgent {
 }
 "@
 
-# --- 4. DERLEME VE BASLATMA ---
-Stop-Process -Name "Agent" -Force -ErrorAction SilentlyContinue
-Start-Sleep -Seconds 2
-
 $source | Out-File -FilePath "$dir\Agent.cs" -Encoding utf8
 $cscPaths = Get-ChildItem "C:\Windows\Microsoft.NET\Framework*\v4.0.*\csc.exe" -ErrorAction SilentlyContinue
 $csc = ($cscPaths | Select-Object -Last 1).FullName
-if (!$csc) { Write-Error "csc.exe bulunamadi"; exit 1 }
+if (!$csc) { Report-Error ".NET Compiler (csc.exe) bulunamadı." }
 
-$refs = @(
-    "/reference:System.Management.dll",
-    "/reference:Microsoft.CSharp.dll",
-    "/reference:System.dll",
-    "/reference:System.Core.dll"
-)
+$refs = @("/reference:System.Management.dll", "/reference:Microsoft.CSharp.dll", "/reference:System.dll", "/reference:System.Core.dll")
 $buildArgs = "/target:exe /out:`"$dir\Agent.exe`" " + ($refs -join " ") + " `"$dir\Agent.cs`""
 
 $process = Start-Process -FilePath $csc -ArgumentList $buildArgs -Wait -NoNewWindow -PassThru -RedirectStandardOutput "$dir\build.log" -RedirectStandardError "$dir\build_err.log"
 if ($process.ExitCode -ne 0) {
     $errText = Get-Content "$dir\build_err.log" -Raw
-    Write-Error "Derleme basarisiz.`nDETAY: $errText"
-    exit 1
+    Report-Error "Ajan derlenemedi. Detay: $errText"
 }
 
-# --- 5. GOREV ZAMANLAYICI ---
-$taskName = "RustDeskRMM"
-if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) { 
-    Stop-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
-    Unregister-ScheduledTask -TaskName $taskName -Confirm:$false 
+# --- 5. GOREV ZAMANLAYICI VE BASLATMA ---
+Write-Step 5 "Ajan servisi başlatılıyor"
+
+try {
+    $action = New-ScheduledTaskAction -Execute "$dir\Agent.exe"
+    $trigger = New-ScheduledTaskTrigger -AtStartup
+    $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+    $settingsSet = New-ScheduledTaskSettingsSet -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit (New-TimeSpan -Days 0)
+    
+    Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settingsSet -Force | Out-Null
+    Start-ScheduledTask -TaskName $taskName
+    
+    Write-Host "`n------------------------------------------------" -ForegroundColor Gray
+    Write-Host "ISLEM TAMAMLANDI: Talay RMM Pro Ajanı Hazır! ✅" -ForegroundColor Green
+    Write-Host "Cihaz ID: $rdId" -ForegroundColor Yellow
+    Write-Host "------------------------------------------------`n" -ForegroundColor Gray
+} catch {
+    Report-Error "Servis kaydı sırasında hata oluştu: $($_.Exception.Message)"
 }
-$action = New-ScheduledTaskAction -Execute "$dir\Agent.exe"
-$trigger = New-ScheduledTaskTrigger -AtStartup
-$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
-$settingsSet = New-ScheduledTaskSettingsSet -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit (New-TimeSpan -Days 0)
-Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settingsSet | Out-Null
-Start-ScheduledTask -TaskName $taskName

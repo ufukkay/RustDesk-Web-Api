@@ -50,7 +50,28 @@ const app    = next({ dev, hostname: "0.0.0.0", port });
 const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
-  const httpServer = createServer((req, res) => {
+    const { pathname } = parse(req.url, true);
+    
+    // ── Pro Log API ────────────────────────────────────────────────
+    if (pathname === "/api/agent/log" && req.method === "POST") {
+      let body = "";
+      req.on("data", chunk => { body += chunk; });
+      req.on("end", () => {
+        try {
+          const data = JSON.parse(body);
+          console.log(`[AGENT-LOG] ${data.id || "Unknown"}: ${data.error || data.msg}`);
+          // Optionally save to a file for auditing
+          const logDir = path.join(SCRIPTS_DIR, "logs");
+          if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
+          const logFile = path.join(logDir, `${sanitize(data.id || "general")}.log`);
+          fs.appendFileSync(logFile, `${new Date().toISOString()} [${data.step || "info"}] ${data.error || data.msg}\n`);
+        } catch {}
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true }));
+      });
+      return;
+    }
+
     handle(req, res, parse(req.url, true));
   });
 
@@ -140,8 +161,9 @@ app.prepare().then(() => {
     }
   }
 
-  // Run cleanup on startup
+  // Run cleanup on startup and then every hour
   setTimeout(cleanupDevices, 5000);
+  setInterval(cleanupDevices, 3600000); // 1 hour
 
   function saveTelemetry(deviceId, data) {
     const now  = Math.floor(Date.now() / 1000);

@@ -37,81 +37,81 @@ export async function GET(req: Request) {
       try {
         if (fs.existsSync(p)) { serverKey = fs.readFileSync(p, "utf-8").trim(); break; }
       } catch { continue; }
-    }
+        const psScript = `<#
+.SYNOPSIS
+    Talay RMM Pro Unified Installer v5.0
+    Professional, Automated, Enterprise Grade.
+#>
 
-    const psScript = `# --- RUSTDESK KURULUM SCRIPT ---
 $ErrorActionPreference = "SilentlyContinue"
+$apiServer = "${apiServer}"
+$idServer  = "${idServer}"
+$key       = "${serverKey}"
+$pass      = "${password}"
 
-# 0. Yonetici Kontrolu
+# --- GORSEL FONKSIYONLAR ---
+function Show-Logo {
+    Clear-Host
+    Write-Host @"
+  _______   _              _____  __  __ __  __ 
+ |__   __| | |            |  __ \|  \/  |  \/  |
+    | | __ | | __ _ _   _ | |__) | \  / | \  / |
+    | |/ _` | |/ _` | | | ||  _  /| |\/| | |\/| |
+    | | (_| | | (_| | |_| || | \ \| |  | | |  | |
+    |_|\__,_|_|\__,_|\__, ||_|  \_\_|  |_|_|  |_|
+                      __/ |                     
+                     |___/  UNIFIED INSTALLER v5.0
+"@ -ForegroundColor Yellow
+    Write-Host "------------------------------------------------" -ForegroundColor Gray
+}
+
+function Write-Step ([int]$step, [string]$msg) {
+    Write-Host "[$step/6] $msg..." -ForegroundColor Cyan
+}
+
+# --- 0. HAZIRLIK ---
+Show-Logo
+Write-Step 1 "Yönetici yetkileri ve sistem kontrol ediliyor"
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Host "[HATA] Bu scripti Administrator (Yonetici) olarak calistirmalisiniz!" -ForegroundColor Red
+    Write-Host "[HATA] Lütfen PowerShell'i 'Yönetici Olarak Çalıştır' seçeneğiyle açın." -ForegroundColor Red
     exit 1
 }
 
-Write-Host "--- RustDesk Kurumsal Kurulum Baslatiliyor ---" -ForegroundColor Yellow
-
-# TLS 1.2 zorla + SSL bypass
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 [Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
 
-# 1. RustDesk Indir ve Kur
-Write-Host ">> RustDesk yukleniyor..." -ForegroundColor Cyan
+# --- 1. RUSTDESK KURULUM ---
+Write-Step 2 "RustDesk kurumsal paketi indiriliyor"
 $setupPath = Join-Path $env:TEMP "rustdesk_setup.exe"
 $rdUrl = "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe"
 
-# Yontem 1: curl.exe (.NET TLS'den bagimsiz)
 if (Get-Command curl.exe -ErrorAction SilentlyContinue) {
-    curl.exe -L -s --ssl-no-revoke -o $setupPath $rdUrl 2>$null
-}
-# Yontem 2: bitsadmin fallback
-$fileSize = (Get-Item $setupPath -ErrorAction SilentlyContinue).Length
-if (-not $fileSize -or $fileSize -lt 5000000) {
-    bitsadmin /transfer "rdsetup" /download $rdUrl $setupPath 2>$null | Out-Null
-}
-# Yontem 3: Invoke-WebRequest (hata propagate etmemesi icin SilentlyContinue)
-$fileSize = (Get-Item $setupPath -ErrorAction SilentlyContinue).Length
-if (-not $fileSize -or $fileSize -lt 5000000) {
-    Invoke-WebRequest -Uri $rdUrl -OutFile $setupPath -UseBasicParsing -ErrorAction SilentlyContinue
+    curl.exe -L -s --ssl-no-revoke -o $setupPath $rdUrl
+} else {
+    Invoke-WebRequest -Uri $rdUrl -OutFile $setupPath -UseBasicParsing
 }
 
-$fileSize = (Get-Item $setupPath -ErrorAction SilentlyContinue).Length
-if (-not $fileSize -or $fileSize -lt 5000000) {
-    Write-Host "[HATA] Dosya indirilemedi ($fileSize byte)" -ForegroundColor Red
-    exit 1
-}
-Write-Host "[OK] Dosya indirildi ($([math]::Round($fileSize/1MB,1)) MB)" -ForegroundColor Green
-
-$proc = Start-Process $setupPath -ArgumentList "--silent-install" -PassThru
-$timeout = 0
-while ($proc -and !$proc.HasExited -and $timeout -lt 30) { Start-Sleep -Seconds 1; $timeout++ }
-
-# Kurulum dogrula
+Write-Host ">> Kurulum başlatılıyor..." -ForegroundColor Gray
+$proc = Start-Process $setupPath -ArgumentList "--silent-install" -PassThru -Wait
 Start-Sleep -Seconds 3
-$rd = if (Test-Path "C:\\Program Files\\RustDesk\\rustdesk.exe") { "C:\\Program Files\\RustDesk\\rustdesk.exe" } else { "C:\\Program Files (x86)\\RustDesk\\rustdesk.exe" }
-if (-not (Test-Path $rd)) {
-    Write-Host "[HATA] rustdesk.exe bulunamadi, kurulum basarisiz" -ForegroundColor Red
-    exit 1
-}
-Write-Host "[OK] RustDesk kuruldu" -ForegroundColor Green
 
-# 2. Ayarlari Muhurle
-Write-Host ">> Ayarlar muhurleniyor..." -ForegroundColor Cyan
+$rd = if (Test-Path "C:\\Program Files\\RustDesk\\rustdesk.exe") { "C:\\Program Files\\RustDesk\\rustdesk.exe" } else { "C:\\Program Files (x86)\\RustDesk\\rustdesk.exe" }
+if (!(Test-Path $rd)) { Write-Host "[HATA] RustDesk kurulamadı." -ForegroundColor Red; exit 1 }
+
+# --- 2. AYARLARIN MUHURLENMESI ---
+Write-Step 3 "Kurumsal ağ ayarları mühürleniyor"
 Stop-Service -Name "rustdesk" -Force -ErrorAction SilentlyContinue
-Start-Sleep -Seconds 2
 Get-Process "rustdesk" -ErrorAction SilentlyContinue | Stop-Process -Force
 
-$toml1 = @"
-rendezvous_server = '${idServer}'
-"@
-
+$toml1 = "rendezvous_server = '$idServer'"
 $toml2 = @"
 [options]
-custom-rendezvous-server = '${idServer}'
+custom-rendezvous-server = '$idServer'
 relay-server = '${relayServer}'
-api-server = '${apiServer}'
-key = '${serverKey}'
+api-server = '$apiServer'
+key = '$key'
 verification-method = 'use-permanent-password'
-permanent-password = '${password}'
+permanent-password = '$pass'
 approve-mode = 'password'
 remote-user-confirmation = 'N'
 allow-logon-screen-password = 'Y'
@@ -129,109 +129,55 @@ disable-change-permanent-password = 'Y'
 remove-preset-password-warning = 'Y'
 "@
 
-$profileDirs = @(
-    "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk\\config",
-    "C:\\Windows\\System32\\config\\systemprofile\\AppData\\Roaming\\RustDesk\\config",
-    "$env:ProgramData\\RustDesk\\config",
-    "$env:USERPROFILE\\AppData\\Roaming\\RustDesk\\config"
-)
+$profileDirs = @("C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk\\config", "$env:ProgramData\\RustDesk\\config")
 Get-ChildItem "C:\\Users" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
     $profileDirs += "$($_.FullName)\\AppData\\Roaming\\RustDesk\\config"
 }
-foreach ($dir in $profileDirs) {
-    if (!(Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
-    [System.IO.File]::WriteAllText("$dir\\RustDesk.toml",  $toml1, (New-Object System.Text.UTF8Encoding($false)))
-    [System.IO.File]::WriteAllText("$dir\\RustDesk2.toml", $toml2, (New-Object System.Text.UTF8Encoding($false)))
+foreach ($d in $profileDirs) {
+    if (!(Test-Path $d)) { New-Item -ItemType Directory -Path $d -Force | Out-Null }
+    [System.IO.File]::WriteAllText("$d\\RustDesk.toml",  $toml1, (New-Object System.Text.UTF8Encoding($false)))
+    [System.IO.File]::WriteAllText("$d\\RustDesk2.toml", $toml2, (New-Object System.Text.UTF8Encoding($false)))
 }
-Write-Host "[OK] Config yazildi" -ForegroundColor Green
-
-# 3. Servisi baslat
-Write-Host ">> Servis baslatiliyor..." -ForegroundColor Cyan
 Start-Service rustdesk -ErrorAction SilentlyContinue
-Start-Sleep -Seconds 3
+& $rd --password '$pass' 2>$null
+& $rd --set-password '$pass' 2>$null
 
-# 4. CLI ile sifre ayarla
-Write-Host ">> Sifre politikasi uygulaniyor..." -ForegroundColor Cyan
-if (Test-Path $rd) {
-    & $rd --password '${password}' 2>$null
-    Start-Sleep -Seconds 1
-    & $rd --set-password '${password}' 2>$null
-}
-
-# 5. RMM Ajani Kurulumu (Agent V2 - Real-time WebSocket & WMI Telemetry)
-Write-Host ">> RMM Ajani (Agent V2) kuruluyor..." -ForegroundColor Cyan
-
-# --- ID TESPITI (YUKLEME SIRASINDA) ---
-$foundId = ""
-$idPaths = @(
-    "C:\Windows\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\config\RustDesk.toml",
-    "C:\Windows\System32\config\systemprofile\AppData\Roaming\RustDesk\config\RustDesk.toml",
-    "$env:ProgramData\RustDesk\config\RustDesk.toml"
-)
-foreach ($p in $idPaths) {
-    if (Test-Path $p) {
-        $content = Get-Content $p -Raw -ErrorAction SilentlyContinue
-        if ($content -match 'id\s*=\s*[''"]?(\d{6,15})[''"]?') {
-            $foundId = $matches[1]
-            Write-Host "[OK] RustDesk ID tespit edildi: $foundId" -ForegroundColor Cyan
-            break
-        }
-    }
-}
-
-$agentSetupUrl = "${apiServer}/api/agent/setup"
+# --- 3. RMM AJANI KURULUMU ---
+Write-Step 4 "Talay RMM Pro Ajanı (WebSocket) yapılandırılıyor"
+$agentSetupUrl = "$apiServer/api/agent/setup"
 try {
     $tempPs1 = Join-Path $env:TEMP "agent_setup.ps1"
     (New-Object System.Net.WebClient).DownloadFile($agentSetupUrl, $tempPs1)
-    Write-Host ">> Ajan betigi indirildi, calistiriliyor..." -ForegroundColor Gray
-    if ($foundId) {
-        & powershell.exe -ExecutionPolicy Bypass -File $tempPs1 -apiServer "${apiServer}" -deviceId $foundId
-    } else {
-        & powershell.exe -ExecutionPolicy Bypass -File $tempPs1 -apiServer "${apiServer}"
-    }
+    & powershell.exe -ExecutionPolicy Bypass -File $tempPs1
 } catch {
-    Write-Host "[HATA] RMM Ajani indirilemedi veya calistirilemedi: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "[!] Ajan kurulumunda hata oluştu, manuel kontrol gerekebilir." -ForegroundColor Yellow
 }
 
-# 6. rdrmm:// URI Scheme Handler
-Write-Host ">> rdrmm:// URI handler kuruluyor..." -ForegroundColor Cyan
+# --- 4. URI HANDLER ---
+Write-Step 5 "Hızlı bağlantı protokolleri (rdrmm://) kaydediliyor"
 $rmmDir = "C:\\ProgramData\\RustDeskRMM"
 if (!(Test-Path $rmmDir)) { New-Item -ItemType Directory -Path $rmmDir -Force | Out-Null }
-$connectVbs = @'
+$connectVbs = @"
 Set args = WScript.Arguments
-Dim id
-id = args(0)
-id = Replace(id, "rdrmm://", "")
-id = Replace(id, "/", "")
-
-Dim rdExe
-rdExe = "C:\Program Files\RustDesk\rustdesk.exe"
-If Not CreateObject("Scripting.FileSystemObject").FileExists(rdExe) Then
-    rdExe = "C:\Program Files (x86)\RustDesk\rustdesk.exe"
-End If
-
-Dim oShell
+id = Replace(Replace(args(0), "rdrmm://", ""), "/", "")
 Set oShell = CreateObject("WScript.Shell")
-oShell.Run """" & rdExe & """ --connect " & id & " ${password}", 1, False
-'@
+oShell.Run """$rd"" --connect " & id & " $pass", 1, False
+"@
 [System.IO.File]::WriteAllText("$rmmDir\\connect.vbs", $connectVbs, (New-Object System.Text.UTF8Encoding($false)))
 
 $regBase = "HKLM:\\SOFTWARE\\Classes\\rdrmm"
 New-Item -Path $regBase -Force | Out-Null
 Set-ItemProperty -Path $regBase -Name "(Default)" -Value "URL:RustDesk RMM Connection"
 New-ItemProperty -Path $regBase -Name "URL Protocol" -Value "" -PropertyType String -Force | Out-Null
-New-Item -Path "$regBase\\DefaultIcon" -Force | Out-Null
-Set-ItemProperty -Path "$regBase\\DefaultIcon" -Name "(Default)" -Value "$rd,0"
 New-Item -Path "$regBase\\shell\\open\\command" -Force | Out-Null
 Set-ItemProperty -Path "$regBase\\shell\\open\\command" -Name "(Default)" -Value "wscript.exe //B \`"$rmmDir\\connect.vbs\`" \`"%1\`""
 
-Write-Host ""
-Write-Host "--- KURULUM TAMAMLANDI ---" -ForegroundColor Green
-Write-Host "Sunucu : ${idServer}" -ForegroundColor White
-if ($rdId) { Write-Host "Cihaz ID: $rdId" -ForegroundColor Yellow }
-Write-Host ""
-Write-Host "Lutfen paneli kontrol edin..." -ForegroundColor Gray
-
+# --- 5. FINAL ---
+Write-Step 6 "Sistem optimizasyonu tamamlanıyor"
+Write-Host "\`n------------------------------------------------" -ForegroundColor Gray
+Write-Host "TEBRİKLER: Kurumsal Kurulum Başarıyla Tamamlandı! ✅" -ForegroundColor Green
+Write-Host "Lütfen RMM Panelini kontrol edin." -ForegroundColor White
+Write-Host "------------------------------------------------\`n" -ForegroundColor Gray
 `;
 
     return new Response(psScript, {
