@@ -12,6 +12,7 @@ export default function BuilderPage() {
   const { serverConfig } = useAppStore();
   const [host, setHost] = useState("");
   const [copied, setCopied] = useState(false);
+  const [uninstallCopied, setUninstallCopied] = useState(false);
   const [serverKey, setServerKey] = useState("Yükleniyor...");
   const [baseUrl, setBaseUrl] = useState("");
   const [companyName, setCompanyName] = useState("");
@@ -50,21 +51,32 @@ export default function BuilderPage() {
   }, []);
 
   const installCommand = `irm "${baseUrl}/api/rustdesk/builder/install?host=${host}&port=443" | iex`;
+  const uninstallCommand = `irm "${baseUrl}/api/rustdesk/builder/uninstall" | iex`;
 
-  const copyToClipboard = () => {
+  const copyToClipboard = (text: string, isUninstall: boolean = false) => {
     if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(installCommand);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      navigator.clipboard.writeText(text);
+      if (isUninstall) {
+        setUninstallCopied(true);
+        setTimeout(() => setUninstallCopied(false), 2000);
+      } else {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
     } else {
       const textArea = document.createElement("textarea");
-      textArea.value = installCommand;
+      textArea.value = text;
       document.body.appendChild(textArea);
       textArea.select();
       try {
         document.execCommand('copy');
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        if (isUninstall) {
+          setUninstallCopied(true);
+          setTimeout(() => setUninstallCopied(false), 2000);
+        } else {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        }
       } catch (err) {
         console.error('Kopyalama hatası:', err);
       }
@@ -197,7 +209,7 @@ export default function BuilderPage() {
               <span className="rd2-mono" style={{ color: "#FFCC00", fontSize: 12, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {installCommand}
               </span>
-              <button className="rd2-copy-btn" style={{ background: "#FFCC00", color: "#0E1116" }} onClick={copyToClipboard}>
+              <button className="rd2-copy-btn" style={{ background: "#FFCC00", color: "#0E1116" }} onClick={() => copyToClipboard(installCommand)}>
                 {copied ? <Check width="14" height="14" /> : <Copy width="14" height="14" />}
               </button>
             </div>
@@ -208,9 +220,12 @@ export default function BuilderPage() {
               </div>
               <div className="rd2-ps-cmd" style={{ background: "rgba(255,255,255,.04)" }}>
                 <span style={{ color: "rgba(255,255,255,.25)", marginRight: 6 }}>$</span>
-                <span className="rd2-mono" style={{ color: "#fca5a5", fontSize: 11, flex: 1 }}>
-                  {`irm "${baseUrl}/api/rustdesk/builder/uninstall" | iex`}
+                <span className="rd2-mono" style={{ color: "#fca5a5", fontSize: 11, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {uninstallCommand}
                 </span>
+                <button className="rd2-copy-btn" style={{ background: "rgba(252,165,165,0.2)", color: "#fca5a5", border: "1px solid rgba(252,165,165,0.3)" }} onClick={() => copyToClipboard(uninstallCommand, true)}>
+                  {uninstallCopied ? <Check width="14" height="14" /> : <Copy width="14" height="14" />}
+                </button>
               </div>
             </div>
 
