@@ -1,0 +1,16 @@
+[
+  {
+    "id": "welcome",
+    "title": "Hoş Geldiniz",
+    "content": "# Bilgi Bankasına Hoş Geldiniz\n\nBurada teknisyenler için gerekli dokümanları, sık kullanılan scriptleri ve sistem notlarını saklayabilirsiniz.\n\n### Örnek Kullanım:\n- PowerShell scriptleri\n- Ağ yapılandırma detayları\n- RustDesk özel ayarları",
+    "category": "Genel",
+    "updatedAt": "2024-05-14T14:35:00.000Z"
+  },
+  {
+    "id": "ps-agent-fix",
+    "title": "Ajan Bağlantı Onarma",
+    "content": "# Ajan Bağlantı Onarma Scripti\n\nEğer bir cihazda 'WS Yok' hatası alıyorsanız şu komutu PowerShell ile (Yönetici) çalıştırın:\n\n```powershell\nStop-Service RustDeskAgent\nStart-Service RustDeskAgent\n```\n\n### Alternatif:\nCihazın internet bağlantısını ve firewall ayarlarını kontrol edin.",
+    "category": "Scripts",
+    "updatedAt": "2024-05-14T14:36:00.000Z"
+  }
+]
