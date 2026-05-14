@@ -337,7 +337,11 @@ public class RustDeskAgent {
 }
 "@
 
-# --- 4. DERLEME ---
+# --- 4. DERLEME VE BASLATMA ---
+# Eski süreci durdur (Dosya kullanımda hatasını önlemek için)
+Stop-Process -Name "Agent" -Force -ErrorAction SilentlyContinue
+Start-Sleep -Seconds 2 # Dosya kilidinin tam bırakılması için bekleme
+
 $source | Out-File -FilePath "$dir\Agent.cs" -Encoding utf8
 $csc = (Get-ChildItem "C:\Windows\Microsoft.NET\Framework*\v4.0.*\csc.exe" -ErrorAction SilentlyContinue | Select-Object -Last 1).FullName
 if (!$csc) { Write-Error "csc.exe bulunamadi"; exit 1 }
@@ -361,39 +365,12 @@ if ($result.ExitCode -ne 0) {
 
 # --- 5. GOREV ZAMANLAYICI ---
 $taskName = "RustDeskRMM"
-if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) { Stop-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue; Unregister-ScheduledTask -TaskName $taskName -Confirm:$false }
-$action = New-ScheduledTaskAction -Execute "$dir\Agent.exe"; $trigger = New-ScheduledTaskTrigger -AtStartup
-$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
-$settings = New-ScheduledTaskSettingsSet -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit (New-TimeSpan -Days 0)
-Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings | Out-Null
-Start-ScheduledTask -TaskName $taskName
-
-# --- 4. DERLEME ---
-$source | Out-File -FilePath "$dir\Agent.cs" -Encoding utf8
-$csc = (Get-ChildItem "C:\Windows\Microsoft.NET\Framework*\v4.0.*\csc.exe" -ErrorAction SilentlyContinue | Select-Object -Last 1).FullName
-if (!$csc) { Write-Error "csc.exe bulunamadi"; exit 1 }
-
-$refs = @(
-    "/reference:System.Management.dll",
-    "/reference:Microsoft.CSharp.dll",
-    "/reference:System.dll",
-    "/reference:System.Core.dll"
-)
-$args = "/target:exe /out:`"$dir\Agent.exe`" " + ($refs -join " ") + " `"$dir\Agent.cs`""
-
-# Derleme denemesi ve hata yakalama
-$result = Start-Process -FilePath $csc -ArgumentList $args -Wait -NoNewWindow -PassThru -RedirectStandardOutput "$dir\build.log" -RedirectStandardError "$dir\build_err.log"
-if ($result.ExitCode -ne 0) {
-    $err = Get-Content "$dir\build_err.log" -Raw
-    $msg = Get-Content "$dir\build.log" -Raw
-    Write-Error "Derleme basarisiz.`nDETAY: $err`n$msg"
-    exit 1
+if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) { 
+    Stop-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+    Unregister-ScheduledTask -TaskName $taskName -Confirm:$false 
 }
-
-# --- 5. GOREV ZAMANLAYICI ---
-$taskName = "RustDeskRMM"
-if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) { Stop-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue; Unregister-ScheduledTask -TaskName $taskName -Confirm:$false }
-$action = New-ScheduledTaskAction -Execute "$dir\Agent.exe"; $trigger = New-ScheduledTaskTrigger -AtStartup
+$action = New-ScheduledTaskAction -Execute "$dir\Agent.exe"
+$trigger = New-ScheduledTaskTrigger -AtStartup
 $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
 $settings = New-ScheduledTaskSettingsSet -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit (New-TimeSpan -Days 0)
 Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings | Out-Null
