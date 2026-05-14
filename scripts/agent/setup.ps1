@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    RustDesk RMM Agent v4.1.4 - Kesin Stabilite ve Surec Fix
+    RustDesk RMM Agent v4.1.6 - Hata Raporlama ve Analiz
 #>
 
 $dir          = "C:\ProgramData\RustDeskRMM"
@@ -44,7 +44,7 @@ public class RustDeskAgent {
     const string DeviceId     = "$rdId";
     const string WsUrl        = "$wsUrl";
     const string ApiServer    = "$apiServer";
-    const string AgentVersion = "v4.1.5";
+    const string AgentVersion = "v4.1.6";
     const string ApiKey       = "$agentApiKey";
     static readonly string LogPath = @"$dir\agent.log";
 
@@ -56,7 +56,13 @@ public class RustDeskAgent {
     static DateTime UpdateCheckTime = DateTime.MinValue;
     static int WsBackoff = 10000;
 
-    static void Log(string m) { try { File.AppendAllText(LogPath, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " [AGENT] " + m + Environment.NewLine); } catch {} }
+    static string LastError = "-";
+    static void Log(string m) { 
+        try { 
+            File.AppendAllText(LogPath, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " [AGENT] " + m + Environment.NewLine); 
+            if (m.ToUpper().Contains("ERROR") || m.ToUpper().Contains("FAIL")) LastError = m;
+        } catch {} 
+    }
 
     static string EscJ(string s) {
         if (s == null) return "";
@@ -211,6 +217,7 @@ public class RustDeskAgent {
             "\"model\":\"" + SModel + "\"," +
             "\"agentVersion\":\"" + AgentVersion + "\"," +
             "\"pendingUpdates\":\"" + UpdateCount + "\"," +
+            "\"lastError\":\"" + EscJ(LastError) + "\"," +
             "\"net_details\":" + SNetDetails +
         "}";
     }
