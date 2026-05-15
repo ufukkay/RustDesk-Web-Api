@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getOrCreateAgentApiKey } from "@/lib/settings";
 import fs from "fs";
 import path from "path";
 
@@ -9,15 +10,17 @@ export async function GET() {
       return new NextResponse("Agent script not found", { status: 404 });
     }
 
-    const scriptContent = fs.readFileSync(filePath, "utf-8");
-    
-    return new NextResponse(scriptContent, {
+    const agentApiKey = getOrCreateAgentApiKey();
+    const script = fs.readFileSync(filePath, "utf-8")
+      .replace("AGENT_API_KEY_PLACEHOLDER", agentApiKey);
+
+    return new NextResponse(script, {
       headers: {
         "Content-Type": "text/plain",
-        "Cache-Control": "no-store, max-age=0"
-      }
+        "Cache-Control": "no-store, max-age=0",
+      },
     });
-  } catch (error) {
+  } catch {
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

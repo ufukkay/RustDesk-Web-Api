@@ -37,7 +37,8 @@ export async function GET(req: Request) {
       try {
         if (fs.existsSync(p)) { serverKey = fs.readFileSync(p, "utf-8").trim(); break; }
       } catch { continue; }
-        const psScript = `<#
+    }
+    const psScript = `<#
 .SYNOPSIS
     Talay RMM Pro Unified Installer v5.0
     Professional, Automated, Enterprise Grade.
@@ -56,7 +57,7 @@ function Show-Logo {
   _______   _              _____  __  __ __  __ 
  |__   __| | |            |  __ \|  \/  |  \/  |
     | | __ | | __ _ _   _ | |__) | \  / | \  / |
-    | |/ _` | |/ _` | | | ||  _  /| |\/| | |\/| |
+    | |/ _\` | |/ _\` | | | ||  _  /| |\/| | |\/| |
     | | (_| | | (_| | |_| || | \ \| |  | | |  | |
     |_|\__,_|_|\__,_|\__, ||_|  \_\_|  |_|_|  |_|
                       __/ |                     
