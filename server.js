@@ -50,8 +50,10 @@ const app    = next({ dev, hostname: "0.0.0.0", port });
 const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
-    const { pathname } = parse(req.url, true);
-    
+  const httpServer = createServer((req, res) => {
+    const parsedUrl = parse(req.url, true);
+    const { pathname } = parsedUrl;
+
     // ── Pro Log API ────────────────────────────────────────────────
     if (pathname === "/api/agent/log" && req.method === "POST") {
       let body = "";
@@ -72,7 +74,7 @@ app.prepare().then(() => {
       return;
     }
 
-    handle(req, res, parse(req.url, true));
+    handle(req, res, parsedUrl);
   });
 
   // Socket.IO — dashboard clients
