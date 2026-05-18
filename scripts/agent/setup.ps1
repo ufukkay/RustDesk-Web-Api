@@ -10,23 +10,6 @@ $apiServer     = "https://rmm.talay.com"
 $wsUrl         = "wss://rmm.talay.com/agent-socket"
 $agentApiKey   = "AGENT_API_KEY_PLACEHOLDER"
 $taskName      = "RustDeskRMM"
-$logFile       = "$dir\setup.log"
-
-# --- GORSEL FONKSIYONLAR ---
-function Show-Logo {
-    Clear-Host
-    Write-Host @"
-  _______   _              _____  __  __ __  __ 
- |__   __| | |            |  __ \|  \/  |  \/  |
-    | | __ | | __ _ _   _ | |__) | \  / | \  / |
-    | |/ _` | |/ _` | | | ||  _  /| |\/| | |\/| |
-    | | (_| | | (_| | |_| || | \ \| |  | | |  | |
-    |_|\__,_|_|\__,_|\__, ||_|  \_\_|  |_|_|  |_|
-                      __/ |                     
-                     |___/  PRO INSTALLER v5.0
-"@ -ForegroundColor Yellow
-    Write-Host "------------------------------------------------" -ForegroundColor Gray
-}
 
 function Write-Step ([int]$step, [string]$msg) {
     Write-Host "[$step/5] $msg..." -ForegroundColor Cyan
@@ -42,7 +25,6 @@ function Report-Error ([string]$msg) {
 }
 
 # --- 1. HAZIRLIK VE ADMIN ---
-Show-Logo
 Write-Step 1 "Sistem gereksinimleri kontrol ediliyor"
 
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
