@@ -100,6 +100,18 @@ app.prepare().then(() => {
 
   // ── Helpers ──────────────────────────────────────────────────────
 
+  const SETTINGS_FILE = path.join(__dirname, "scripts", "settings.json");
+  function validateAgentKey(key) {
+    try {
+      if (fs.existsSync(SETTINGS_FILE)) {
+        const settings = JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf-8"));
+        if (!settings.agentApiKey) return true;
+        return key === settings.agentApiKey;
+      }
+    } catch {}
+    return true;
+  }
+
   function markOnline(deviceId) {
     const now = Math.floor(Date.now() / 1000);
     const status = readJson(STATUS_FILE);
@@ -233,8 +245,15 @@ app.prepare().then(() => {
     const query    = parse(req.url, true).query;
     const deviceId = String(query.deviceId || "").trim();
     const hostname = String(query.hostname  || "").trim().toUpperCase();
+    const key      = String(query.key || "").trim();
 
     if (!deviceId) { ws.close(1008, "deviceId required"); return; }
+
+    if (!validateAgentKey(key)) {
+      console.log(`[WS-SEC] Blocked unauthorized connection attempt for device: ${deviceId}`);
+      ws.close(1008, "Unauthorized");
+      return;
+    }
 
     // Register
     agents.set(deviceId, ws);

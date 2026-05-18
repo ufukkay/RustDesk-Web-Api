@@ -40,7 +40,7 @@ export async function GET(req: Request) {
     }
     const psScript = `<#
 .SYNOPSIS
-    Talay RMM Pro Unified Installer v5.0
+    Talay RMM Pro Unified Installer v1.1-Beta
     Professional, Automated, Enterprise Grade.
 #>
 
@@ -49,31 +49,33 @@ $apiServer = "${apiServer}"
 $idServer  = "${idServer}"
 $key       = "${serverKey}"
 $pass      = "${password}"
+$dir       = "C:\\ProgramData\\RustDeskRMM"
+$logFile   = "$dir\\setup.log"
 
-# --- GORSEL FONKSIYONLAR ---
-function Show-Logo {
-    Clear-Host
-    Write-Host @"
-  _______   _              _____  __  __ __  __ 
- |__   __| | |            |  __ \|  \/  |  \/  |
-    | | __ | | __ _ _   _ | |__) | \  / | \  / |
-    | |/ _\` | |/ _\` | | | ||  _  /| |\/| | |\/| |
-    | | (_| | | (_| | |_| || | \ \| |  | | |  | |
-    |_|\__,_|_|\__,_|\__, ||_|  \_\_|  |_|_|  |_|
-                      __/ |                     
-                     |___/  UNIFIED INSTALLER v5.0
-"@ -ForegroundColor Yellow
-    Write-Host "------------------------------------------------" -ForegroundColor Gray
-}
+# Proje dizinini en başta oluşturalım ki log yazabilelim
+if (!(Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
 
 function Write-Step ([int]$step, [string]$msg) {
-    Write-Host "[$step/6] $msg..." -ForegroundColor Cyan
+    $formatted = "[$step/6] $msg..."
+    Write-Host $formatted -ForegroundColor Cyan
+    try {
+        $logMsg = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [UNIFIED STEP $step] $msg"
+        Add-Content -Path $logFile -Value $logMsg -ErrorAction SilentlyContinue
+    } catch {}
 }
 
 # --- 0. HAZIRLIK ---
-Show-Logo
+try {
+    $initMsg = "\`n$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') === UNIFIED INSTALLER BASLADI ==="
+    Add-Content -Path $logFile -Value $initMsg -ErrorAction SilentlyContinue
+} catch {}
+
 Write-Step 1 "Yönetici yetkileri ve sistem kontrol ediliyor"
 if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    try {
+        $errLog = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [HATA] Yönetici yetkileri yetersiz."
+        Add-Content -Path $logFile -Value $errLog -ErrorAction SilentlyContinue
+    } catch {}
     Write-Host "[HATA] Lütfen PowerShell'i 'Yönetici Olarak Çalıştır' seçeneğiyle açın." -ForegroundColor Red
     exit 1
 }
@@ -191,6 +193,10 @@ Set-ItemProperty -Path "$regBase\\shell\\open\\command" -Name "(Default)" -Value
 
 # --- 5. FINAL ---
 Write-Step 6 "Sistem optimizasyonu tamamlanıyor"
+try {
+    $successMsg = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [UNIFIED SUCCESS] Kurumsal kurulum başarıyla tamamlandı!"
+    Add-Content -Path $logFile -Value $successMsg -ErrorAction SilentlyContinue
+} catch {}
 Write-Host "\`n------------------------------------------------" -ForegroundColor Gray
 Write-Host "TEBRİKLER: Kurumsal Kurulum Başarıyla Tamamlandı! ✅" -ForegroundColor Green
 Write-Host "Lütfen RMM Panelini kontrol edin." -ForegroundColor White

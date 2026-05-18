@@ -383,8 +383,8 @@ public class RustDeskAgent {
     static async Task Connect() {
         DeviceId = GetRuntimeId(); 
         using (ClientWebSocket ws = new ClientWebSocket()) {
-            string q = "?deviceId=" + DeviceId + "&hostname=" + Uri.EscapeDataString(Environment.MachineName) + "&type=agent";
-            Log("Connecting to WS: " + WsUrl + q);
+            string q = "?deviceId=" + DeviceId + "&hostname=" + Uri.EscapeDataString(Environment.MachineName) + "&type=agent&key=" + ApiKey;
+            Log("Connecting to WS: " + WsUrl + "?deviceId=" + DeviceId);
             try {
                 await ws.ConnectAsync(new Uri(WsUrl + q), CancellationToken.None);
                 WsBackoff = 10000;
