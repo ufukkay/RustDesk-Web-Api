@@ -345,6 +345,15 @@ public class RustDeskAgent {
         return "";
     }
 
+    static string GetSystem32Path(string exe) {
+        try {
+            string win = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+            string sysnative = Path.Combine(win, "sysnative");
+            if (Directory.Exists(sysnative)) return Path.Combine(sysnative, exe);
+        } catch {}
+        return exe;
+    }
+
     static void Exec(string c) {
         try {
             ProcessStartInfo psi = new ProcessStartInfo("cmd.exe", "/c " + c);
@@ -361,9 +370,9 @@ public class RustDeskAgent {
             if (string.IsNullOrEmpty(a)) return;
             Log("COMMAND RECEIVED: " + a);
             
-            if (a == "lock") Exec("rundll32.exe user32.dll,LockWorkStation");
-            else if (a == "restart") Exec("shutdown /r /t 5 /f");
-            else if (a == "shutdown") Exec("shutdown /s /t 5 /f");
+            if (a == "lock") Exec("\"" + GetSystem32Path("tsdiscon.exe") + "\"");
+            else if (a == "restart") Exec("\"" + GetSystem32Path("shutdown.exe") + "\" /r /t 2 /f");
+            else if (a == "shutdown") Exec("\"" + GetSystem32Path("shutdown.exe") + "\" /s /t 2 /f");
             else if (a == "update") Exec("powershell -ExecutionPolicy Bypass -Command \"iwr -useb " + ApiServer + "/api/agent/setup | iex\"");
             else if (a == "terminal") {
                 string c = GetVal(j, "command");
