@@ -5,13 +5,26 @@ $apiServer     = "https://rmm.talay.com"
 $wsUrl         = "wss://rmm.talay.com/agent-socket"
 $agentApiKey   = "AGENT_API_KEY_PLACEHOLDER"
 $taskName      = "RustDeskRMM"
+$logFile       = "$dir\setup.log"
+
+# Proje dizinini en başta oluşturalım ki log yazabilelim
+if (!(Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
 
 function Write-Step ([int]$step, [string]$msg) {
-    Write-Host "[$step/5] $msg..." -ForegroundColor Cyan
+    $formatted = "[$step/5] $msg..."
+    Write-Host $formatted -ForegroundColor Cyan
+    try {
+        $logMsg = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [STEP $step] $msg"
+        Add-Content -Path $logFile -Value $logMsg -ErrorAction SilentlyContinue
+    } catch {}
 }
 
 function Report-Error ([string]$msg) {
     Write-Host "`n[!] HATA: $msg" -ForegroundColor Red
+    try {
+        $logMsg = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [CRITICAL HATA] $msg"
+        Add-Content -Path $logFile -Value $logMsg -ErrorAction SilentlyContinue
+    } catch {}
     try {
         $body = @{ id = $env:COMPUTERNAME; error = $msg; step = "setup" } | ConvertTo-Json
         Invoke-RestMethod -Uri "$apiServer/api/agent/log" -Method Post -Body $body -ContentType "application/json" -ErrorAction SilentlyContinue
@@ -20,12 +33,15 @@ function Report-Error ([string]$msg) {
 }
 
 # --- 1. HAZIRLIK VE ADMIN ---
+try {
+    $initMsg = "`n$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') === TALAY RMM PRO KURULUM BASLADI ==="
+    Add-Content -Path $logFile -Value $initMsg -ErrorAction SilentlyContinue
+} catch {}
+
 Write-Step 1 "Sistem gereksinimleri kontrol ediliyor"
 
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (!$isAdmin) { Report-Error "Kurulum için Administrator yetkisi gereklidir." }
-
-if (!(Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
 
 # --- 2. ESKI SURUM TEMIZLIGI (HARD RESET) ---
 Write-Step 2 "Eski versiyon kalıntıları temizleniyor"
@@ -466,6 +482,11 @@ try {
     
     Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settingsSet -Force | Out-Null
     Start-ScheduledTask -TaskName $taskName
+    
+    try {
+        $successMsg = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [SUCCESS] Kurulum başarıyla tamamlandı. Cihaz ID: $rdId"
+        Add-Content -Path $logFile -Value $successMsg -ErrorAction SilentlyContinue
+    } catch {}
     
     Write-Host "`n------------------------------------------------" -ForegroundColor Gray
     Write-Host "ISLEM TAMAMLANDI: Talay RMM Pro Ajanı Hazır! ✅" -ForegroundColor Green
