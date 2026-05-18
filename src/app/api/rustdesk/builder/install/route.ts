@@ -86,7 +86,7 @@ if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]:
 # --- 1. RUSTDESK KURULUM ---
 Write-Step 2 "RustDesk kurumsal paketi indiriliyor"
 $setupPath = Join-Path $env:TEMP "rustdesk_setup.exe"
-$rdUrl = "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.exe"
+$rdUrl = "$apiServer/rustdesk-1.4.6-x86_64.exe"
 
 if (Get-Command curl.exe -ErrorAction SilentlyContinue) {
     curl.exe -L -s --ssl-no-revoke -o $setupPath $rdUrl
