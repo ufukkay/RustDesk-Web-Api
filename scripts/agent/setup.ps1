@@ -1,8 +1,3 @@
-<#
-.SYNOPSIS
-    Talay RMM Pro Installer v5.0 (v4.1.10)
-    Professional, Robust, Enterprise Grade.
-#>
 
 # --- KONFIGURASYON ---
 $dir           = "C:\ProgramData\RustDeskRMM"
