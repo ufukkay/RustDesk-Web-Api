@@ -345,8 +345,13 @@ public class RustDeskAgent {
         return "";
     }
 
-    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
-    static extern uint WTSGetActiveConsoleSessionId();
+    static int GetActiveSessionId() {
+        try {
+            Process[] ps = Process.GetProcessesByName("explorer");
+            if (ps.Length > 0) return ps[0].SessionId;
+        } catch {}
+        return 1;
+    }
 
     static string GetSystem32Path(string exe) {
         try {
@@ -354,7 +359,7 @@ public class RustDeskAgent {
             string sysnative = Path.Combine(win, "sysnative");
             if (Directory.Exists(sysnative)) return Path.Combine(sysnative, exe);
         } catch {}
-        return exe;
+        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), exe);
     }
 
     static void Exec(string c) {
@@ -374,13 +379,8 @@ public class RustDeskAgent {
             Log("COMMAND RECEIVED: " + a);
             
             if (a == "lock") {
-                uint sessId = WTSGetActiveConsoleSessionId();
-                if (sessId != 0xFFFFFFFF) {
-                    Exec("\"" + GetSystem32Path("tsdiscon.exe") + "\" " + sessId);
-                } else {
-                    Exec("\"" + GetSystem32Path("tsdiscon.exe") + "\" 1");
-                    Exec("\"" + GetSystem32Path("tsdiscon.exe") + "\" 2");
-                }
+                int sessId = GetActiveSessionId();
+                Exec("\"" + GetSystem32Path("tsdiscon.exe") + "\" " + sessId);
             }
             else if (a == "restart") Exec("\"" + GetSystem32Path("shutdown.exe") + "\" /r /t 2 /f");
             else if (a == "shutdown") Exec("\"" + GetSystem32Path("shutdown.exe") + "\" /s /t 2 /f");
