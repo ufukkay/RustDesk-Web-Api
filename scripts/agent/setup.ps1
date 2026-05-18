@@ -68,8 +68,8 @@ if (!$rdId) {
 }
 if (!$rdId) { $rdId = $env:COMPUTERNAME }
 
-# --- 4. AJAN DERLEME (v4.1.10) ---
-Write-Step 4 "Pro-Agent derleniyor (v4.1.10)"
+# --- 4. AJAN DERLEME (v1.1-Beta) ---
+Write-Step 4 "Pro-Agent derleniyor (v1.1-Beta)"
 
 $source = @"
 using System;
@@ -88,7 +88,7 @@ public class RustDeskAgent {
     static string DeviceId    = "$rdId"; 
     const string WsUrl        = "$wsUrl";
     const string ApiServer    = "$apiServer";
-    const string AgentVersion = "v4.1.10";
+    const string AgentVersion = "v1.1-Beta";
     const string ApiKey       = "$agentApiKey";
     static readonly string LogPath = @"$dir\agent.log";
 
