@@ -92,17 +92,32 @@ if (Get-Command curl.exe -ErrorAction SilentlyContinue) {
     Invoke-WebRequest -Uri $rdUrl -OutFile $setupPath -UseBasicParsing
 }
 
-Write-Host ">> Kurulum başlatılıyor..." -ForegroundColor Gray
-$proc = Start-Process $setupPath -ArgumentList "--silent-install" -PassThru -Wait
-Start-Sleep -Seconds 3
+Write-Host ">> Mevcut servisler durduruluyor..." -ForegroundColor Gray
+Stop-Service -Name "rustdesk" -Force -ErrorAction SilentlyContinue
+Get-Process "rustdesk" -ErrorAction SilentlyContinue | Stop-Process -Force
 
-$rd = if (Test-Path "C:\\Program Files\\RustDesk\\rustdesk.exe") { "C:\\Program Files\\RustDesk\\rustdesk.exe" } else { "C:\\Program Files (x86)\\RustDesk\\rustdesk.exe" }
-if (!(Test-Path $rd)) { Write-Host "[HATA] RustDesk kurulamadı." -ForegroundColor Red; exit 1 }
+Write-Host ">> Kurulum başlatılıyor..." -ForegroundColor Gray
+Start-Process $setupPath -ArgumentList "--silent-install"
+
+$timeout = 60
+$rd = ""
+while ($timeout -gt 0) {
+    if (Test-Path "C:\\Program Files\\RustDesk\\rustdesk.exe") { $rd = "C:\\Program Files\\RustDesk\\rustdesk.exe"; break }
+    if (Test-Path "C:\\Program Files (x86)\\RustDesk\\rustdesk.exe") { $rd = "C:\\Program Files (x86)\\RustDesk\\rustdesk.exe"; break }
+    Start-Sleep -Seconds 1
+    $timeout--
+}
+
+if ($rd -eq "") { Write-Host "[HATA] RustDesk kurulamadı." -ForegroundColor Red; exit 1 }
+
+Start-Sleep -Seconds 5
+
+# Kurulum sonrası servisleri tekrar durduruyoruz (yapılandırma için)
+Stop-Service -Name "rustdesk" -Force -ErrorAction SilentlyContinue
+Get-Process "rustdesk" -ErrorAction SilentlyContinue | Stop-Process -Force
 
 # --- 2. AYARLARIN MUHURLENMESI ---
 Write-Step 3 "Kurumsal ağ ayarları mühürleniyor"
-Stop-Service -Name "rustdesk" -Force -ErrorAction SilentlyContinue
-Get-Process "rustdesk" -ErrorAction SilentlyContinue | Stop-Process -Force
 
 $toml1 = "rendezvous_server = '$idServer'"
 $toml2 = @"
@@ -140,8 +155,9 @@ foreach ($d in $profileDirs) {
     [System.IO.File]::WriteAllText("$d\\RustDesk2.toml", $toml2, (New-Object System.Text.UTF8Encoding($false)))
 }
 Start-Service rustdesk -ErrorAction SilentlyContinue
-& $rd --password '$pass' 2>$null
-& $rd --set-password '$pass' 2>$null
+Start-Sleep -Seconds 3
+& $rd --password "$pass" 2>$null
+& $rd --set-password "$pass" 2>$null
 
 # --- 3. RMM AJANI KURULUMU ---
 Write-Step 4 "Talay RMM Pro Ajanı (WebSocket) yapılandırılıyor"

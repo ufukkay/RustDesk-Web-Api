@@ -66,14 +66,26 @@ try {
 # --- 3. CIHAZ ID VE RUSTDESK ---
 Write-Step 3 "RustDesk yapılandırması taranıyor"
 $rdId = ""
-$configPaths = @(
-    "C:\Windows\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\config\rustdesk.toml",
-    "$env:AppData\RustDesk\config\rustdesk.toml"
-)
-foreach ($p in $configPaths) {
-    if (!$rdId -and (Test-Path $p)) {
-        if ($content = Get-Content $p -Raw -ErrorAction SilentlyContinue) {
-            if ($content -match "id = '([^']+)'") { $rdId = $matches[1] }
+$rdExe = if (Test-Path "C:\Program Files\RustDesk\rustdesk.exe") { "C:\Program Files\RustDesk\rustdesk.exe" } else { "C:\Program Files (x86)\RustDesk\rustdesk.exe" }
+if (Test-Path $rdExe) {
+    try { $rdId = (& $rdExe --get-id 2>$null).Trim() } catch {}
+}
+
+if (!$rdId) {
+    $configPaths = @(
+        "C:\Windows\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\config\rustdesk.toml",
+        "$env:AppData\RustDesk\config\rustdesk.toml"
+    )
+    foreach ($p in $configPaths) {
+        if (!$rdId -and (Test-Path $p)) {
+            if ($lines = Get-Content $p -ErrorAction SilentlyContinue) {
+                foreach ($line in $lines) {
+                    if ($line -match "^id = '([^']+)'") { 
+                        $rdId = $matches[1]
+                        break
+                    }
+                }
+            }
         }
     }
 }
@@ -121,18 +133,34 @@ public class RustDeskAgent {
 
     static string GetRuntimeId() {
         try {
+            string rd = @"C:\Program Files\RustDesk\rustdesk.exe";
+            if (!File.Exists(rd)) rd = @"C:\Program Files (x86)\RustDesk\rustdesk.exe";
+            if (File.Exists(rd)) {
+                ProcessStartInfo psi = new ProcessStartInfo(rd, "--get-id");
+                psi.RedirectStandardOutput = true;
+                psi.UseShellExecute = false;
+                psi.CreateNoWindow = true;
+                Process p = Process.Start(psi);
+                string id = p.StandardOutput.ReadToEnd().Trim();
+                p.WaitForExit();
+                if (!string.IsNullOrEmpty(id) && id.Length >= 5) return id;
+            }
+        } catch {}
+
+        try {
             string[] paths = { 
                 @"C:\Windows\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\config\rustdesk.toml",
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), @"RustDesk\config\rustdesk.toml")
             };
             foreach (var p in paths) {
                 if (File.Exists(p)) {
-                    string c = File.ReadAllText(p);
-                    int start = c.IndexOf("id = '");
-                    if (start >= 0) {
-                        start += 6;
-                        int end = c.IndexOf("'", start);
-                        if (end > start) return c.Substring(start, end - start);
+                    string[] lines = File.ReadAllLines(p);
+                    foreach (string line in lines) {
+                        if (line.StartsWith("id = '")) {
+                            int start = 6;
+                            int end = line.IndexOf("'", start);
+                            if (end > start) return line.Substring(start, end - start);
+                        }
                     }
                 }
             }
@@ -351,6 +379,7 @@ public class RustDeskAgent {
             Log("Connecting to WS: " + WsUrl + q);
             try {
                 await ws.ConnectAsync(new Uri(WsUrl + q), CancellationToken.None);
+                WsBackoff = 10000;
             } catch (Exception ex) {
                 Log("CRITICAL WS CONN ERROR: " + ex.Message);
                 throw;
