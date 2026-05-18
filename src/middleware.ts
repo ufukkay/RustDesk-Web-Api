@@ -20,7 +20,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const protectedPaths = ["/dashboard", "/devices", "/builder", "/settings", "/technicians", "/wiki"];
-  const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
+  const isProtected = protectedPaths.some((p) => pathname === p || pathname.startsWith(p + "/"));
 
   if (isProtected) {
     if (!token || !(await isValidToken(token))) {
@@ -39,11 +39,17 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/dashboard",
     "/dashboard/:path*",
+    "/devices",
     "/devices/:path*",
+    "/builder",
     "/builder/:path*",
+    "/settings",
     "/settings/:path*",
+    "/technicians",
     "/technicians/:path*",
+    "/wiki",
     "/wiki/:path*",
     "/login",
   ],
