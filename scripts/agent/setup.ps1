@@ -333,8 +333,23 @@ public class RustDeskAgent {
         int i = j.IndexOf(n);
         if (i < 0) return "";
         i += n.Length;
-        int e = j.IndexOf("\"", i);
-        return e < 0 ? "" : j.Substring(i, e - i);
+        int e = i;
+        while (e < j.Length) {
+            int nextQuote = j.IndexOf("\"", e);
+            if (nextQuote < 0) return "";
+            int backslashes = 0;
+            int temp = nextQuote - 1;
+            while (temp >= i && j[temp] == '\\') {
+                backslashes++;
+                temp--;
+            }
+            if (backslashes % 2 == 0) {
+                string val = j.Substring(i, nextQuote - i);
+                return val.Replace("\\\"", "\"").Replace("\\\\", "\\").Replace("\\/", "/");
+            }
+            e = nextQuote + 1;
+        }
+        return "";
     }
 
     static void Exec(string c) {
