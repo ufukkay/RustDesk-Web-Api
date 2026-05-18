@@ -345,6 +345,9 @@ public class RustDeskAgent {
         return "";
     }
 
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+    static extern uint WTSGetActiveConsoleSessionId();
+
     static string GetSystem32Path(string exe) {
         try {
             string win = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
@@ -370,7 +373,15 @@ public class RustDeskAgent {
             if (string.IsNullOrEmpty(a)) return;
             Log("COMMAND RECEIVED: " + a);
             
-            if (a == "lock") Exec("\"" + GetSystem32Path("tsdiscon.exe") + "\"");
+            if (a == "lock") {
+                uint sessId = WTSGetActiveConsoleSessionId();
+                if (sessId != 0xFFFFFFFF) {
+                    Exec("\"" + GetSystem32Path("tsdiscon.exe") + "\" " + sessId);
+                } else {
+                    Exec("\"" + GetSystem32Path("tsdiscon.exe") + "\" 1");
+                    Exec("\"" + GetSystem32Path("tsdiscon.exe") + "\" 2");
+                }
+            }
             else if (a == "restart") Exec("\"" + GetSystem32Path("shutdown.exe") + "\" /r /t 2 /f");
             else if (a == "shutdown") Exec("\"" + GetSystem32Path("shutdown.exe") + "\" /s /t 2 /f");
             else if (a == "update") Exec("powershell -ExecutionPolicy Bypass -Command \"iwr -useb " + ApiServer + "/api/agent/setup | iex\"");

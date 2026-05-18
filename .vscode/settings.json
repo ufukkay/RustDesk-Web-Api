@@ -4,6 +4,7 @@
             "approve": true,
             "matchCommandLine": true
         },
-        "Get-Command": true
+        "Get-Command": true,
+        "ForEach-Object": true
     }
 }
