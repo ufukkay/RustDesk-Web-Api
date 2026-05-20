@@ -20,7 +20,7 @@ set /p end_ip="Bitis IP (Orn: 254): "
 if "%end_ip%"=="" set end_ip=254
 
 echo.
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0mass_deploy.ps1" -BaseIP "%base_ip%." -StartRange %start_ip% -EndRange %end_ip% -SetupUrl "https://rmm.talay.com/api/rustdesk/builder/install?host=rmm.talay.com&port=443"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0mass_deploy_seq.ps1" -BaseIP "%base_ip%." -StartRange %start_ip% -EndRange %end_ip% -SetupUrl "https://rmm.talay.com/api/rustdesk/builder/install?host=rmm.talay.com&port=443"
 
 echo.
 echo Islemler tamamlandi.
