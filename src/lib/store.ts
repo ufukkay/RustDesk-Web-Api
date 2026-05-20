@@ -55,7 +55,7 @@ interface AppState {
   isAuthenticated: boolean;
   user: { name: string; email: string; role: string } | null;
   login: (user: { name: string; email: string; role: string }) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
 
   // Cihaz yönetimi
   devices: Device[];
@@ -98,7 +98,15 @@ export const useAppStore = create<AppState>()(
       }),
       
       // Çıkış yap ve verileri sıfırla
-      logout: () => set({ isAuthenticated: false, user: null }),
+      logout: async () => {
+        try {
+          await fetch("/api/auth/logout", { method: "POST" });
+        } catch (e) {
+          console.error("Logout API error:", e);
+        }
+        set({ isAuthenticated: false, user: null });
+        window.location.href = "/login";
+      },
 
       // Cihaz listesi işlemleri
       devices: [], 
