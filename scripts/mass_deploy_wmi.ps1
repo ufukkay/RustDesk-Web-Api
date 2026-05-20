@@ -49,7 +49,8 @@ $StartRange..$EndRange | ForEach-Object {
             $session = New-CimSession -ComputerName $target -SessionOption $opt -ErrorAction Stop
             
             # Kurulum komutunu WMI uzerinden uzaktaki bilgisayarda calistiriyoruz.
-            $cmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command `"[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-RestMethod -Uri '$SetupUrl' -UseBasicParsing | Invoke-Expression`""
+            # Tek tırnak ve string birleştirme kullanarak tırnak kaçırma sorunlarını ve parser uyarılarını önlüyoruz.
+            $cmd = 'powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-RestMethod -Uri ''' + $SetupUrl + ''' -UseBasicParsing | Invoke-Expression"'
             
             $result = Invoke-CimMethod -CimSession $session -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = $cmd } -ErrorAction Stop
             

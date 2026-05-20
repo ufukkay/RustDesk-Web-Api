@@ -19,7 +19,7 @@ function Write-Step ([int]$step, [string]$msg) {
     } catch {}
 }
 
-function Report-Error ([string]$msg) {
+function ReportError ([string]$msg) {
     Write-Host "`n[!] HATA: $msg" -ForegroundColor Red
     try {
         $logMsg = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') [CRITICAL HATA] $msg"
@@ -41,7 +41,7 @@ try {
 Write-Step 1 "Sistem gereksinimleri kontrol ediliyor"
 
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-if (!$isAdmin) { Report-Error "Kurulum için Administrator yetkisi gereklidir." }
+if (!$isAdmin) { ReportError "Kurulum için Administrator yetkisi gereklidir." }
 
 # --- 2. ESKI SURUM TEMIZLIGI (HARD RESET) ---
 Write-Step 2 "Eski versiyon kalıntıları temizleniyor"
@@ -480,7 +480,7 @@ public class RustDeskAgent {
 $source | Out-File -FilePath "$dir\Agent.cs" -Encoding utf8
 $cscPaths = Get-ChildItem "C:\Windows\Microsoft.NET\Framework*\v4.0.*\csc.exe" -ErrorAction SilentlyContinue
 $csc = ($cscPaths | Select-Object -Last 1).FullName
-if (!$csc) { Report-Error ".NET Compiler (csc.exe) bulunamadı." }
+if (!$csc) { ReportError ".NET Compiler (csc.exe) bulunamadı." }
 
 $refs = @("/reference:System.Management.dll", "/reference:Microsoft.CSharp.dll", "/reference:System.dll", "/reference:System.Core.dll")
 $buildArgs = "/target:exe /out:`"$dir\Agent.exe`" " + ($refs -join " ") + " `"$dir\Agent.cs`""
@@ -488,7 +488,7 @@ $buildArgs = "/target:exe /out:`"$dir\Agent.exe`" " + ($refs -join " ") + " `"$d
 $process = Start-Process -FilePath $csc -ArgumentList $buildArgs -Wait -NoNewWindow -PassThru -RedirectStandardOutput "$dir\build.log" -RedirectStandardError "$dir\build_err.log"
 if ($process.ExitCode -ne 0) {
     $errText = Get-Content "$dir\build_err.log" -Raw
-    Report-Error "Ajan derlenemedi. Detay: $errText"
+    ReportError "Ajan derlenemedi. Detay: $errText"
 }
 
 # --- 5. GOREV ZAMANLAYICI VE BASLATMA ---
@@ -513,5 +513,5 @@ try {
     Write-Host "Cihaz ID: $rdId" -ForegroundColor Yellow
     Write-Host "------------------------------------------------`n" -ForegroundColor Gray
 } catch {
-    Report-Error "Servis kaydı sırasında hata oluştu: $($_.Exception.Message)"
+    ReportError "Servis kaydı sırasında hata oluştu: $($_.Exception.Message)"
 }
