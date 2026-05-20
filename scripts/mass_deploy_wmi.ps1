@@ -1,5 +1,5 @@
 # Pure ASCII version to prevent encoding issues in Windows PowerShell 5.1
-# WMI (RPC Port 135) deployment script.
+# WMI (RPC Port 135) deployment script using DCOM protocol.
 param (
     [string]$BaseIP = "172.16.1.",
     [int]$StartRange = 1,
@@ -12,6 +12,9 @@ Write-Host " TALAY RMM - WMI TOPLU KURULUM (RPC 135)  " -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host "Hedef Ag: ${BaseIP}${StartRange} - ${BaseIP}${EndRange}" -ForegroundColor Yellow
 Write-Host "Kurulum URL: $SetupUrl`n" -ForegroundColor Yellow
+
+# DCOM protokol ayarini tanimliyoruz (WinRM engellerini bypass etmek icin)
+$opt = New-CimSessionOption -Protocol Dcom
 
 $StartRange..$EndRange | ForEach-Object {
     $ip = "${BaseIP}$_"
@@ -39,12 +42,16 @@ $StartRange..$EndRange | ForEach-Object {
     if ($success) {
         Write-Host "WMI/RPC ACIK ($target)!" -ForegroundColor Green
         Write-Host "   - Kurulum komutu gonderiliyor..." -ForegroundColor Cyan
+        
+        $session = $null
         try {
+            # DCOM oturumu olusturuyoruz (TrustedHosts ve WinRM engellerini aşar)
+            $session = New-CimSession -ComputerName $target -SessionOption $opt -ErrorAction Stop
+            
             # Kurulum komutunu WMI uzerinden uzaktaki bilgisayarda calistiriyoruz.
-            # PowerShell kacar karakteri olan backtick (`) isaretini dogru kullaniyoruz.
             $cmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command `"[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-RestMethod -Uri '$SetupUrl' -UseBasicParsing | Invoke-Expression`""
             
-            $result = Invoke-CimMethod -ComputerName $target -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = $cmd } -ErrorAction Stop
+            $result = Invoke-CimMethod -CimSession $session -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = $cmd } -ErrorAction Stop
             
             if ($result.ReturnValue -eq 0) {
                 Write-Host "   - Sonuc: BASARILI (Process ID: $($result.ProcessId))" -ForegroundColor Green
@@ -53,6 +60,8 @@ $StartRange..$EndRange | ForEach-Object {
             }
         } catch {
             Write-Host "   - HATA: $($_.Exception.Message)" -ForegroundColor Red
+        } finally {
+            if ($session) { Remove-CimSession $session -ErrorAction SilentlyContinue }
         }
     } else {
         Write-Host "Kapali veya WMI devre disi." -ForegroundColor DarkGray
