@@ -1,12 +1,4 @@
-<#
-.SYNOPSIS
-    Talay RMM Pro - Sıralı Kurulum Aracı (WinRM Port 5985)
-.DESCRIPTION
-    Belirtilen IP aralığını tek tek, sırayla kontrol eder. 
-    WinRM portu (5985) açık olan cihazları tespit edip kurulum komutunu sırayla gönderir.
-    Kullanıcıya her adımda görsel bilgi verir.
-#>
-
+# Pure ASCII version to prevent encoding issues in Windows PowerShell 5.1
 param (
     [string]$BaseIP = "172.16.1.",
     [int]$StartRange = 1,
@@ -30,7 +22,6 @@ $StartRange..$EndRange | ForEach-Object {
     
     try {
         $ar = $tcp.BeginConnect($ip, 5985, $null, $null)
-        # Sıralı taramada hızlı ilerlemesi için 500ms timeout uyguluyoruz
         if ($ar.AsyncWaitHandle.WaitOne(500)) {
             if ($tcp.Connected) {
                 $success = $true
@@ -46,9 +37,8 @@ $StartRange..$EndRange | ForEach-Object {
     
     if ($success) {
         Write-Host "WinRM ACIK ($target)!" -ForegroundColor Green
-        Write-Host "   └─ Kurulum komutu gonderiliyor..." -ForegroundColor Cyan
+        Write-Host "   - Kurulum komutu gonderiliyor..." -ForegroundColor Cyan
         try {
-            # Hataları yakalamak için ErrorAction Stop ile çalıştırıyoruz
             $output = Invoke-Command -ComputerName $target -ScriptBlock {
                 param($url)
                 try {
@@ -60,15 +50,16 @@ $StartRange..$EndRange | ForEach-Object {
                 }
             } -ArgumentList $SetupUrl -ErrorAction Stop
             
-            Write-Host "   └─ Sonuc: $output" -ForegroundColor Green
+            Write-Host "   - Sonuc: $output" -ForegroundColor Green
         } catch {
-            Write-Host "   └─ HATA: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "   - HATA: $($_.Exception.Message)" -ForegroundColor Red
         }
     } else {
         Write-Host "Kapali veya WinRM devre disi." -ForegroundColor DarkGray
     }
 }
 
-Write-Host "`n==========================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host " Tum cihazlar kontrol edildi." -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
