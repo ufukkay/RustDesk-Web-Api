@@ -41,7 +41,7 @@ for /L %%i in (%start_ip%,1,%end_ip%) do (
         if !errorlevel! EQU 0 (
             echo [!TARGET_IP!] - BASARILI.
         ) else (
-            echo [!TARGET_IP!] - HATA: WinRM (Powershell Remoting) izni yok veya erisim reddedildi.
+            echo [!TARGET_IP!] - HATA: WinRM - Powershell Remoting izni yok veya erisim reddedildi.
         )
     ) else (
         echo [!TARGET_IP!] Kapali, atlaniyor.
