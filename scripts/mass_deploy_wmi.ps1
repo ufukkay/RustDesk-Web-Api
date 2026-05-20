@@ -40,8 +40,9 @@ $StartRange..$EndRange | ForEach-Object {
         Write-Host "WMI/RPC ACIK ($target)!" -ForegroundColor Green
         Write-Host "   - Kurulum komutu gonderiliyor..." -ForegroundColor Cyan
         try {
-            # Kurulum komutunu WMI uzerinden uzaktaki bilgisayarda calistiriyoruz
-            $cmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command `\"[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-RestMethod -Uri '$SetupUrl' -UseBasicParsing | Invoke-Expression`\""
+            # Kurulum komutunu WMI uzerinden uzaktaki bilgisayarda calistiriyoruz.
+            # PowerShell kacar karakteri olan backtick (`) isaretini dogru kullaniyoruz.
+            $cmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command `"[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-RestMethod -Uri '$SetupUrl' -UseBasicParsing | Invoke-Expression`""
             
             $result = Invoke-CimMethod -ComputerName $target -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = $cmd } -ErrorAction Stop
             
